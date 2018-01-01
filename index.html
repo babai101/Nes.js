@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+</head>
+
+<body>
+    <div class="btns">
+        <input type="file" id="file-input" />
+        <button id="test" type="button" class="btn">Test</button>
+        <button id="viewCHR" type="button" class="btn">View CHR</button>
+        <!--<button id="start" type="button" class="btn">Start</button>-->
+        <input type="text" id="start" onkeydown="startdownFunction()" onkeyup="startupFunction()">
+        <button id="viewNameTable" type="button" class="btn">View Nametable</button>
+        <select id="ddlNameTable">
+            <option value="0" selected="selected">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+        </select>
+    </div>
+    <div>
+        <div class="viewport">
+            <canvas id="nesCanvas" width="256" height="240"></canvas>
+            <!--<canvas id="chrCanvas" width="1024" height="1024">-->
+            <canvas id="nameTableCanvas" width="256" height="240"></canvas>
+        </div>
+        <div class="debug">
+            <div class="debugInfo">
+                <div class="controlSections">
+                    <!--<h5>Status Flags</h5>-->
+                    <div class="controlHeader"><u>Status Flags</u></div>
+                    <table class="flagTbl" border="1" cellpadding="2">
+                        <tr>
+                            <td>S</td>
+                            <td>V</td>
+                            <td>U</td>
+                            <td>B</td>
+                            <td>D</td>
+                            <td>I</td>
+                            <td>Z</td>
+                            <td>C</td>
+                        </tr>
+                        <tr>
+                            <td><input type="checkbox" id="signFlag" onclick="return false;"></td>
+                            <td><input type="checkbox" id="overFlowFlag" onclick="return false;"></td>
+                            <td><input type="checkbox" id="unusedFlag" onclick="return false;"></td>
+                            <td><input type="checkbox" id="breakFlag" onclick="return false;"></td>
+                            <td><input type="checkbox" id="decimalFlag" onclick="return false;"></td>
+                            <td><input type="checkbox" id="interruptFlag" onclick="return false;"></td>
+                            <td><input type="checkbox" id="zeroFlag" onclick="return false;"></td>
+                            <td><input type="checkbox" id="carryFlag" onclick="return false;"></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="controlSections">
+                    <!--<h5></h5>-->
+                    <div class="controlHeader"><u>Register Info</u></div>
+                    <table class="regTbl" border="1" cellpadding="2">
+                        <tr>
+                            <td align="center" id="accReg">A:</td>
+                            <td align="center" id="xReg">X:</td>
+                            <td align="center" id="yReg">Y:</td>
+                        </tr>
+                        <tr>
+                            <td align="center" id="stackPointer">SP:</td>
+                            <td align="center" id="programCounter">PC:</td>
+                            <td align="center" id="processorFlags">P:</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="controlSections">
+                    <!--<h5>Header Info</h5>-->
+                    <div class="controlHeader"><u>Header Info</u></div>
+                    <table class="headerTbl" border="1" cellpadding="2">
+                        <tbody>
+                            <tr>
+                                <td align="center" id="prgRomUnits">prgRomUnits:</td>
+                                <td align="center" id="chrRomUnits">chrRomUnits:</td>
+                            </tr>
+                            <tr>
+                                <td align="center" id="mirroring">mirroring:</td>
+                                <td align="center" id="mapper">mapper:</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="controlSections">
+                    <div class="controlHeader"><u>Debug Controls</u></div>
+                    <button id="seekPC" type="button" class="btn">Seek PC</button>
+                    <input id="seekPCValue" type="text" class="debugInput" maxlength="4" />
+                    <button id="step" type="button" class="btn">Step</button>
+                </div>
+                <div class="controlSections">
+                    <div class="traceHeader"><u>Trace options</u></div>
+                    <div>
+                        Trace Limit :
+                        <input class="traceRadio" type="radio" name="traceLimit" onclick="traceLimitClicked(this);" value="noOfInst" checked> Number of Instrs
+                        <input class="traceRadio" type="radio" name="traceLimit" onclick="traceLimitClicked(this);" value="fromTo"> Instr to Instr
+                    </div>
+                    <div id="traceForNoOfInst">
+                        Trace for
+                        <input id="traceForInstrs" type="text" class="debugInput" maxlength="8" />
+                    </div>
+                    <div id="traceFromTo">
+                        Trace PC from :
+                        <input id="traceFrom" type="text" class="debugInput" maxlength="4" /> Trace PC to :
+                        <input id="traceTo" type="text" class="debugInput" maxlength="4" />
+                    </div>
+                    <div>
+                        <input class="traceRadio" type="radio" name="traceOpts" value="window" checked> Log to Window
+                        <input class="traceRadio" type="radio" name="traceOpts" value="file"> Log to File
+                    </div>
+                    <button id="btnTrace" type="button" class="btn">Trace</button>
+                </div>
+            </div>
+            <div class="debugActivity">
+                <pre id="outputWindow" class="outputWindow"></pre>
+                <pre id="traceWindow" class="traceWindow"></pre>
+            </div>
+        </div>
+    </div>
+    <style>
+        h5 {
+            color: MediumSlateBlue;
+        }
+
+        canvas {
+            margin: 20px;
+            border-width: 1px;
+            border-style: solid;
+            -ms-interpolation-mode: nearest-neighbor;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -o-pixelated;
+            image-rendering: pixelated;
+            image-rendering: optimizespeed
+        }
+
+        #btnTrace {
+            display: block;
+            margin: 5px auto;
+        }
+
+        .flagTbl td {
+            text-align: center;
+            min-width: 25px;
+            border-style: dotted;
+            border-color: MediumSlateBlue;
+        }
+
+        .flagTbl {
+            border-style: dotted;
+            border-width: 1px;
+            border-color: MediumSlateBlue;
+        }
+
+        .regTbl {
+            border-style: dotted;
+            border-color: MediumSlateBlue;
+        }
+
+        .regTbl td {
+            min-width: 80px;
+            border-style: dotted;
+            border-color: MediumSlateBlue;
+            min-height: 100px;
+        }
+
+        .headerTbl {
+            border-width: 1px;
+            border-style: dotted;
+            border-color: MediumSlateBlue
+        }
+
+        .headerTbl td {
+            border-style: dotted;
+            border-color: MediumSlateBlue
+        }
+
+        .btn {
+            /* Styling for buttons */
+            /*margin: 0 8px;*/
+            /*color: white;*/
+            color: MediumSlateBlue;
+            /*background-color: #00BCD4;*/
+            background-color: white;
+            display: inline-block;
+            /*border: 0;*/
+            border-style: solid;
+            border-width: 1px;
+            border-color: MediumSlateBlue;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 0.8em;
+            border-radius: 3px;
+            padding: 7px 3px;
+            width: auto;
+            min-width: 75px;
+            max-height: 30px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn:focus {
+            /* Remove outline when hovering over button */
+            outline: none;
+        }
+
+        .btn:active {
+            /* Scale the button down by 10% when clicking on button */
+            -webkit-transform: scale(0.95, 0.95);
+            -moz-transform: scale(0.95, 0.95);
+            transform: scale(0.95, 0.95);
+        }
+
+        .btns {
+            margin-left: 20px;
+        }
+
+        .viewport {
+            float: left;
+        }
+
+        .debug {
+            margin: 20px 0px 10px 0px;
+            padding: 5px;
+            border-width: 1px;
+            border-style: solid;
+            float: left;
+        }
+
+        .debugInfo {
+            float: left;
+        }
+
+        .debugActivity {
+            float: left;
+        }
+
+        .debugInput {
+            max-width: 50px;
+            max-height: 30px;
+            border-style: solid;
+            border-width: 1px;
+            border-color: MediumSlateBlue;
+            font-family: Helvetica, Arial, sans-serif;
+            border-radius: 3px;
+            padding: 7px 3px;
+            text-transform: uppercase;
+        }
+
+        .outputWindow {
+            /*padding: 5px;*/
+            margin: 5px;
+            width: 350px;
+            padding-left: 2px;
+            /*min-height: 450px;*/
+            height: 454px;
+            border-width: 1px;
+            border-style: solid;
+            font-family: monospace;
+            font-size: 1em;
+            overflow: scroll;
+        }
+
+        .controlSections {
+            margin: 5px;
+            padding: 5px;
+            border-width: 1px;
+            border-style: solid;
+        }
+
+        .controlHeader {
+            padding-top: 10px;
+            padding-bottom: 10px;
+            display: block;
+            color: MediumSlateBlue;
+            font-size: 1em;
+        }
+
+        u {
+            border-bottom: 1px dotted MediumSlateBlue;
+            text-decoration: none;
+        }
+
+        .traceHeader {
+            padding-top: 10px;
+            padding-bottom: 10px;
+            display: block;
+            color: MediumSlateBlue;
+            font-size: 1em;
+        }
+
+        .traceRadio {
+            display: inline;
+        }
+    </style>
+    <script type="text/javascript" src="cpu.js"></script>
+    <script type="text/javascript" src="mmu.js"></script>
+    <script type="text/javascript" src="iNES.js"></script>
+    <script type="text/javascript" src="ppu.js"></script>
+    <script type="text/javascript" src="apu.js"></script>
+    <script type="text/javascript" src="display.js"></script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', init, false);
+        var iNES;
+        var CPU;
+        var PPU;
+        var MMU;
+        var APU;
+        var Display;
+        var traceLimitOption;
+
+        function init() {
+            iNES = new iNES();
+            document.getElementById('file-input')
+                .addEventListener('change', readOpcodeFile, false);
+            document.getElementById('test')
+                .addEventListener('click', testiNES, false);
+            document.getElementById('viewNameTable')
+                .addEventListener('click', viewNameTable, false);
+            document.getElementById('viewCHR')
+                .addEventListener('click', viewCHR, false);
+            document.getElementById('seekPC')
+                .addEventListener('click', seekPC, false);
+            document.getElementById('btnTrace')
+                .addEventListener('click', trace, false);
+            document.getElementById('step')
+                .addEventListener('click', debugEmu, false);
+            document.getElementById("traceFromTo")
+                .style.display = "none";
+            traceLimitOption = "noOfInst";
+        }
+
+        function updateRegisters() {
+            document.getElementById('accReg')
+                .innerHTML = 'A:' + ("00" + CPU.accumulator.toString(16).toUpperCase()).slice(-2);
+            document.getElementById('xReg')
+                .innerHTML = 'X:' + ("00" + CPU.X.toString(16).toUpperCase()).slice(-2);
+            document.getElementById('yReg')
+                .innerHTML = 'Y:' + ("00" + CPU.Y.toString(16).toUpperCase()).slice(-2);
+            document.getElementById('stackPointer')
+                .innerHTML = 'SP:' + ("00" + CPU.sp.toString(16).toUpperCase()).slice(-2);
+            document.getElementById('programCounter')
+                .innerHTML = 'PC:' + ("0000" + CPU.pc.toString(16).toUpperCase()).slice(-4);
+            document.getElementById('processorFlags')
+                .innerHTML = 'P:' + ("00" + CPU.P.toString(16).toUpperCase()).slice(-2);
+        }
+
+        function updateFlags() {
+            if ((CPU.P & 0x01) == 0x01)
+                document.getElementById('carryFlag')
+                .checked = true;
+            else document.getElementById('carryFlag')
+                .checked = false;
+
+            if ((CPU.P & 0x02) == 0x02)
+                document.getElementById('zeroFlag')
+                .checked = true;
+            else document.getElementById('zeroFlag')
+                .checked = false;
+
+            if ((CPU.P & 0x04) == 0x04)
+                document.getElementById('interruptFlag')
+                .checked = true;
+            else document.getElementById('interruptFlag')
+                .checked = false;
+
+            if ((CPU.P & 0x08) == 0x08)
+                document.getElementById('decimalFlag')
+                .checked = true;
+            else document.getElementById('decimalFlag')
+                .checked = false;
+
+            if ((CPU.P & 0x16) == 0x16)
+                document.getElementById('breakFlag')
+                .checked = true;
+            else document.getElementById('breakFlag')
+                .checked = false;
+
+            if ((CPU.P & 0x32) == 0x32)
+                document.getElementById('unusedFlag')
+                .checked = true;
+            else document.getElementById('unusedFlag')
+                .checked = false;
+
+            if ((CPU.P & 0x64) == 0x64)
+                document.getElementById('overFlowFlag')
+                .checked = true;
+            else document.getElementById('overFlowFlag')
+                .checked = false;
+
+            if ((CPU.P & 0x128) == 0x128)
+                document.getElementById('signFlag')
+                .checked = true;
+            else document.getElementById('signFlag')
+                .checked = false;
+        }
+
+        function updateHeaders() {
+            document.getElementById('prgRomUnits')
+                .innerHTML = "prgRomUnits=" + iNES.prgRomUnits;
+
+            document.getElementById('chrRomUnits')
+                .innerHTML = "chrRomUnits=" + iNES.chrRomUnits;
+
+            document.getElementById('mirroring')
+                .innerHTML = "mirroring=" + iNES.mirroring;
+
+            document.getElementById('mapper')
+                .innerHTML = "mapperLowBits=" + iNES.mapperLowBits;
+        }
+
+        function prepareInstuctionLog() {
+            var temp1 = (CPU.currentOpcodeLog + ' ' + CPU.ArgLog + '  ' + '  ' + '  ' + '  ' + '  ').slice(0, 9);
+            if (CPU.opcodeType[0] != '*') {
+                CPU.opcodeType = ' ' + CPU.opcodeType;
+            }
+            var temp2 = CPU.PCLog + '  ' + temp1 + CPU.opcodeType + ' ' + CPU.memLog;
+            temp2 = (temp2 + '                            ').slice(0, 48);
+            var temp3 = 'A:' + CPU.accumulatorLog + ' X:' + CPU.XLog + ' Y:' + CPU.YLog + ' P:' + CPU.PLog + ' SP:' + CPU.SPLog;
+            var logString = [temp2, temp2 + temp3];
+            return logString;
+        }
+
+        function updateInstructionLog() {
+            var logString = prepareInstuctionLog();
+            console.log(logString[1]);
+            var opWdw = document.getElementById('outputWindow');
+            opWdw.innerHTML += (logString[0] + '\n');
+            opWdw.scrollTop = opWdw.scrollHeight;
+        }
+
+        function updateDebugInfo() {
+            updateRegisters();
+            updateFlags();
+            updateHeaders();
+            updateInstructionLog();
+        }
+
+
+        function traceLimitClicked(radio) {
+            if (radio.value == "noOfInst") {
+                document.getElementById("traceForNoOfInst").style.display = "inline";
+                document.getElementById("traceFromTo").style.display = "none";
+                traceLimitOption = "noOfInst";
+            }
+            else if (radio.value == "fromTo") {
+                document.getElementById("traceForNoOfInst").style.display = "none";
+                document.getElementById("traceFromTo").style.display = "inline";
+                traceLimitOption = "fromTo";
+            }
+        }
+        var renderCHRTiles = function(CHRGrid) {
+            // 236 180 176 [0] 228 196 144 [1] 204 210 120 [2] 180 222 120 [3]   Using this palette to view CHR tiles
+            var pixel, x, y, scaleFactor, tileXShift, tileYShift, tilePixels;
+
+            scaleFactor = 8;
+            tileYShift = 0;
+            for (var tile = 0; tile < 256; tile++) {
+                if ((tile % 16 == 0) && tile != 0) {
+                    tileYShift++;
+                }
+                tileXShift = tile % 16;
+                for (var row = 0; row < 8; row++) { //each row of 8x8 tile
+                    for (var col = 0; col < 8; col++) { //each col of 8x8 tile
+                        tilePixels = CHRGrid[tile];
+                        pixel = tilePixels[row][col];
+                        x = col * scaleFactor + tileXShift * (scaleFactor * scaleFactor); // + (tile) * scaleFactor;
+                        y = row * scaleFactor + tileYShift * (scaleFactor * scaleFactor);
+                        // if(tile % 16 == 0) {
+                        // }
+                        switch (pixel) {
+                            case 3:
+                                // chrCtx.fillStyle = 'rgb(180, 222, 120)';
+                                chrCtx.fillStyle = 'red';
+                                break;
+                            case 2:
+                                // chrCtx.fillStyle = 'rgb(208, 210, 120)';
+                                chrCtx.fillStyle = 'green';
+                                break;
+                            case 1:
+                                // chrCtx.fillStyle = 'rgb(228, 196, 188)';
+                                chrCtx.fillStyle = 'blue';
+                                break;
+                            case 0:
+                                // chrCtx.fillStyle = 'rgb(236, 180, 176)';
+                                chrCtx.fillStyle = 'orange';
+                                break;
+                        }
+                        chrCtx.fillRect(x, y, scaleFactor, scaleFactor);
+                    }
+                }
+            }
+        };
+        var viewNameTable = function() {
+            var selectedTable = document.getElementById("ddlNameTable");
+            var tempAddr = 0x2000;
+            switch (selectedTable.value) {
+                case '0':
+                    tempAddr = 0x2000;
+                    break;
+                case '1':
+                    tempAddr = 0x2400;
+                    break;
+                case '2':
+                    tempAddr = 0x2800;
+                    break;
+                case '3':
+                    tempAddr = 0x2C00;
+                    break;
+            }
+            var nametable = [];
+            for (var i = tempAddr; i < (tempAddr + 960); i++)
+                nametable.push(MMU.ppuMem[i]);
+            renderNameTable(nametable);
+        };
+
+        var startdownFunction = function() {
+            MMU.startBtnState = true;
+        };
+        var startupFunction = function() {
+            MMU.startBtnState = false;
+        };
+        var renderNameTable = function(nameTable) {
+            Display.nameTableScreenReset();
+            var paletteNum = 0;
+            var pixelColor = 0;
+            var screenPixel = 0; //for debugging
+
+            //Fetch the background CHR tile lying on the current scanline
+            var curTileX;
+            var curTileY;
+            // var curTileY = Math.floor(this.currentScanline / 8);
+            for (curTileY = 0; curTileY < 30; curTileY++) {
+                for (curTileX = 0; curTileX < 32; curTileX++) {
+                    var tileToDraw = nameTable[curTileX + curTileY * 32];
+                    tileToDraw = PPU.backgroundPatTblAddr[tileToDraw];
+                    //Loop through the 8 pixels for the current tile
+                    for (var curY = 0; curY < 8; curY++) {
+                        for (var curX = 0; curX < 8; curX++) {
+                            //Pallete logic broken down
+                            if (tileToDraw[curY][curX] == 0) { //backdrop color
+                                pixelColor = PPU.paletteColors[PPU.palette[0]];
+                                screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
+                                //this.screenBuffer[screenPixel] = pixelColor;
+                                Display.updateNameTableBuffer(screenPixel, pixelColor);
+                            }
+                            else {
+                                pixelColor = PPU.paletteColors[PPU.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
+                                screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
+                                //this.screenBuffer[screenPixel] = pixelColor;
+                                Display.updateNameTableBuffer(screenPixel, pixelColor);
+                            }
+                        }
+                    }
+                }
+            }
+            Display.updateNameTableCanvas();
+        };
+
+        var renderScreen = function() {
+            Display.updateCanvas();
+        };
+
+        var nmiCounter = 0;
+        var cpucycles = 0;
+
+        var renderFrame = function() {
+            nmiCounter += CPU.runFrame();
+            cpucycles += CPU.totalCPUCyclesThisFrame;
+            CPU.nmiLoopCounter = 0;
+            nmiCounter = 0;
+            cpucycles = 0;
+            renderScreen();
+            requestAnimationFrame(renderFrame);
+        };
+
+        var readOpcodeFile = function(e) {
+            var file = e.target.files[0];
+            if (!file) {
+                return;
+            }
+            var reader = new FileReader();
+            reader.onload = function() {
+                this.opcodes = new Uint8Array(this.result);
+                Display = new display(document.getElementById('nesCanvas'), document.getElementById('nameTableCanvas'));
+                PPU = new ppu(Display);
+                MMU = new mmu(PPU);
+                CPU = new cpu(MMU, PPU);
+                APU = new apu(MMU);
+                MMU.OAMInit();
+                PPU.initScreenBuffer();
+                iNES.load(this.opcodes, MMU);
+                MMU.nameTableMirroring = iNES.mirroring;
+                CPU.reset();
+                MMU.copyCHRToGrid();
+                MMU.copyBGRCHRToGrid();
+                Display.screenReset();
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        var testiNES = function() {
+            requestAnimationFrame(renderFrame);
+        };
+
+        var seekPC = function() {
+            var seekAddr = parseInt(document.getElementById('seekPCValue')
+                .value, 16);
+            while (true) {
+                debugEmu();
+                if (CPU.pc == seekAddr)
+                    break;
+            }
+        };
+
+        var trace = function() {
+            var traceFrom = parseInt(document.getElementById('traceFrom')
+                .value, 16);
+            var traceTo = parseInt(document.getElementById('traceTo')
+                .value, 16);
+            var doTrace = false;
+            var log = '';
+            var noOfInst = 0;
+            while (true) {
+                if (traceLimitOption == 'noOfInst') {
+                    doTrace = true;
+                    noOfInst++;
+                    if (noOfInst >= parseInt(document.getElementById("traceForInstrs").value, 10)) {
+                        break;
+                    }
+                }
+                else if (traceLimitOption == 'fromTo') {
+                    if (CPU.pc == traceTo)
+                        break;
+                    if (CPU.pc == traceFrom)
+                        doTrace = true;
+                }
+
+                if (doTrace) {
+                    CPU.debugCPU();
+                    log += prepareInstuctionLog()[1] + '\n';
+                }
+            }
+
+            var element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(log));
+            element.setAttribute('download', 'nesLog.txt');
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        };
+
+        var debugEmu = function() {
+            CPU.debugCPU();
+            updateDebugInfo();
+        };
+
+        var viewCHR = function() {
+            //MMU.copyCHRToGrid();
+            renderCHRTiles(MMU.BGRCHRGrid);
+        };
+    </script>
+</body>
+
+</html>

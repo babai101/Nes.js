@@ -1,0 +1,3 @@
+function apu(MMU) {
+   //Stub 
+}
