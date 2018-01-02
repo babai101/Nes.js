@@ -384,7 +384,7 @@ function ppu(Display) {
         var pixelColor = 0;
         var screenPixel = 0;
         var nametableOffset = 0x2000 + this.baseNameTblAddr * 1024;
-        var tileXOffset = 0; //this.xScroll;
+        var tileXOffset = 0;
         var pixelXOffset = 0;
         var tileToDraw = 0;
         var nameTableCrossed = false;
@@ -393,7 +393,7 @@ function ppu(Display) {
         //Fetch the background CHR tile lying on the current scanline
         var curTileX = 0;
         var curTileY = Math.floor(this.currentScanline / 8);
-
+        var tileCounter = 0;
         //Tile Draw logic: get the tile to start draw from. Check for horizontal offset
         //offset the tiles using horizontal offset, then calculate pixel offset
         //Also calculate how many tiles of next nametable need to be drawn
@@ -401,63 +401,39 @@ function ppu(Display) {
 
         tileXOffset = Math.floor(this.xScroll / 8); //offset tile (see above)
         pixelXOffset = this.xScroll % 8; //offset pixel
-
+        curTileX = tileXOffset; //start rendering from the offsetted tile
         //loop to draw all the tiles on the screen for current scanline
         while (!bgRenderingDone) {
-            if (curTileX + tileXOffset >= 32) //check if current tile lies on next nametable
+            if (curTileX >= 32) //check if current tile lies on next nametable
                 nameTableCrossed = true;
             else nameTableCrossed = false;
-            
+
             if (nameTableCrossed) {
                 //fetch the tile from the next nametable by adding 1KB of memory offset to nametable base address
-                tileToDraw = nametable[nametableOffset + 1024 + (960 - (curTileX + tileXOffset + curTileY * 32))];
+                //normalizing tile X co-ordinate by subtracting 32 to get tile x in next nametable
+                tileToDraw = nametable[nametableOffset + 1024 + ((32 - curTileX) + curTileY * 32)];
             }
             else {
                 //offsetted tile falls in current nametable so do a regular fetch
-                tileToDraw = nametable[nametableOffset + curTileX + tileXOffset + curTileY * 32];
-            }
-            tileToDraw = this.backgroundPatTblAddr[tileToDraw];
-            
-            if (curTileX == 0) { //now drawing the left most tile so check for pixel offset
-                if(pixelXOffset > 0) {
-                    
-                }
-            }
-            curTileX++;
-        }
-
-
-
-
-
-
-
-
-        //loop to draw 32 tiles on the screen
-        for (curTileX = 0; curTileX < 32; curTileX++) {
-            //tileXOffset = this.xScroll + curTileX; //offset the nametable address by the xScroll
-            //check if the current tile is exceeding current nametable
-            if ((curTileX + (curTileY * 32) + this.xScroll) > 960) {
-                nameTableCrossed = true;
-            }
-            else {
-                nameTableCrossed = false;
-            }
-            if (nameTableCrossed) {
-                //fetch the tile from the next nametable
-                tileToDraw = nametable[nametableOffset + 1024 + (960 - (curTileX + curTileY * 32 + this.xScroll))];
-            }
-            else {
-                //offsetted tile falls in current nametable so do a regular fetch
-                tileToDraw = nametable[nametableOffset + curTileX + curTileY * 32 + this.xScroll];
+                tileToDraw = nametable[nametableOffset + curTileX + curTileY * 32];
             }
             tileToDraw = this.backgroundPatTblAddr[tileToDraw];
 
-            //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array            
-            var curAttrX = Math.floor(curTileX / 4);
-            var curAttrY = Math.floor(curTileY / 4);
+            //Determine color palette
+            //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array
+            var curAttrX;
+            var curAttrY;
             if (nameTableCrossed) {
-                attrByte = attrtable[(0x23C0 + this.baseNameTblAddr * 1024) + curAttrX + curAttrY * 8];
+                curAttrX = Math.floor((32 - curTileX) / 4);
+                curAttrY = Math.floor((32 - curTileY) / 4);
+            }
+            else {
+                curAttrX = Math.floor(curTileX / 4);
+                curAttrY = Math.floor(curTileY / 4);
+            }
+
+            if (nameTableCrossed) {
+                attrByte = attrtable[(0x23C0 + (this.baseNameTblAddr + 1) * 1024) + curAttrX + curAttrY * 8];
             }
             else {
                 attrByte = attrtable[(0x23C0 + this.baseNameTblAddr * 1024) + curAttrX + curAttrY * 8];
@@ -486,22 +462,44 @@ function ppu(Display) {
                 alert("palette not found!!");
             }
 
-            //Loop through the 8 pixels for the current tile
+            //We have now determined the background tile(accross nametables) to be rendered
+            //also calculated the color palette using proper attributes
+            //Now start the actual rendering process
+
             var curY = (this.currentScanline % 8);
-            for (var curX = 0; curX < 8; curX++) {
+            var curX = 0;
+            var pixelXlimit = 8;
+            if (tileCounter == 0) { //now drawing the left most tile so check for pixel offset
+                if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
+                    curX = pixelXOffset;
+                }
+            }
+            if (tileCounter == 31) { //now drawing the final tile, so only draw until the offset is normalized
+                if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
+                    pixelXlimit = pixelXlimit - pixelXOffset;
+                }
+            }
+
+            //Loop through the pixels for the current tile
+            for (var curX = pixelXOffset; curX < pixelXlimit; curX++) {
                 //Pallete logic broken down
                 if (tileToDraw[curY][curX] == 0) { //backdrop color
                     pixelColor = this.paletteColors[this.palette[0]];
-                    screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
+                    screenPixel = ((tileCounter * 8) + curX) + ((curTileY * 8) + curY) * 256;
                     this.screenBuffer[screenPixel] = pixelColor;
                     Display.updateBuffer(screenPixel, pixelColor);
                 }
                 else {
                     pixelColor = this.paletteColors[this.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
-                    screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
+                    screenPixel = ((tileCounter * 8) + curX) + ((curTileY * 8) + curY) * 256;
                     this.screenBuffer[screenPixel] = pixelColor;
                     Display.updateBuffer(screenPixel, pixelColor);
                 }
+            }
+            tileCounter++;
+            curTileX++;
+            if (tileCounter >= 32) {
+                bgRenderingDone = true;
             }
         }
     };
