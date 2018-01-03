@@ -18,6 +18,7 @@
             <option value="2">2</option>
             <option value="3">3</option>
         </select>
+        <button id="pause" type="button" class="btn">Play/Pause</button>
     </div>
     <div>
         <div class="viewport">
@@ -310,6 +311,7 @@
         var APU;
         var Display;
         var traceLimitOption;
+        var isPaused = false;
 
         function init() {
             iNES = new iNES();
@@ -319,6 +321,8 @@
                 .addEventListener('click', testiNES, false);
             document.getElementById('viewNameTable')
                 .addEventListener('click', viewNameTable, false);
+            document.getElementById('pause')
+                .addEventListener('click', playOrPauseGame, false);
             document.getElementById('viewCHR')
                 .addEventListener('click', viewCHR, false);
             document.getElementById('seekPC')
@@ -511,9 +515,12 @@
                     break;
             }
             var nametable = [];
+            var attrtable = [];
             for (var i = tempAddr; i < (tempAddr + 960); i++)
                 nametable.push(MMU.ppuMem[i]);
-            renderNameTable(nametable);
+            for (i = tempAddr + 960; i < (tempAddr + 960 + 64); i++)
+                attrtable.push(MMU.ppuMem[i]);
+            renderNameTable(nametable, attrtable);
         };
 
         var startdownFunction = function() {
@@ -522,7 +529,7 @@
         var startupFunction = function() {
             MMU.startBtnState = false;
         };
-        var renderNameTable = function(nameTable) {
+        var renderNameTable = function(nameTable, attrtable) {
             Display.nameTableScreenReset();
             var paletteNum = 0;
             var pixelColor = 0;
@@ -536,6 +543,34 @@
                 for (curTileX = 0; curTileX < 32; curTileX++) {
                     var tileToDraw = nameTable[curTileX + curTileY * 32];
                     tileToDraw = PPU.backgroundPatTblAddr[tileToDraw];
+                    var curAttrX = Math.floor(curTileX / 4);
+                    var curAttrY = Math.floor(curTileY / 4);
+
+                    var attrByte = attrtable[curAttrX + curAttrY * 8];
+                    // var attrByte = attrtable[curAttrX + curAttrY * 8];
+                    //Top left of 2x2 tile
+                    if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
+                        // paletteNum = attrByte >> 6;
+                        paletteNum = attrByte & 0x03;
+                    }
+                    //Top right
+                    else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
+                        // paletteNum = (attrByte >> 4) & 0x03;
+                        paletteNum = (attrByte >> 2) & 0x03;
+                    }
+                    //Bottom left
+                    else if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+                        // paletteNum = (attrByte >> 2) & 0x03;
+                        paletteNum = (attrByte >> 4) & 0x03;
+                    }
+                    //Bottom right
+                    else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+                        // paletteNum = attrByte & 0x03;
+                        paletteNum = attrByte >> 6;
+                    }
+                    else {
+                        alert("palette not found!!");
+                    }
                     //Loop through the 8 pixels for the current tile
                     for (var curY = 0; curY < 8; curY++) {
                         for (var curX = 0; curX < 8; curX++) {
@@ -566,13 +601,18 @@
         var nmiCounter = 0;
         var cpucycles = 0;
 
+        var playOrPauseGame = function() {
+            isPaused = !isPaused;
+        };
         var renderFrame = function() {
-            nmiCounter += CPU.runFrame();
-            cpucycles += CPU.totalCPUCyclesThisFrame;
-            CPU.nmiLoopCounter = 0;
-            nmiCounter = 0;
-            cpucycles = 0;
-            renderScreen();
+            if (!isPaused) {
+                nmiCounter += CPU.runFrame();
+                cpucycles += CPU.totalCPUCyclesThisFrame;
+                CPU.nmiLoopCounter = 0;
+                nmiCounter = 0;
+                cpucycles = 0;
+                renderScreen();
+            }
             requestAnimationFrame(renderFrame);
         };
 
