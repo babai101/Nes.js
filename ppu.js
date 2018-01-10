@@ -1,6 +1,7 @@
 function ppu(Display) {
     //Render VARS
     this.currentScanline = 0;
+    this.nameTableMirroring = '';
     this.NMIOccured = false;
     this.CHRGrid = [];
     this.BGRCHRGrid = [];
@@ -219,9 +220,9 @@ function ppu(Display) {
     };
 
     //Update OAMDATA
-    this.setOAMDATA = function(OAMDATA) {
-        this.OAMDATA = OAMDATA;
-    };
+    // this.setOAMDATA = function(OAMDATA) {
+    //     this.OAMDATA = OAMDATA;
+    // };
 
     //Update PPUADDR
     this.setPPUADDR = function(PPUADDR) {
@@ -240,9 +241,9 @@ function ppu(Display) {
         return prevStatus;
     };
 
-    this.getOAMDATA = function() {
-        return this.OAMDATA;
-    };
+    // this.getOAMDATA = function() {
+    //     return this.OAMDATA;
+    // };
 
     //Load PPU Palette values
     //TODO: mirror palette values
@@ -255,16 +256,20 @@ function ppu(Display) {
             this.screenBuffer.push(0x000000);
         }
         Display.initScreenBuffer();
-        Display.initNameTableScreenBuffer();
+        // Display.initNameTableScreenBuffer();
     };
-
+    this.initOAMScreenBuffer = function(oamCanvas) {
+        Display.initOamScreenBuffer(oamCanvas);    
+    };
+    
     //Evaluate sprites & Draw to screen buffer
     //TODO: 8x16 tile rendering
     this.renderSprites = function(oam) {
         var spritesToDraw = [],
             tile, paletteNum, spriteX, spriteY, pixelColor, pixelColorIndex, spriteAttr, tileNum, tileRow;
+        //Beginning of Sprite Evaluation
         //Check which sprites in OAM lie in current scanline
-        for (var i = 0; i < 256; i += 4) {
+        for (var i = this.OAMADDR; i < 256; i += 4) {
             if ((oam[i] + 1) > (this.currentScanline - 8) && (oam[i] + 1) <= this.currentScanline) {
                 //add to list of sprites to draw on current scanline
                 spritesToDraw.push(i);
@@ -332,26 +337,32 @@ function ppu(Display) {
                     var currentBackgroundPixelColor = this.screenBuffer[spriteX + x + (this.currentScanline * 256)];
 
                     //non-transparent sprite over transparent background
-                    if (currentBackgroundPixelColor == this.paletteColors[this.palette[0]]) {
+                    // if (currentBackgroundPixelColor == this.paletteColors[this.palette[0]]) {
+                    if (currentBackgroundPixelColor == 0) {    
                         pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
-                        this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColor;
+                        // this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColor;
+                        this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
                         Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
                     }
 
                     //Sprite hit logic: non-transparent Sprite over non-transparent BG REGARDLESS of priority
-                    else if (currentBackgroundPixelColor != this.paletteColors[this.palette[0]]) {
+                    // else if (currentBackgroundPixelColor != this.paletteColors[this.palette[0]]) {
+                    else if (currentBackgroundPixelColor != 0) {    
 
                         //If current sprite is sprite 0 and sprite hit not already set in PPUSTATUS
-                        if ((spritesToDraw[i] == 0) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
+                        // if ((i == 0) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
+                        if ((spritesToDraw[i] == this.OAMADDR) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
                             //set sprite 0 hit bit TODO: Other sprite hit conditions
                             this.ppuStatusBits = this.ppuStatusBits | 0x40;
                             this.sprite0Hit = true;
                         }
 
                         //non-transparent sprite having foreground priority over non-transparent background
-                        if (currentBackgroundPixelColor != this.paletteColors[this.palette[0]] && ((spriteAttr & 0b00100000) == 0)) {
+                        // if (currentBackgroundPixelColor != this.paletteColors[this.palette[0]] && ((spriteAttr & 0b00100000) == 0)) {
+                        if ((currentBackgroundPixelColor != 0) && ((spriteAttr & 0b00100000) == 0)) {    
                             pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
-                            this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColor;
+                            this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
+                            // this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColor;
                             Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
                         }
                     }
@@ -359,11 +370,13 @@ function ppu(Display) {
             }
         }
     };
-    
+
     this.renderBackGroundsScroll = function(nametable, attrtable) {
         var paletteNum = 0;
         var pixelColor = 0; //this will hold the final pixel with color calculated 
         var pixelColorArray = []; //array to hold one scanline worth of color pixels
+        var pixelColorIndexArray = [];
+        // var pixelColorIndex = 0;
         var screenPixel = 0; //this is the pixel index of 32x30 screen 
         var nametableOffset = 0x2000 + this.baseNameTblAddr * 1024;
         var tileXOffset = 0;
@@ -477,10 +490,12 @@ function ppu(Display) {
             for (curX; curX < pixelXlimit; curX++) {
                 if (tileToDraw[curY][curX] == 0) { //backdrop color
                     pixelColor = this.paletteColors[this.palette[0]];
+                    pixelColorIndexArray.push(tileToDraw[curY][curX]);
                     pixelColorArray.push(pixelColor);
                 }
                 else {
                     pixelColor = this.paletteColors[this.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
+                    pixelColorIndexArray.push(tileToDraw[curY][curX]);
                     pixelColorArray.push(pixelColor);
                 }
             }
@@ -498,12 +513,234 @@ function ppu(Display) {
 
         //start merging our color pixel array into screen buffer from now on
         for (var x = screenPixel; x < (screenPixel + pixelColorArray.length); x++) {
-            this.screenBuffer[x] = pixelColorArray[x - screenPixel];
+            this.screenBuffer[x] = pixelColorIndexArray[x - screenPixel];
             Display.updateBuffer(x, pixelColorArray[x - screenPixel]);
         }
     };
 
-    
+    this.renderBackGroundsXYScroll = function(nametable, attrtable) {
+        var paletteNum = 0;
+        var pixelColor = 0; //this will hold the final pixel with color calculated 
+        var pixelColorArray = []; //array to hold one scanline worth of color pixels
+        var screenPixel = 0; //this is the pixel index of 32x30 screen 
+        var nametableOffset = 0x2000 + this.baseNameTblAddr * 1024;
+        var tileXOffset = 0,
+            tileYOffset = 0;
+        var pixelXOffset = 0,
+            pixelYOffset = 0;
+        var tileToDraw = 0;
+        var nameTableCrossed = false;
+        var bgRenderingDone = false;
+        var attrByte = 0;
+        var curTileX = 0;
+        var curTileY = Math.floor(this.currentScanline / 8);
+        var tileCounter = 0;
+        var tilesThisScanline = 32;
+        var curTileYOffsetted = 0;
+
+        //Tile Draw logic: get the tile to start draw from. Check for horizontal offset
+        //offset the tiles using horizontal offset, then calculate pixel offset
+        //Also calculate how many tiles of next nametable need to be drawn
+        //then calculate upto which pixel drawing is needed
+
+        tileXOffset = Math.floor(this.xScroll / 8); //offset tile (see above)
+        tileYOffset = Math.floor(this.yScroll / 8); //offset tile (see above)
+        pixelXOffset = this.xScroll % 8; //offset pixel
+        pixelYOffset = this.yScroll % 8; //offset pixel
+        curTileX = tileXOffset; //start rendering from the offsetted tile
+        curTileYOffsetted = tileYOffset + curTileY;
+        //when there is fine pixel offset, we have to fetch and draw pixels from an extra tile
+        if (pixelXOffset > 0) {
+            tilesThisScanline = 33;
+        }
+        //loop to draw all the tiles on the screen for current scanline
+        while (!bgRenderingDone) {
+
+            if (this.nameTableMirroring == 'vertical') {
+                var curAttrX;
+                var curAttrY;
+                //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array
+                curAttrY = Math.floor(curTileY / 4);
+
+                if (curTileX >= 32) { //check if current tile lies on next nametable
+                    nameTableCrossed = true;
+                    //fetch the tile from the next nametable by adding 1KB of memory offset to nametable base address
+                    //normalizing tile X co-ordinate by subtracting 32 to get tile x in next nametable
+                    tileToDraw = nametable[nametableOffset + 1024 + ((curTileX - 32) + curTileY * 32)];
+                    curAttrX = Math.floor((curTileX - 32) / 4);
+                    attrByte = attrtable[(0x23C0 + (this.baseNameTblAddr + 1) * 1024) + curAttrX + curAttrY * 8];
+                }
+                else {
+                    nameTableCrossed = false;
+                    //offsetted tile falls in current nametable so do a regular fetch
+                    tileToDraw = nametable[nametableOffset + curTileX + curTileY * 32];
+                    curAttrX = Math.floor(curTileX / 4);
+                    attrByte = attrtable[(0x23C0 + this.baseNameTblAddr * 1024) + curAttrX + curAttrY * 8];
+                }
+
+                //get the tile bits from pre-calculated grid
+                tileToDraw = this.backgroundPatTblAddr[tileToDraw];
+
+                //Determine color palette
+                //Top left of 2x2 tile
+                if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
+                    // paletteNum = attrByte >> 6;
+                    paletteNum = attrByte & 0x03;
+                }
+                //Top right
+                else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
+                    // paletteNum = (attrByte >> 4) & 0x03;
+                    paletteNum = (attrByte >> 2) & 0x03;
+                }
+                //Bottom left
+                else if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+                    // paletteNum = (attrByte >> 2) & 0x03;
+                    paletteNum = (attrByte >> 4) & 0x03;
+                }
+                //Bottom right
+                else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+                    // paletteNum = attrByte & 0x03;
+                    paletteNum = attrByte >> 6;
+                }
+                else {
+                    alert("palette not found!!");
+                }
+
+                //We have now determined the background tile(accross nametables) to be rendered
+                //also calculated the color palette using proper attributes
+                //Now start the actual rendering process
+
+                var curY = (this.currentScanline % 8); //get the y co-ordinate of an 8x8 tile from where to start rendering
+                var curX = 0;
+                var pixelXlimit = 8;
+                if (tileCounter == 0) { //now drawing the left most tile so check for pixel offset
+                    if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
+                        curX = pixelXOffset;
+                    }
+                }
+                if (tileCounter == tilesThisScanline - 1) { //now drawing the final tile, so only draw until the offset is normalized
+                    if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
+                        pixelXlimit = pixelXOffset;
+                    }
+                }
+
+                //Loop through the pixels for the current tile and store in an array
+                for (curX; curX < pixelXlimit; curX++) {
+                    if (tileToDraw[curY][curX] == 0) { //backdrop color
+                        pixelColor = this.paletteColors[this.palette[0]];
+                        pixelColorArray.push(pixelColor);
+                    }
+                    else {
+                        pixelColor = this.paletteColors[this.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
+                        pixelColorArray.push(pixelColor);
+                    }
+                }
+
+                tileCounter++;
+                curTileX++;
+                if (tileCounter >= tilesThisScanline) {
+                    bgRenderingDone = true;
+                }
+
+            }
+            else if (this.nameTableMirroring == 'horizontal') {
+                var curAttrX;
+                var curAttrY;
+                //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array
+                curAttrX = Math.floor(curTileX / 4);
+
+                if (curTileYOffsetted >= 30) { //check if current tile lies on next nametable
+                    nameTableCrossed = true;
+                    //fetch the tile from the next nametable by adding 1KB of memory offset to nametable base address
+                    //normalizing tile X co-ordinate by subtracting 32 to get tile x in next nametable
+                    tileToDraw = nametable[nametableOffset + 2048 + (curTileX + (curTileYOffsetted - 30) * 32)];
+                    curAttrY = Math.floor((curTileYOffsetted - 30) / 4);
+                    attrByte = attrtable[(0x23C0 + (this.baseNameTblAddr + 2) * 1024) + curAttrX + curAttrY * 8];
+                }
+                else {
+                    nameTableCrossed = false;
+                    //offsetted tile falls in current nametable so do a regular fetch
+                    tileToDraw = nametable[nametableOffset + curTileX + curTileY * 32];
+                    curAttrY = Math.floor(curTileYOffsetted / 4);
+                    attrByte = attrtable[(0x23C0 + this.baseNameTblAddr * 1024) + curAttrX + curAttrY * 8];
+                }
+
+                //get the tile bits from pre-calculated grid
+                tileToDraw = this.backgroundPatTblAddr[tileToDraw];
+
+                //Determine color palette
+                //Top left of 2x2 tile
+                if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileYOffsetted % 4 == 0) || (curTileYOffsetted % 4 == 1))) {
+                    // paletteNum = attrByte >> 6;
+                    paletteNum = attrByte & 0x03;
+                }
+                //Top right
+                else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileYOffsetted % 4 == 0) || (curTileYOffsetted % 4 == 1))) {
+                    // paletteNum = (attrByte >> 4) & 0x03;
+                    paletteNum = (attrByte >> 2) & 0x03;
+                }
+                //Bottom left
+                else if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+                    // paletteNum = (attrByte >> 2) & 0x03;
+                    paletteNum = (attrByte >> 4) & 0x03;
+                }
+                //Bottom right
+                else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+                    // paletteNum = attrByte & 0x03;
+                    paletteNum = attrByte >> 6;
+                }
+                else {
+                    alert("palette not found!!");
+                }
+
+                //We have now determined the background tile(accross nametables) to be rendered
+                //also calculated the color palette using proper attributes
+                //Now start the actual rendering process
+
+                var curY = (this.currentScanline % 8); //get the y co-ordinate of an 8x8 tile from where to start rendering
+                var curX = 0;
+                var pixelXlimit = 8;
+                if (tileCounter == 0) { //now drawing the left most tile so check for pixel offset
+                    if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
+                        curX = pixelXOffset;
+                    }
+                }
+                if (tileCounter == tilesThisScanline - 1) { //now drawing the final tile, so only draw until the offset is normalized
+                    if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
+                        pixelXlimit = pixelXOffset;
+                    }
+                }
+
+                //Loop through the pixels for the current tile and store in an array
+                for (curX; curX < pixelXlimit; curX++) {
+                    if (tileToDraw[curY][curX] == 0) { //backdrop color
+                        pixelColor = this.paletteColors[this.palette[0]];
+                        pixelColorArray.push(pixelColor);
+                    }
+                    else {
+                        pixelColor = this.paletteColors[this.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
+                        pixelColorArray.push(pixelColor);
+                    }
+                }
+
+                tileCounter++;
+                curTileX++;
+                if (tileCounter >= tilesThisScanline) {
+                    bgRenderingDone = true;
+                }
+            }
+        }
+
+        //Now that we have the color pixel array, update them in the screen buffer
+        //Start from left most pixel (x = 0) from current scanline
+        screenPixel = 0 + (curTileY * 8 + (this.currentScanline % 8)) * 256;
+
+        //start merging our color pixel array into screen buffer from now on
+        for (var x = screenPixel; x < (screenPixel + pixelColorArray.length); x++) {
+            this.screenBuffer[x] = pixelColorArray[x - screenPixel];
+            Display.updateBuffer(x, pixelColorArray[x - screenPixel]);
+        }
+    };
 
     this.renderBackGrounds = function(nametable, attrtable) {
         var paletteNum = 0;

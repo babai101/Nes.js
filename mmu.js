@@ -118,8 +118,8 @@ function mmu(PPU) {
             temp = temp % 8;
             return this.setPPUReg((0x2000 + temp), value);
         }
-        else if (location == 0x4014)
-            return 0;
+        // else if (location == 0x4014)
+        //     return 0;
         else if (location >= 0x4000 && location <= 0x4015) {
             return this.setAPUReg(location, value);
         }
@@ -226,7 +226,12 @@ function mmu(PPU) {
                 break;
                 //OAMDATA
             case 0x2004:
-                return this.ppuRegObj.OAMDATA;
+                if (PPU.currentScanline == 261 || (PPU.currentScanline >= 0 && PPU.currentScanline < 240)) {
+                    return;
+                }
+                else {
+                    return this.OAM[this.ppuRegObj.OAMADDR];
+                }
             case 0x2005:
                 break;
             case 0x2006:
@@ -269,20 +274,24 @@ function mmu(PPU) {
                 break;
                 //OAMADDR
             case 0x2003:
-                this.ppuRegObj.OAMADDR = value;
-                PPU.setOAMADDR(this.ppuRegObj.OAMADDR);
+                this.setOAMADDR(value);
                 this.OAMADDRwritten = true;
                 return 0x2003;
                 //OAMDATA
             case 0x2004:
-                this.ppuRegObj.OAMDATA = value;
-                PPU.setOAMDATA(this.ppuRegObj.OAMDATA);
-                this.OAMDATAwritten = true;
+                this.setOAMDATA(value);
+                // if (PPU.currentScanline == 261 || (PPU.currentScanline >= 0 && PPU.currentScanline < 240)) {
+
+                // }
+                // else {
+                //     this.setOAMDATA(value);
+                //     this.setOAMADDR(this.ppuRegObj.OAMADDR + 1);
+                //     this.OAMDATAwritten = true;
+                // }
                 return 0x2004;
                 //PPUSCROLL
             case 0x2005:
-                this.ppuRegObj.PPUSCROLL = value;
-                this.setPPUSCROLL(this.ppuRegObj.PPUSCROLL);
+                this.setPPUSCROLL(value);
                 this.PPUSCROLLwritten = true;
                 return 0x2005;
                 //PPUADDR
@@ -335,7 +344,7 @@ function mmu(PPU) {
         //     for (var x = nametableAddrs[i]; x < (nametableAddrs[i] + 960); x++)
         //         nametable.push(this.ppuMem[x]);
         // }
-        
+
         return this.ppuMem;
     };
 
@@ -351,11 +360,33 @@ function mmu(PPU) {
         return this.ppuMem;
     };
 
+    this.setOAMDATA = function(value) {
+        if (PPU.currentScanline == 261 || (PPU.currentScanline >= 0 && PPU.currentScanline < 240)) {
+
+        }
+        else {
+            this.OAM[this.ppuRegObj.OAMADDR] = value;
+            this.setOAMADDR(this.ppuRegObj.OAMADDR + 1);
+        }
+        this.OAMDATAwritten = true;
+        // this.ppuRegObj.OAMDATA = value;
+        // PPU.setOAMDATA(this.ppuRegObj.OAMDATA);
+    };
+
+    this.setOAMADDR = function(value) {
+        this.ppuRegObj.OAMADDR = value;
+        PPU.setOAMADDR(this.ppuRegObj.OAMADDR);
+    };
+
     //OAM DMA copying
     this.startOAMDMACopy = function() {
         if ( /*PPU.vBlankStarted*/ true) {
             for (var i = 0; i < 256; i++) {
-                this.OAM[i] = this.getCpuMemVal((this.OAMDMA << 8) + i);
+                // this.OAM[i] = this.getCpuMemVal((this.OAMDMA << 8) + i);
+                // this.OAM[i] = this.getCpuMemVal((this.OAMDMA * 0x100) + i);
+                // this.setOAMDATA(this.getCpuMemVal((this.OAMDMA * 0x100) + i));
+                this.setOAMDATA(this.cpuMem[(this.OAMDMA * 0x100) + i]);
+                // this.setOAMADDR(this.ppuRegObj.OAMADDR + 1);
             }
         }
     };
@@ -380,6 +411,7 @@ function mmu(PPU) {
     };
 
     this.setPPUSCROLL = function(value) {
+        this.ppuRegObj.PPUSCROLL = value;
         if (this.PPUSCROLLFirstWrite) {
             PPU.xScroll = value;
             this.PPUSCROLLFirstWrite = false;

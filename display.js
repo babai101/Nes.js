@@ -1,30 +1,50 @@
 function display(canvas, nameTableCanvas) {
     this.ctx = canvas.getContext('2d');
-    this.nameTableCtx = nameTableCanvas.getContext('2d');
-    this.nameTableCanvasImageData = this.nameTableCtx.getImageData(0, 0, nameTableCanvas.width, nameTableCanvas.height);
-    this.nameTableData = this.nameTableCanvasImageData.data;
+    this.oamCtx;
+    this.oamCanvasImageData;
+    this.oamData;
+    // this.nameTableCtx = nameTableCanvas.getContext('2d');
+    // this.nameTableCanvasImageData = this.nameTableCtx.getImageData(0, 0, nameTableCanvas.width, nameTableCanvas.height);
+    // this.nameTableData = this.nameTableCanvasImageData.data;
     this.canvasImageData = this.ctx.getImageData(0, 0, canvas.width, canvas.height);
     this.data = this.canvasImageData.data;
+    
+    //Update the data for the cavases
     this.updateBuffer = function(screenPixel, pixelColor) {
         this.data[screenPixel * 4] = 0xFF; //alpha
         this.data[screenPixel * 4] = (pixelColor >> 16) & 0xFF; //red
         this.data[screenPixel * 4 + 1] = (pixelColor >> 8) & 0xFF; //green
         this.data[screenPixel * 4 + 2] = pixelColor & 0xFF; //blue
     };
-    
+
     this.updateNameTableBuffer = function(screenPixel, pixelColor) {
         this.nameTableData[screenPixel * 4] = 0xFF; //alpha
         this.nameTableData[screenPixel * 4] = (pixelColor >> 16) & 0xFF; //red
         this.nameTableData[screenPixel * 4 + 1] = (pixelColor >> 8) & 0xFF; //green
         this.nameTableData[screenPixel * 4 + 2] = pixelColor & 0xFF; //blue
     };
+    
+    this.updateOamBuffer = function(screenPixel, pixelColor) {
+        this.oamData[screenPixel * 4] = 0xFF; //alpha
+        this.oamData[screenPixel * 4] = (pixelColor >> 16) & 0xFF; //red
+        this.oamData[screenPixel * 4 + 1] = (pixelColor >> 8) & 0xFF; //green
+        this.oamData[screenPixel * 4 + 2] = pixelColor & 0xFF; //blue
+    };
 
+    
+    //Update the cavases themselves
     this.updateCanvas = function() {
         this.ctx.putImageData(this.canvasImageData, 0, 0);
     };
     this.updateNameTableCanvas = function() {
-        this.nameTableCtx.putImageData(this.nameTableCanvasImageData, 0, 0);   
+        this.nameTableCtx.putImageData(this.nameTableCanvasImageData, 0, 0);
     };
+    
+    this.updateOamCanvas = function() {
+        this.oamCtx.putImageData(this.oamCanvasImageData, 0, 0);
+    };
+    
+    //Reset the cavases
     this.screenReset = function() {
         this.ctx.fillStyle = 'Red';
         this.ctx.fillRect(0, 0, 256, 240);
@@ -33,6 +53,14 @@ function display(canvas, nameTableCanvas) {
         this.nameTableCtx.fillStyle = 'Black';
         this.nameTableCtx.fillRect(0, 0, 256, 240);
     };
+    
+    this.oamScreenReset = function() {
+        this.oamCtx.fillStyle = 'black';
+        this.oamCtx.fillRect(0, 0, 64, 64);
+    };
+    
+    //Initilize the screen buffers for various canvases
+    
     this.initScreenBuffer = function() {
         for (var i = 0; i < 256 * 240; i++) {
             var j = i * 4;
@@ -52,5 +80,18 @@ function display(canvas, nameTableCanvas) {
             this.nameTableData[j] = 0x00;
         }
         this.nameTableCtx.putImageData(this.nameTableCanvasImageData, 0, 0);
+    };
+    this.initOamScreenBuffer = function(oamCanvas) {
+        this.oamCtx = oamCanvas.getContext('2d');
+        this.oamCanvasImageData = this.oamCtx.getImageData(0, 0, oamCanvas.width, oamCanvas.height);
+        this.oamData = this.oamCanvasImageData.data;
+        for (var i = 0; i < 64 * 64; i++) {
+            var j = i * 4;
+            this.oamData[j + 3] = 0xFF;
+            this.oamData[j + 2] = 0x00;
+            this.oamData[j + 1] = 0x00;
+            this.oamData[j] = 0x00;
+        }
+        this.oamCtx.putImageData(this.oamCanvasImageData, 0, 0);
     };
 }

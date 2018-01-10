@@ -20,12 +20,12 @@
         </select>
         <button id="pause" type="button" class="btn">Play/Pause</button>
     </div>
+    <div class="viewport">
+        <canvas id="nesCanvas" width="256" height="240"></canvas>
+        <!--<canvas id="chrCanvas" width="1024" height="1024">-->
+        <canvas id="nameTableCanvas" width="256" height="240"></canvas>
+    </div>
     <div>
-        <div class="viewport">
-            <canvas id="nesCanvas" width="256" height="240"></canvas>
-            <!--<canvas id="chrCanvas" width="1024" height="1024">-->
-            <canvas id="nameTableCanvas" width="256" height="240"></canvas>
-        </div>
         <div class="debug">
             <div class="debugInfo">
                 <div class="controlSections">
@@ -122,6 +122,10 @@
         </div>
     </div>
     <style>
+        body {
+            background-color: #425159;
+        }
+
         h5 {
             color: MediumSlateBlue;
         }
@@ -142,6 +146,12 @@
             display: block;
             margin: 5px auto;
         }
+
+        /*#nesCanvas {*/
+
+        /*    margin: auto;*/
+
+        /*}*/
 
         .flagTbl td {
             text-align: center;
@@ -219,7 +229,10 @@
         }
 
         .viewport {
-            float: left;
+            /*float: left;*/
+            display: inline-block;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .debug {
@@ -633,6 +646,7 @@
                 PPU.initScreenBuffer();
                 iNES.load(this.opcodes, MMU);
                 MMU.nameTableMirroring = iNES.mirroring;
+                PPU.nameTableMirroring = iNES.mirroring;
                 CPU.reset();
                 MMU.copyCHRToGrid();
                 MMU.copyBGRCHRToGrid();
