@@ -378,7 +378,7 @@ function cpu(MMU, PPU) {
 		else this.unsetFlag('overflow');
 		this.accumulator = this.writeCarry(this.accumulator + arg + (this.P & 0x01));
 		this.calcFlags(null, false, null);
-		if(this.loggingEnabled)
+		if (this.loggingEnabled)
 			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
@@ -545,66 +545,50 @@ function cpu(MMU, PPU) {
 		}
 		else
 			this.opcodeType = 'SBC';
-		//increment pc by 1
 		this.pc++;
-
-		//Does not work in Javascript as it doesn't support signed integers
-		/*var temp = this.accumulator - param;
-		if ((this.P & 0x01) == 0)
-			temp = temp - 1;
-		if (temp > 255) {
-			this.unsetFlag('carry');
+		//fetch single param
+		var arg = this.fetchParams();
+		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
+		// this.F_SIGN = (temp >> 7) & 1;
+		// this.F_ZERO = temp & 0xff;
+		if (
+			((this.accumulator ^ temp) & 0x80) !== 0 &&
+			((this.accumulator ^ arg) & 0x80) !== 0
+		) {
 			this.setFlag('overflow');
 		}
 		else {
-			this.setFlag('carry');
 			this.unsetFlag('overflow');
 		}
-
-		if ((temp & 0xFF) == 0)
-			this.setFlag('zero');
-		else this.unsetFlag('zero');
-
-		if ((temp & 0x80) == 0x80)
-			this.setFlag('negative');
-		else this.unsetFlag('negetive');
-
-		this.accumulator = temp & 0xFF;*/
-
-
-		//fetch single param
-		var arg = this.fetchParams();
-		//Old implementation
-		/*var arg = ~param;
-		// Add with carry
-		var temp = this.accumulator + arg + (this.P & 0x01);
-		
-
-		// calculate sign change and set overflow flag accordingly
-		this.calcFlags(arg, true, temp);
-		temp = this.writeCarry(temp);
-		this.accumulator = temp;
-
-		// calculate zero,sign flag status
-		this.calcFlags(null, false, null);*/
-
-		var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
-		if ((this.P & 0x01) == 0x00)
-			temp = temp - 1;
-		if (temp < -128 || temp > 127) {
-			this.setFlag('overflow');
-		}
-		else this.unsetFlag('overflow');
-
-		if (this.accumulator >= arg)
+		if (temp < 0 ? 0 : 1) {
 			this.setFlag('carry');
-		else this.unsetFlag('carry');
-
-		this.accumulator = this.toSigned8bit(temp);
+		}
+		else {
+			this.unsetFlag('carry');
+		}
+		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
-		this.memLog = '#$' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
-		//instLen = 2;
 		this.elapsedCycles += 2;
+
+		// var arg = this.fetchParams();
+		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
+		// if ((this.P & 0x01) == 0x00)
+		// 	temp = temp - 1;
+		// if (temp < -128 || temp > 127) {
+		// 	this.setFlag('overflow');
+		// }
+		// else this.unsetFlag('overflow');
+
+		// if (this.accumulator >= arg)
+		// 	this.setFlag('carry');
+		// else this.unsetFlag('carry');
+
+		// this.accumulator = this.toSigned8bit(temp);
+		// this.calcFlags(null, false, null);
+		// if(this.loggingEnabled)
+		// 	this.memLog = '#$' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
+		// //instLen = 2;
+		// this.elapsedCycles += 2;
 	};
 
 	this.SBC_Z = function() {
@@ -612,29 +596,46 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		var arg = MMU.getCpuMemVal(param);
-		// arg = ~arg;
-		// var temp = this.accumulator + arg + (this.P & 0x01);
-		// temp = this.writeCarry(temp);
-		// this.calcFlags(arg, true, temp);
-		// this.accumulator = temp;
-		// this.calcFlags(null, false, null);
-		var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
-		if ((this.P & 0x01) == 0x00)
-			temp = temp - 1;
-		if (temp < -128 || temp > 127) {
+		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
+		// this.F_SIGN = (temp >> 7) & 1;
+		// this.F_ZERO = temp & 0xff;
+		if (
+			((this.accumulator ^ temp) & 0x80) !== 0 &&
+			((this.accumulator ^ arg) & 0x80) !== 0
+		) {
 			this.setFlag('overflow');
 		}
-		else this.unsetFlag('overflow');
-
-		if (this.accumulator >= arg)
+		else {
+			this.unsetFlag('overflow');
+		}
+		if (temp < 0 ? 0 : 1) {
 			this.setFlag('carry');
-		else this.unsetFlag('carry');
-
-		this.accumulator = this.toSigned8bit(temp);
+		}
+		else {
+			this.unsetFlag('carry');
+		}
+		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
-		//instLen = 2;
 		this.elapsedCycles += 3;
+		// var param = this.fetchParams();
+		// var arg = MMU.getCpuMemVal(param);
+		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
+		// if ((this.P & 0x01) == 0x00)
+		// 	temp = temp - 1;
+		// if (temp < -128 || temp > 127) {
+		// 	this.setFlag('overflow');
+		// }
+		// else this.unsetFlag('overflow');
+
+		// if (this.accumulator >= arg)
+		// 	this.setFlag('carry');
+		// else this.unsetFlag('carry');
+
+		// this.accumulator = this.toSigned8bit(temp);
+		// this.calcFlags(null, false, null);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
+		// //instLen = 2;
+		// this.elapsedCycles += 3;
 	};
 
 	this.SBC_Z_X = function() {
@@ -642,27 +643,45 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		var arg = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		// var temp = this.accumulator + arg + (this.P & 0x01);
-		// temp = this.writeCarry(temp);
-		// this.calcFlags(arg, true, temp);
-		// this.accumulator = temp;
-		// this.calcFlags(null, false, null);
-		var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
-		if ((this.P & 0x01) == 0x00)
-			temp = temp - 1;
-		if (temp < -128 || temp > 127) {
+		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
+		// this.F_SIGN = (temp >> 7) & 1;
+		// this.F_ZERO = temp & 0xff;
+		if (
+			((this.accumulator ^ temp) & 0x80) !== 0 &&
+			((this.accumulator ^ arg) & 0x80) !== 0
+		) {
 			this.setFlag('overflow');
 		}
-		else this.unsetFlag('overflow');
-
-		if (this.accumulator >= arg)
+		else {
+			this.unsetFlag('overflow');
+		}
+		if (temp < 0 ? 0 : 1) {
 			this.setFlag('carry');
-		else this.unsetFlag('carry');
-
-		this.accumulator = this.toSigned8bit(temp);
+		}
+		else {
+			this.unsetFlag('carry');
+		}
+		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
-		//instLen = 2;
 		this.elapsedCycles += 4;
+		// var param = this.fetchParams();
+		// var arg = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
+		// if ((this.P & 0x01) == 0x00)
+		// 	temp = temp - 1;
+		// if (temp < -128 || temp > 127) {
+		// 	this.setFlag('overflow');
+		// }
+		// else this.unsetFlag('overflow');
+
+		// if (this.accumulator >= arg)
+		// 	this.setFlag('carry');
+		// else this.unsetFlag('carry');
+
+		// this.accumulator = this.toSigned8bit(temp);
+		// this.calcFlags(null, false, null);
+		// //instLen = 2;
+		// this.elapsedCycles += 4;
 	};
 
 	this.SBC_A = function() {
@@ -673,29 +692,49 @@ function cpu(MMU, PPU) {
 		param2 = param2 << 8;
 		var param = param2 | param1;
 		var arg = MMU.getCpuMemVal(param);
-		// arg = ~arg;
-		// var temp = this.accumulator + arg + (this.P & 0x01);
-		// temp = this.writeCarry(temp);
-		// this.calcFlags(arg, true, temp);
-		// this.accumulator = temp;
-		// this.calcFlags(null, false, null);
-		var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
-		if ((this.P & 0x01) == 0x00)
-			temp = temp - 1;
-		if (temp < -128 || temp > 127) {
+		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
+		// this.F_SIGN = (temp >> 7) & 1;
+		// this.F_ZERO = temp & 0xff;
+		if (
+			((this.accumulator ^ temp) & 0x80) !== 0 &&
+			((this.accumulator ^ arg) & 0x80) !== 0
+		) {
 			this.setFlag('overflow');
 		}
-		else this.unsetFlag('overflow');
-
-		if (this.accumulator >= arg)
+		else {
+			this.unsetFlag('overflow');
+		}
+		if (temp < 0 ? 0 : 1) {
 			this.setFlag('carry');
-		else this.unsetFlag('carry');
-
-		this.accumulator = this.toSigned8bit(temp);
+		}
+		else {
+			this.unsetFlag('carry');
+		}
+		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
-		//instLen = 3;
 		this.elapsedCycles += 4;
+		// var param1 = this.fetchParams();
+		// var param2 = this.fetchParams();
+		// param2 = param2 << 8;
+		// var param = param2 | param1;
+		// var arg = MMU.getCpuMemVal(param);
+		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
+		// if ((this.P & 0x01) == 0x00)
+		// 	temp = temp - 1;
+		// if (temp < -128 || temp > 127) {
+		// 	this.setFlag('overflow');
+		// }
+		// else this.unsetFlag('overflow');
+
+		// if (this.accumulator >= arg)
+		// 	this.setFlag('carry');
+		// else this.unsetFlag('carry');
+
+		// this.accumulator = this.toSigned8bit(temp);
+		// this.calcFlags(null, false, null);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
+		// //instLen = 3;
+		// this.elapsedCycles += 4;
 	};
 
 	this.SBC_A_X = function() {
@@ -706,31 +745,54 @@ function cpu(MMU, PPU) {
 		param2 = param2 << 8;
 		var param = param2 | param1;
 		var arg = MMU.getCpuMemVal(param + this.X);
-		// arg = ~arg;
-		// var temp = this.accumulator + arg + (this.P & 0x01);
-		// temp = this.writeCarry(temp);
-		// this.calcFlags(arg, true, temp);
-		// this.accumulator = temp;
-		// this.calcFlags(null, false, null);
-		var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
-		if ((this.P & 0x01) == 0x00)
-			temp = temp - 1;
-		if (temp < -128 || temp > 127) {
+		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
+		// this.F_SIGN = (temp >> 7) & 1;
+		// this.F_ZERO = temp & 0xff;
+		if (
+			((this.accumulator ^ temp) & 0x80) !== 0 &&
+			((this.accumulator ^ arg) & 0x80) !== 0
+		) {
 			this.setFlag('overflow');
 		}
-		else this.unsetFlag('overflow');
-
-		if (this.accumulator >= arg)
+		else {
+			this.unsetFlag('overflow');
+		}
+		if (temp < 0 ? 0 : 1) {
 			this.setFlag('carry');
-		else this.unsetFlag('carry');
-
-		this.accumulator = this.toSigned8bit(temp);
+		}
+		else {
+			this.unsetFlag('carry');
+		}
+		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
-		//instLen = 3;
 		if ((param1 + this.X) > 0xFF)
 			this.elapsedCycles += 5;
 		else
 			this.elapsedCycles += 4;
+		// var param1 = this.fetchParams();
+		// var param2 = this.fetchParams();
+		// param2 = param2 << 8;
+		// var param = param2 | param1;
+		// var arg = MMU.getCpuMemVal(param + this.X);
+		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
+		// if ((this.P & 0x01) == 0x00)
+		// 	temp = temp - 1;
+		// if (temp < -128 || temp > 127) {
+		// 	this.setFlag('overflow');
+		// }
+		// else this.unsetFlag('overflow');
+
+		// if (this.accumulator >= arg)
+		// 	this.setFlag('carry');
+		// else this.unsetFlag('carry');
+
+		// this.accumulator = this.toSigned8bit(temp);
+		// this.calcFlags(null, false, null);
+		// //instLen = 3;
+		// if ((param1 + this.X) > 0xFF)
+		// 	this.elapsedCycles += 5;
+		// else
+		// 	this.elapsedCycles += 4;
 	};
 
 	this.SBC_A_Y = function() {
@@ -741,101 +803,165 @@ function cpu(MMU, PPU) {
 		param2 = param2 << 8;
 		var param = param2 | param1;
 		var arg = MMU.getCpuMemVal(param + this.Y);
-		// arg = ~arg;
-		// var temp = this.accumulator + arg + (this.P & 0x01);
-		// temp = this.writeCarry(temp);
-		// this.calcFlags(arg, true, temp);
-		// this.accumulator = temp;
-		// this.calcFlags(null, false, null);
-		var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
-		if ((this.P & 0x01) == 0x00)
-			temp = temp - 1;
-		if (temp < -128 || temp > 127) {
+		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
+		// this.F_SIGN = (temp >> 7) & 1;
+		// this.F_ZERO = temp & 0xff;
+		if (
+			((this.accumulator ^ temp) & 0x80) !== 0 &&
+			((this.accumulator ^ arg) & 0x80) !== 0
+		) {
 			this.setFlag('overflow');
 		}
-		else this.unsetFlag('overflow');
-
-		if (this.accumulator >= arg)
+		else {
+			this.unsetFlag('overflow');
+		}
+		if (temp < 0 ? 0 : 1) {
 			this.setFlag('carry');
-		else this.unsetFlag('carry');
-
-		this.accumulator = this.toSigned8bit(temp);
+		}
+		else {
+			this.unsetFlag('carry');
+		}
+		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
-		//instLen = 3;
 		if ((param1 + this.Y) > 0xFF)
 			this.elapsedCycles += 5;
 		else
 			this.elapsedCycles += 4;
+		// var param1 = this.fetchParams();
+		// var param2 = this.fetchParams();
+		// param2 = param2 << 8;
+		// var param = param2 | param1;
+		// var arg = MMU.getCpuMemVal(param + this.Y);
+		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
+		// if ((this.P & 0x01) == 0x00)
+		// 	temp = temp - 1;
+		// if (temp < -128 || temp > 127) {
+		// 	this.setFlag('overflow');
+		// }
+		// else this.unsetFlag('overflow');
+
+		// if (this.accumulator >= arg)
+		// 	this.setFlag('carry');
+		// else this.unsetFlag('carry');
+
+		// this.accumulator = this.toSigned8bit(temp);
+		// this.calcFlags(null, false, null);
+		// //instLen = 3;
+		// if ((param1 + this.Y) > 0xFF)
+		// 	this.elapsedCycles += 5;
+		// else
+		// 	this.elapsedCycles += 4;
 	};
 
 	this.SBC_I_X = function() {
 		this.opcodeType = 'SBC';
 		this.pc++;
 		var param = this.fetchParams();
-		// param += this.X;
 		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
 		var arg = MMU.getCpuMemVal(index2 | index1);
-		// arg = ~arg;
-		// var temp = this.accumulator + arg + (this.P & 0x01);
-		// temp = this.writeCarry(temp);
-		// this.calcFlags(arg, true, temp);
-		// this.accumulator = temp;
-		// this.calcFlags(null, false, null);
-		var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
-		if ((this.P & 0x01) == 0x00)
-			temp = temp - 1;
-		if (temp < -128 || temp > 127) {
+		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
+		// this.F_SIGN = (temp >> 7) & 1;
+		// this.F_ZERO = temp & 0xff;
+		if (
+			((this.accumulator ^ temp) & 0x80) !== 0 &&
+			((this.accumulator ^ arg) & 0x80) !== 0
+		) {
 			this.setFlag('overflow');
 		}
-		else this.unsetFlag('overflow');
-
-		if (this.accumulator >= arg)
+		else {
+			this.unsetFlag('overflow');
+		}
+		if (temp < 0 ? 0 : 1) {
 			this.setFlag('carry');
-		else this.unsetFlag('carry');
-
-		this.accumulator = this.toSigned8bit(temp);
+		}
+		else {
+			this.unsetFlag('carry');
+		}
+		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
-		this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
-		//instLen = 2;
 		this.elapsedCycles += 6;
+		// var param = this.fetchParams();
+		// var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		// var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		// index2 = index2 << 8;
+		// var arg = MMU.getCpuMemVal(index2 | index1);
+		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
+		// if ((this.P & 0x01) == 0x00)
+		// 	temp = temp - 1;
+		// if (temp < -128 || temp > 127) {
+		// 	this.setFlag('overflow');
+		// }
+		// else this.unsetFlag('overflow');
+
+		// if (this.accumulator >= arg)
+		// 	this.setFlag('carry');
+		// else this.unsetFlag('carry');
+
+		// this.accumulator = this.toSigned8bit(temp);
+		// this.calcFlags(null, false, null);
+		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
+		// //instLen = 2;
+		// this.elapsedCycles += 6;
 	};
 
 	this.SBC_I_Y = function() {
 		this.opcodeType = 'SBC';
 		this.pc++;
 		var param = this.fetchParams();
-		// param += this.Y;
 		var index1 = MMU.getCpuMemVal(param);
 		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
 		var arg = MMU.getCpuMemVal((index2 | index1) + this.Y);
-		// arg = ~arg;
-		// var temp = this.accumulator + arg + (this.P & 0x01);
-		// temp = this.writeCarry(temp);
-		// this.calcFlags(arg, true, temp);
-		// this.accumulator = temp;
-		// this.calcFlags(null, false, null);
-		var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
-		if ((this.P & 0x01) == 0x00)
-			temp = temp - 1;
-		if (temp < -128 || temp > 127) {
+		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
+		// this.F_SIGN = (temp >> 7) & 1;
+		// this.F_ZERO = temp & 0xff;
+		if (
+			((this.accumulator ^ temp) & 0x80) !== 0 &&
+			((this.accumulator ^ arg) & 0x80) !== 0
+		) {
 			this.setFlag('overflow');
 		}
-		else this.unsetFlag('overflow');
-
-		if (this.accumulator >= arg)
+		else {
+			this.unsetFlag('overflow');
+		}
+		if (temp < 0 ? 0 : 1) {
 			this.setFlag('carry');
-		else this.unsetFlag('carry');
-
-		this.accumulator = this.toSigned8bit(temp);
+		}
+		else {
+			this.unsetFlag('carry');
+		}
+		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
-		//instLen = 2;
 		if ((index1 + this.Y) > 0xFF)
 			this.elapsedCycles += 6;
 		else
 			this.elapsedCycles += 5;
+		// var param = this.fetchParams();
+		// var index1 = MMU.getCpuMemVal(param);
+		// var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		// index2 = index2 << 8;
+		// var arg = MMU.getCpuMemVal((index2 | index1) + this.Y);
+		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
+		// if ((this.P & 0x01) == 0x00)
+		// 	temp = temp - 1;
+		// if (temp < -128 || temp > 127) {
+		// 	this.setFlag('overflow');
+		// }
+		// else this.unsetFlag('overflow');
+
+		// if (this.accumulator >= arg)
+		// 	this.setFlag('carry');
+		// else this.unsetFlag('carry');
+
+		// this.accumulator = this.toSigned8bit(temp);
+		// this.calcFlags(null, false, null);
+		// //instLen = 2;
+		// if ((index1 + this.Y) > 0xFF)
+		// 	this.elapsedCycles += 6;
+		// else
+		// 	this.elapsedCycles += 5;
 	};
 
 	//AND Instructions
@@ -846,7 +972,7 @@ function cpu(MMU, PPU) {
 		var param = this.fetchParams();
 		this.accumulator = this.accumulator & param;
 		this.calcFlags(null, false, null);
-		if(this.loggingEnabled)
+		if (this.loggingEnabled)
 			this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 2;
@@ -975,7 +1101,7 @@ function cpu(MMU, PPU) {
 		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param);
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
-		if(this.loggingEnabled)
+		if (this.loggingEnabled)
 			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
@@ -1228,7 +1354,7 @@ function cpu(MMU, PPU) {
 		else
 			this.unsetFlag('carry');
 		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) << 1));
-		this.calcFlags(MMU.getCpuMemVal(param + this.X), false, null);
+		this.calcFlags(MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -1558,7 +1684,7 @@ function cpu(MMU, PPU) {
 		else
 			this.unsetFlag('carry');
 		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 1));
-		this.calcFlags(MMU.getCpuMemVal(param + this.X), false, null);
+		this.calcFlags(MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -1645,7 +1771,7 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(param + this.X) >> 7) == 1)
+		if ((MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
@@ -2151,8 +2277,13 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'INC';
 		this.pc++;
 		var param = this.fetchParams();
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.wrap8bit('increment', MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), null)));
-		this.calcFlags(MMU.getCpuMemVal(param + this.X), false, null);
+		var loc = this.wrap8bit('sum', param, this.X);
+		var valueAtLoc = MMU.getCpuMemVal(loc);
+		//increment
+		valueAtLoc = this.wrap8bit('increment', valueAtLoc, null);
+		// MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.wrap8bit('increment', MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), null)));
+		MMU.setCpuMemVal(loc, valueAtLoc);
+		this.calcFlags(MMU.getCpuMemVal(loc), false, null);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -2369,7 +2500,8 @@ function cpu(MMU, PPU) {
 
 	this.BRK = function() {
 		this.opcodeType = 'BRK';
-		// this.pc++;
+		this.pc++;
+		var param = this.fetchParams();
 		this.serveISR('BRK');
 		//instLen = 1;
 		this.elapsedCycles += 7;
@@ -2429,7 +2561,7 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if(this.loggingEnabled)
+		if (this.loggingEnabled)
 			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if ((this.P >> 7) == 0) {
 			// this.pc--;
@@ -5039,7 +5171,7 @@ function cpu(MMU, PPU) {
 				break;
 
 			default:
-				console.log("Unknown opcode: " + this.currentOpcode);
+				console.log("Unknown opcode: " + this.currentOpcode.toString('16'));
 				this.errorFlag = true;
 				this.pc++;
 				break;
@@ -5069,11 +5201,21 @@ function cpu(MMU, PPU) {
 				//push pc to stack
 				this.pushToStack((this.pc & 0xFF00) >> 8); //push high byte
 				this.pushToStack(this.pc & 0x00FF); //push low byte
-				//push processor status to stack
-				this.pushToStack(this.P);
+
 				//Set the Break flag 
 				this.P = this.P & 0b11101111;
 				this.P = this.P | 0b00010000;
+				this.P = this.P & 0b11011111;
+				this.P = this.P | 0b00100000;
+				//set unused flag
+				//push processor status to stack
+				this.pushToStack(this.P);
+				// //Set the Break flag 
+				// this.P = this.P & 0b11101111;
+				// this.P = this.P | 0b00010000;
+				//Set the I flag
+				this.P = this.P & 0b11111011;
+				this.P = this.P | 0b00000100;
 				this.pc = vector2 | vector1;
 				break;
 			default:
@@ -5107,50 +5249,67 @@ function cpu(MMU, PPU) {
 
 	this.runFrame = function() {
 		var frameCompleted = false;
-		var cpuCyclesElapsed = 0;
+		// var cpuCyclesElapsed = 0;
 		var renderedScanline = -1;
-		var nmiCounter = 0;
-
+		// var nmiCounter = 0;
 		//Debug VARs
-		this.totalCPUCyclesThisFrame = 0;
-		var totalScanLinesRenderedThisFrame = 0;
+		// this.totalCPUCyclesThisFrame = 0;
+		// var totalScanLinesRenderedThisFrame = 0;
 		while (!frameCompleted) {
 			this.fetchOpcode();
 			this.decodeInstruction();
 			// this.logInConsole(); Enable console logging here
-			if (MMU.OAMDMAwritten) {
-				this.totalCPUCyclesThisFrame += 514;
-				MMU.OAMDMAwritten = false;
-			}
-			this.totalCPUCyclesThisFrame += this.elapsedCycles;
-			cpuCyclesElapsed += this.elapsedCycles;
-			cpuCyclesElapsed += this.excessCpuCycles;
+			// this.totalCPUCyclesThisFrame += this.elapsedCycles;
+			// cpuCyclesElapsed += this.elapsedCycles;
+			// cpuCyclesElapsed += this.excessCpuCycles;
+			//experimental
+			this.elapsedCycles += this.excessCpuCycles;
 			this.excessCpuCycles = 0;
-			if (this.oddFrame)
+			if (this.oddFrame) {
 				this.ppuCyclesCurrentScanLine = 340;
-			else
+				if (MMU.OAMDMAwritten) {
+					// this.totalCPUCyclesThisFrame += 514;
+					//exp
+					this.elapsedCycles += 514;
+					MMU.OAMDMAwritten = false;
+				}
+			}
+			else {
 				this.ppuCyclesCurrentScanLine = 341;
+				if (MMU.OAMDMAwritten) {
+					// this.totalCPUCyclesThisFrame += 514;
+					//exp
+					this.elapsedCycles += 513;
+					MMU.OAMDMAwritten = false;
+				}
+			}
 			if ((this.elapsedCycles * 3) >= this.ppuCyclesCurrentScanLine) {
 				renderedScanline = PPU.RenderNextScanline(MMU.getOAM(), MMU.getNameTable(), MMU.getAttrTable());
-				totalScanLinesRenderedThisFrame++;
+				// totalScanLinesRenderedThisFrame++;
+				//Reset OAMADDR, TODO: move this to MMU after refactoring
+				if (renderedScanline == 261 || (renderedScanline >= 0 && renderedScanline < 240)) {
+					MMU.setOAMADDR(0);
+				}
 				//Check we are on the verge of vBlank
 				if (renderedScanline == 241) {
 					this.nmiLoopCounter++;
 					if (MMU.enableNMIGen && PPU.NMIOccured) { //Generet NMI Interrupt
 						this.serveISR('NMI');
-						nmiCounter++;
+						// nmiCounter++;
 					}
 				}
 				else if (renderedScanline == 261)
 					frameCompleted = true;
 				//Calculating extra cpu cycles run for this scanline
-				this.excessCpuCycles = Math.floor(cpuCyclesElapsed - this.ppuCyclesCurrentScanLine / 3);
-				cpuCyclesElapsed = 0;
+				// this.excessCpuCycles = Math.floor(cpuCyclesElapsed - this.ppuCyclesCurrentScanLine / 3);
+				//exp
+				this.excessCpuCycles = Math.floor(this.elapsedCycles - this.ppuCyclesCurrentScanLine / 3);
+				// cpuCyclesElapsed = 0;
 				this.elapsedCycles = 0;
 			}
 		}
 		this.oddFrame = !this.oddFrame;
-		return nmiCounter;
+		// return nmiCounter;
 		// console.log("Total CPU cycles this frame: " + totalCPUCyclesThisFrame);
 		// console.log("Total scanlines rendered this frame: " + totalScanLinesRenderedThisFrame);
 	};
