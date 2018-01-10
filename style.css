@@ -1,0 +1,303 @@
+body {
+    /*margin-top: 50px;*/
+}
+
+h3 {
+    font-family: 'Courgette', cursive;
+}
+
+canvas {
+    /*margin: 20px;*/
+    border: 1px solid black;
+    -ms-interpolation-mode: nearest-neighbor;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -o-pixelated;
+    image-rendering: pixelated;
+    image-rendering: optimizespeed
+}
+
+#nesCanvas {
+    /*height: 512;*/
+    /*width: 480px;*/
+}
+
+
+#oamCanvas {
+    height: 256px;
+    width: 256px;
+}
+/*#btnTrace {*/
+
+/*    display: block;*/
+
+/*    margin: 5px auto;*/
+
+/*}*/
+
+.heading {
+    /*text-align: center;*/
+}
+
+/*.flagTbl td {*/
+
+/*    text-align: center;*/
+
+/*    min-width: 25px;*/
+
+/*    border-style: dotted;*/
+
+/*    border-color: MediumSlateBlue;*/
+
+/*}*/
+
+/*.flagTbl {*/
+
+/*    border-style: dotted;*/
+
+/*    border-width: 1px;*/
+
+/*    border-color: MediumSlateBlue;*/
+
+/*}*/
+
+/*.regTbl {*/
+
+/*    border-style: dotted;*/
+
+/*    border-color: MediumSlateBlue;*/
+
+/*}*/
+
+/*.regTbl td {*/
+
+/*    min-width: 80px;*/
+
+/*    border-style: dotted;*/
+
+/*    border-color: MediumSlateBlue;*/
+
+/*    min-height: 100px;*/
+
+/*}*/
+
+/*.headerTbl {*/
+
+/*    border-width: 1px;*/
+
+/*    border-style: dotted;*/
+
+/*    border-color: MediumSlateBlue*/
+
+/*}*/
+
+/*.headerTbl td {*/
+
+/*    border-style: dotted;*/
+
+/*    border-color: MediumSlateBlue*/
+
+/*}*/
+
+/*.btn {*/
+
+/* Styling for buttons */
+
+/*margin: 0 8px;*/
+
+/*color: white;*/
+
+/*    color: MediumSlateBlue;*/
+
+/*background-color: #00BCD4;*/
+
+/*    background-color: white;*/
+
+/*    display: inline-block;*/
+
+/*border: 0;*/
+
+/*    border-style: solid;*/
+
+/*    border-width: 1px;*/
+
+/*    border-color: MediumSlateBlue;*/
+
+/*    font-family: Helvetica, Arial, sans-serif;*/
+
+/*    font-size: 0.8em;*/
+
+/*    border-radius: 3px;*/
+
+/*    padding: 7px 3px;*/
+
+/*    width: auto;*/
+
+/*    min-width: 75px;*/
+
+/*    max-height: 30px;*/
+
+/*    font-weight: 500;*/
+
+/*    cursor: pointer;*/
+
+/*}*/
+
+/*.btn:focus {*/
+
+/* Remove outline when hovering over button */
+
+/*    outline: none;*/
+
+/*}*/
+
+/*.btn:active {*/
+
+/* Scale the button down by 10% when clicking on button */
+
+/*    -webkit-transform: scale(0.95, 0.95);*/
+
+/*    -moz-transform: scale(0.95, 0.95);*/
+
+/*    transform: scale(0.95, 0.95);*/
+
+/*}*/
+
+/*.btns {*/
+
+/*    margin-left: 20px;*/
+
+/*}*/
+
+.viewport {
+
+    /*background-color: black;*/
+}
+
+/*.debug {*/
+
+/*    margin: 20px 0px 10px 0px;*/
+
+/*    padding: 5px;*/
+
+/*    border-width: 1px;*/
+
+/*    border-style: solid;*/
+
+/*    float: left;*/
+
+/*}*/
+
+/*.debugInfo {*/
+
+/*    float: left;*/
+
+/*}*/
+
+/*.debugActivity {*/
+
+/*    float: left;*/
+
+/*}*/
+
+/*.debugInput {*/
+
+/*    max-width: 50px;*/
+
+/*    max-height: 30px;*/
+
+/*    border-style: solid;*/
+
+/*    border-width: 1px;*/
+
+/*    border-color: MediumSlateBlue;*/
+
+/*    font-family: Helvetica, Arial, sans-serif;*/
+
+/*    border-radius: 3px;*/
+
+/*    padding: 7px 3px;*/
+
+/*    text-transform: uppercase;*/
+
+/*}*/
+
+/*.outputWindow {*/
+
+/*padding: 5px;*/
+
+/*    margin: 5px;*/
+
+/*    width: 350px;*/
+
+/*    padding-left: 2px;*/
+
+/*min-height: 450px;*/
+
+/*    height: 454px;*/
+
+/*    border-width: 1px;*/
+
+/*    border-style: solid;*/
+
+/*    font-family: monospace;*/
+
+/*    font-size: 1em;*/
+
+/*    overflow: scroll;*/
+
+/*}*/
+
+/*.controlSections {*/
+
+/*    margin: 5px;*/
+
+/*    padding: 5px;*/
+
+/*    border-width: 1px;*/
+
+/*    border-style: solid;*/
+
+/*}*/
+
+/*.controlHeader {*/
+
+/*    padding-top: 10px;*/
+
+/*    padding-bottom: 10px;*/
+
+/*    display: block;*/
+
+/*    color: MediumSlateBlue;*/
+
+/*    font-size: 1em;*/
+
+/*}*/
+
+/*u {*/
+
+/*    border-bottom: 1px dotted MediumSlateBlue;*/
+
+/*    text-decoration: none;*/
+
+/*}*/
+
+/*.traceHeader {*/
+
+/*    padding-top: 10px;*/
+
+/*    padding-bottom: 10px;*/
+
+/*    display: block;*/
+
+/*    color: MediumSlateBlue;*/
+
+/*    font-size: 1em;*/
+
+/*}*/
+
+/*.traceRadio {*/
+
+/*    display: inline;*/
+
+/*}*/

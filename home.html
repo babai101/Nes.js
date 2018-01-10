@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Courgette" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #e3f2fd;">
+        <a class="navbar-brand" href="#">Nes.Js</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Debug</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Dropdown
+                </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" href="#">Action</a>
+                        <a class="dropdown-item" href="#">Another action</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#">Something else here</a>
+                    </div>
+                </li>
+            </ul>
+            <div class="form-inline my-2 my-lg-0">
+                <input id="inpSearchRoms" class="form-control mr-sm-2" type="search" placeholder="Search Roms" aria-label="Search" data-container="body" data-placement="bottom" data-content=" ">
+                <button id="btnSearchRoms" class="btn btn-outline-success my-2 my-sm-0">Search</button>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="row heading">
+            <div class="col-sm-6 offset-sm-3">
+                <h3>An NES Emulator Written in JavaScript</h3>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-4 offset-sm-4 viewport">
+                <canvas id="nesCanvas" width="256" height="240"></canvas>
+                <!--<canvas id="nameTableCanvas" width="256" height="240"></canvas>-->
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-9 col-md-4 offset-sm-3 offset-md-4">
+                <br>
+                <button id="test" type="button" class="btn btn-primary col-md-3 offset-md-1 col-sm-6 offset-sm-3">Run</button>
+                <button id="pause" type="button" class="btn btn-info col-md-3 offset-md-1 col-sm-6 offset-sm-3">Pause</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-4 offset-sm-4">
+                <br>
+                <button id="reset" type="button" class="btn btn-danger col-sm-3 offset-sm-3">Reset</button>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="cpu.js"></script>
+    <script type="text/javascript" src="mmu.js"></script>
+    <script type="text/javascript" src="iNES.js"></script>
+    <script type="text/javascript" src="ppu.js"></script>
+    <script type="text/javascript" src="apu.js"></script>
+    <script type="text/javascript" src="display.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+    <!--<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="nes.js"></script>
+</body>
+
+</html>
