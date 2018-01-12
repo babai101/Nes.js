@@ -1127,7 +1127,8 @@ function cpu(MMU, PPU) {
 		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		if (this.loggingEnabled)
+			this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -1440,7 +1441,8 @@ function cpu(MMU, PPU) {
 		var param = param2 | param1;
 		this.accumulator = MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.accumulator.toString(16).toUpperCase()).slice(-2);
+		if (this.loggingEnabled)
+			this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.accumulator.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -5251,6 +5253,8 @@ function cpu(MMU, PPU) {
 		var frameCompleted = false;
 		// var cpuCyclesElapsed = 0;
 		var renderedScanline = -1;
+		//Need to re render CHR for games using CHR RAM
+		MMU.reRenderCHR();
 		// var nmiCounter = 0;
 		//Debug VARs
 		// this.totalCPUCyclesThisFrame = 0;
@@ -5298,8 +5302,10 @@ function cpu(MMU, PPU) {
 						// nmiCounter++;
 					}
 				}
-				else if (renderedScanline == 261)
+				else if (renderedScanline == 261) {
 					frameCompleted = true;
+					// MMU.startBtnState = false;
+				}
 				//Calculating extra cpu cycles run for this scanline
 				// this.excessCpuCycles = Math.floor(cpuCyclesElapsed - this.ppuCyclesCurrentScanLine / 3);
 				//exp

@@ -4,7 +4,8 @@
 <head>
     <title></title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/css?family=Courgette" rel="stylesheet">
+    <!--<link href="https://fonts.googleapis.com/css?family=Courgette" rel="stylesheet">-->
+    <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet"> 
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -43,29 +44,29 @@
     </nav>
     <div class="container">
         <div class="row heading">
-            <div class="col-sm-6 offset-sm-3">
-                <h3>An NES Emulator Written in JavaScript</h3>
+            <div class="col-sm-8 offset-sm-3">
+                <br>
+                <h4>A NES Emulator Written in JavaScript</h4>
             </div>
         </div>
         <div class="row">
-            <div class="col-sm-4 offset-sm-4 viewport">
+            <div class="col-sm-6 offset-sm-3 viewport">
                 <canvas id="nesCanvas" width="256" height="240"></canvas>
-                <!--<canvas id="nameTableCanvas" width="256" height="240"></canvas>-->
             </div>
         </div>
-        <div class="row">
-            <div class="col-sm-9 col-md-4 offset-sm-3 offset-md-4">
-                <br>
-                <button id="test" type="button" class="btn btn-primary col-md-3 offset-md-1 col-sm-6 offset-sm-3">Run</button>
-                <button id="pause" type="button" class="btn btn-info col-md-3 offset-md-1 col-sm-6 offset-sm-3">Pause</button>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-sm-4 offset-sm-4">
-                <br>
-                <button id="reset" type="button" class="btn btn-danger col-sm-3 offset-sm-3">Reset</button>
-            </div>
-        </div>
+        <!--<div class="row">-->
+        <!--    <div class="col-sm-9 col-md-4 offset-sm-3 offset-md-4">-->
+        <!--        <br>-->
+        <!--        <button id="test" type="button" class="btn btn-primary col-md-3 offset-md-1 col-sm-6 offset-sm-3">Run</button>-->
+        <!--        <button id="pause" type="button" class="btn btn-info col-md-3 offset-md-1 col-sm-6 offset-sm-3">Pause</button>-->
+        <!--    </div>-->
+        <!--</div>-->
+        <!--<div class="row">-->
+        <!--    <div class="col-sm-4 offset-sm-4">-->
+        <!--        <br>-->
+        <!--        <button id="reset" type="button" class="btn btn-danger col-sm-3 offset-sm-3">Reset</button>-->
+        <!--    </div>-->
+        <!--</div>-->
     </div>
     <script type="text/javascript" src="cpu.js"></script>
     <script type="text/javascript" src="mmu.js"></script>
