@@ -82,8 +82,10 @@ function ppu(Display) {
     //PPUCTRL vars
     this.baseNameTblAddr = 0x2000;
     this.vRamAddrInc = 'across';
-    this.spritePatTblAddr = this.CHRGrid;
-    this.backgroundPatTblAddr = this.BGRCHRGrid;
+    // this.spritePatTblAddr = this.CHRGrid;
+    // this.backgroundPatTblAddr = this.BGRCHRGrid;
+    this.spritePatTblAddr = 'left';
+    this.backgroundPatTblAddr = 'right';
     this.spriteSize = '8x8';
     this.ppuMasterSlave = 'readBackdrop';
     this.enableNMIGen = false;
@@ -143,14 +145,14 @@ function ppu(Display) {
             this.vRamAddrInc = 'down';
         temp = (PPUCTRL >> 3) & 0x01;
         if (temp == 0)
-            this.spritePatTblAddr = this.CHRGrid;
+            this.spritePatTblAddr = 'left';
         else
-            this.spritePatTblAddr = this.BGRCHRGrid;
+            this.spritePatTblAddr = 'right';
         temp = (PPUCTRL >> 4) & 0x01;
         if (temp == 0)
-            this.backgroundPatTblAddr = this.CHRGrid;
+            this.backgroundPatTblAddr = 'left';
         else
-            this.backgroundPatTblAddr = this.BGRCHRGrid;
+            this.backgroundPatTblAddr = 'right'; 
         temp = (PPUCTRL >> 5) & 0x01;
         if (temp == 0)
             this.spriteSize = '8x8';
@@ -258,9 +260,6 @@ function ppu(Display) {
         Display.initScreenBuffer();
         // Display.initNameTableScreenBuffer();
     };
-    this.initOAMScreenBuffer = function(oamCanvas) {
-        Display.initOamScreenBuffer(oamCanvas);    
-    };
     
     //Evaluate sprites & Draw to screen buffer
     //TODO: 8x16 tile rendering
@@ -290,7 +289,13 @@ function ppu(Display) {
             tileNum = oam[spritesToDraw[i] + 1];
             spriteAttr = oam[spritesToDraw[i] + 2];
             //Select tile num from OAM byte 1 and index from CHRGrid already prepared
-            tile = this.spritePatTblAddr[tileNum];
+            if(this.spritePatTblAddr == 'left') {
+                tile = this.CHRGrid[tileNum];
+            }
+            else if (this.spritePatTblAddr == 'right') {
+                tile = this.BGRCHRGrid[tileNum];
+            }
+            // tile = this.spritePatTblAddr[tileNum];
             tileRow = tile[this.currentScanline - spriteY];
             //Select the palette number from OAM for the tile
             paletteNum = spriteAttr & 0b00000011;
@@ -424,7 +429,13 @@ function ppu(Display) {
             }
 
             //get the tile bits from pre-calculated grid
-            tileToDraw = this.backgroundPatTblAddr[tileToDraw];
+            if(this.backgroundPatTblAddr == 'left') {
+                tileToDraw = this.CHRGrid[tileToDraw];
+            }
+            else if (this.backgroundPatTblAddr == 'right') {
+                tileToDraw = this.BGRCHRGrid[tileToDraw];
+            }
+            // tileToDraw = this.backgroundPatTblAddr[tileToDraw];
 
             //Determine color palette
             //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array
@@ -518,294 +529,294 @@ function ppu(Display) {
         }
     };
 
-    this.renderBackGroundsXYScroll = function(nametable, attrtable) {
-        var paletteNum = 0;
-        var pixelColor = 0; //this will hold the final pixel with color calculated 
-        var pixelColorArray = []; //array to hold one scanline worth of color pixels
-        var screenPixel = 0; //this is the pixel index of 32x30 screen 
-        var nametableOffset = 0x2000 + this.baseNameTblAddr * 1024;
-        var tileXOffset = 0,
-            tileYOffset = 0;
-        var pixelXOffset = 0,
-            pixelYOffset = 0;
-        var tileToDraw = 0;
-        var nameTableCrossed = false;
-        var bgRenderingDone = false;
-        var attrByte = 0;
-        var curTileX = 0;
-        var curTileY = Math.floor(this.currentScanline / 8);
-        var tileCounter = 0;
-        var tilesThisScanline = 32;
-        var curTileYOffsetted = 0;
+    // this.renderBackGroundsXYScroll = function(nametable, attrtable) {
+    //     var paletteNum = 0;
+    //     var pixelColor = 0; //this will hold the final pixel with color calculated 
+    //     var pixelColorArray = []; //array to hold one scanline worth of color pixels
+    //     var screenPixel = 0; //this is the pixel index of 32x30 screen 
+    //     var nametableOffset = 0x2000 + this.baseNameTblAddr * 1024;
+    //     var tileXOffset = 0,
+    //         tileYOffset = 0;
+    //     var pixelXOffset = 0,
+    //         pixelYOffset = 0;
+    //     var tileToDraw = 0;
+    //     var nameTableCrossed = false;
+    //     var bgRenderingDone = false;
+    //     var attrByte = 0;
+    //     var curTileX = 0;
+    //     var curTileY = Math.floor(this.currentScanline / 8);
+    //     var tileCounter = 0;
+    //     var tilesThisScanline = 32;
+    //     var curTileYOffsetted = 0;
 
-        //Tile Draw logic: get the tile to start draw from. Check for horizontal offset
-        //offset the tiles using horizontal offset, then calculate pixel offset
-        //Also calculate how many tiles of next nametable need to be drawn
-        //then calculate upto which pixel drawing is needed
+    //     //Tile Draw logic: get the tile to start draw from. Check for horizontal offset
+    //     //offset the tiles using horizontal offset, then calculate pixel offset
+    //     //Also calculate how many tiles of next nametable need to be drawn
+    //     //then calculate upto which pixel drawing is needed
 
-        tileXOffset = Math.floor(this.xScroll / 8); //offset tile (see above)
-        tileYOffset = Math.floor(this.yScroll / 8); //offset tile (see above)
-        pixelXOffset = this.xScroll % 8; //offset pixel
-        pixelYOffset = this.yScroll % 8; //offset pixel
-        curTileX = tileXOffset; //start rendering from the offsetted tile
-        curTileYOffsetted = tileYOffset + curTileY;
-        //when there is fine pixel offset, we have to fetch and draw pixels from an extra tile
-        if (pixelXOffset > 0) {
-            tilesThisScanline = 33;
-        }
-        //loop to draw all the tiles on the screen for current scanline
-        while (!bgRenderingDone) {
+    //     tileXOffset = Math.floor(this.xScroll / 8); //offset tile (see above)
+    //     tileYOffset = Math.floor(this.yScroll / 8); //offset tile (see above)
+    //     pixelXOffset = this.xScroll % 8; //offset pixel
+    //     pixelYOffset = this.yScroll % 8; //offset pixel
+    //     curTileX = tileXOffset; //start rendering from the offsetted tile
+    //     curTileYOffsetted = tileYOffset + curTileY;
+    //     //when there is fine pixel offset, we have to fetch and draw pixels from an extra tile
+    //     if (pixelXOffset > 0) {
+    //         tilesThisScanline = 33;
+    //     }
+    //     //loop to draw all the tiles on the screen for current scanline
+    //     while (!bgRenderingDone) {
 
-            if (this.nameTableMirroring == 'vertical') {
-                var curAttrX;
-                var curAttrY;
-                //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array
-                curAttrY = Math.floor(curTileY / 4);
+    //         if (this.nameTableMirroring == 'vertical') {
+    //             var curAttrX;
+    //             var curAttrY;
+    //             //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array
+    //             curAttrY = Math.floor(curTileY / 4);
 
-                if (curTileX >= 32) { //check if current tile lies on next nametable
-                    nameTableCrossed = true;
-                    //fetch the tile from the next nametable by adding 1KB of memory offset to nametable base address
-                    //normalizing tile X co-ordinate by subtracting 32 to get tile x in next nametable
-                    tileToDraw = nametable[nametableOffset + 1024 + ((curTileX - 32) + curTileY * 32)];
-                    curAttrX = Math.floor((curTileX - 32) / 4);
-                    attrByte = attrtable[(0x23C0 + (this.baseNameTblAddr + 1) * 1024) + curAttrX + curAttrY * 8];
-                }
-                else {
-                    nameTableCrossed = false;
-                    //offsetted tile falls in current nametable so do a regular fetch
-                    tileToDraw = nametable[nametableOffset + curTileX + curTileY * 32];
-                    curAttrX = Math.floor(curTileX / 4);
-                    attrByte = attrtable[(0x23C0 + this.baseNameTblAddr * 1024) + curAttrX + curAttrY * 8];
-                }
+    //             if (curTileX >= 32) { //check if current tile lies on next nametable
+    //                 nameTableCrossed = true;
+    //                 //fetch the tile from the next nametable by adding 1KB of memory offset to nametable base address
+    //                 //normalizing tile X co-ordinate by subtracting 32 to get tile x in next nametable
+    //                 tileToDraw = nametable[nametableOffset + 1024 + ((curTileX - 32) + curTileY * 32)];
+    //                 curAttrX = Math.floor((curTileX - 32) / 4);
+    //                 attrByte = attrtable[(0x23C0 + (this.baseNameTblAddr + 1) * 1024) + curAttrX + curAttrY * 8];
+    //             }
+    //             else {
+    //                 nameTableCrossed = false;
+    //                 //offsetted tile falls in current nametable so do a regular fetch
+    //                 tileToDraw = nametable[nametableOffset + curTileX + curTileY * 32];
+    //                 curAttrX = Math.floor(curTileX / 4);
+    //                 attrByte = attrtable[(0x23C0 + this.baseNameTblAddr * 1024) + curAttrX + curAttrY * 8];
+    //             }
 
-                //get the tile bits from pre-calculated grid
-                tileToDraw = this.backgroundPatTblAddr[tileToDraw];
+    //             //get the tile bits from pre-calculated grid
+    //             tileToDraw = this.backgroundPatTblAddr[tileToDraw];
 
-                //Determine color palette
-                //Top left of 2x2 tile
-                if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
-                    // paletteNum = attrByte >> 6;
-                    paletteNum = attrByte & 0x03;
-                }
-                //Top right
-                else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
-                    // paletteNum = (attrByte >> 4) & 0x03;
-                    paletteNum = (attrByte >> 2) & 0x03;
-                }
-                //Bottom left
-                else if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
-                    // paletteNum = (attrByte >> 2) & 0x03;
-                    paletteNum = (attrByte >> 4) & 0x03;
-                }
-                //Bottom right
-                else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
-                    // paletteNum = attrByte & 0x03;
-                    paletteNum = attrByte >> 6;
-                }
-                else {
-                    alert("palette not found!!");
-                }
+    //             //Determine color palette
+    //             //Top left of 2x2 tile
+    //             if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
+    //                 // paletteNum = attrByte >> 6;
+    //                 paletteNum = attrByte & 0x03;
+    //             }
+    //             //Top right
+    //             else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
+    //                 // paletteNum = (attrByte >> 4) & 0x03;
+    //                 paletteNum = (attrByte >> 2) & 0x03;
+    //             }
+    //             //Bottom left
+    //             else if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+    //                 // paletteNum = (attrByte >> 2) & 0x03;
+    //                 paletteNum = (attrByte >> 4) & 0x03;
+    //             }
+    //             //Bottom right
+    //             else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+    //                 // paletteNum = attrByte & 0x03;
+    //                 paletteNum = attrByte >> 6;
+    //             }
+    //             else {
+    //                 alert("palette not found!!");
+    //             }
 
-                //We have now determined the background tile(accross nametables) to be rendered
-                //also calculated the color palette using proper attributes
-                //Now start the actual rendering process
+    //             //We have now determined the background tile(accross nametables) to be rendered
+    //             //also calculated the color palette using proper attributes
+    //             //Now start the actual rendering process
 
-                var curY = (this.currentScanline % 8); //get the y co-ordinate of an 8x8 tile from where to start rendering
-                var curX = 0;
-                var pixelXlimit = 8;
-                if (tileCounter == 0) { //now drawing the left most tile so check for pixel offset
-                    if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
-                        curX = pixelXOffset;
-                    }
-                }
-                if (tileCounter == tilesThisScanline - 1) { //now drawing the final tile, so only draw until the offset is normalized
-                    if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
-                        pixelXlimit = pixelXOffset;
-                    }
-                }
+    //             var curY = (this.currentScanline % 8); //get the y co-ordinate of an 8x8 tile from where to start rendering
+    //             var curX = 0;
+    //             var pixelXlimit = 8;
+    //             if (tileCounter == 0) { //now drawing the left most tile so check for pixel offset
+    //                 if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
+    //                     curX = pixelXOffset;
+    //                 }
+    //             }
+    //             if (tileCounter == tilesThisScanline - 1) { //now drawing the final tile, so only draw until the offset is normalized
+    //                 if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
+    //                     pixelXlimit = pixelXOffset;
+    //                 }
+    //             }
 
-                //Loop through the pixels for the current tile and store in an array
-                for (curX; curX < pixelXlimit; curX++) {
-                    if (tileToDraw[curY][curX] == 0) { //backdrop color
-                        pixelColor = this.paletteColors[this.palette[0]];
-                        pixelColorArray.push(pixelColor);
-                    }
-                    else {
-                        pixelColor = this.paletteColors[this.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
-                        pixelColorArray.push(pixelColor);
-                    }
-                }
+    //             //Loop through the pixels for the current tile and store in an array
+    //             for (curX; curX < pixelXlimit; curX++) {
+    //                 if (tileToDraw[curY][curX] == 0) { //backdrop color
+    //                     pixelColor = this.paletteColors[this.palette[0]];
+    //                     pixelColorArray.push(pixelColor);
+    //                 }
+    //                 else {
+    //                     pixelColor = this.paletteColors[this.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
+    //                     pixelColorArray.push(pixelColor);
+    //                 }
+    //             }
 
-                tileCounter++;
-                curTileX++;
-                if (tileCounter >= tilesThisScanline) {
-                    bgRenderingDone = true;
-                }
+    //             tileCounter++;
+    //             curTileX++;
+    //             if (tileCounter >= tilesThisScanline) {
+    //                 bgRenderingDone = true;
+    //             }
 
-            }
-            else if (this.nameTableMirroring == 'horizontal') {
-                var curAttrX;
-                var curAttrY;
-                //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array
-                curAttrX = Math.floor(curTileX / 4);
+    //         }
+    //         else if (this.nameTableMirroring == 'horizontal') {
+    //             var curAttrX;
+    //             var curAttrY;
+    //             //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array
+    //             curAttrX = Math.floor(curTileX / 4);
 
-                if (curTileYOffsetted >= 30) { //check if current tile lies on next nametable
-                    nameTableCrossed = true;
-                    //fetch the tile from the next nametable by adding 1KB of memory offset to nametable base address
-                    //normalizing tile X co-ordinate by subtracting 32 to get tile x in next nametable
-                    tileToDraw = nametable[nametableOffset + 2048 + (curTileX + (curTileYOffsetted - 30) * 32)];
-                    curAttrY = Math.floor((curTileYOffsetted - 30) / 4);
-                    attrByte = attrtable[(0x23C0 + (this.baseNameTblAddr + 2) * 1024) + curAttrX + curAttrY * 8];
-                }
-                else {
-                    nameTableCrossed = false;
-                    //offsetted tile falls in current nametable so do a regular fetch
-                    tileToDraw = nametable[nametableOffset + curTileX + curTileY * 32];
-                    curAttrY = Math.floor(curTileYOffsetted / 4);
-                    attrByte = attrtable[(0x23C0 + this.baseNameTblAddr * 1024) + curAttrX + curAttrY * 8];
-                }
+    //             if (curTileYOffsetted >= 30) { //check if current tile lies on next nametable
+    //                 nameTableCrossed = true;
+    //                 //fetch the tile from the next nametable by adding 1KB of memory offset to nametable base address
+    //                 //normalizing tile X co-ordinate by subtracting 32 to get tile x in next nametable
+    //                 tileToDraw = nametable[nametableOffset + 2048 + (curTileX + (curTileYOffsetted - 30) * 32)];
+    //                 curAttrY = Math.floor((curTileYOffsetted - 30) / 4);
+    //                 attrByte = attrtable[(0x23C0 + (this.baseNameTblAddr + 2) * 1024) + curAttrX + curAttrY * 8];
+    //             }
+    //             else {
+    //                 nameTableCrossed = false;
+    //                 //offsetted tile falls in current nametable so do a regular fetch
+    //                 tileToDraw = nametable[nametableOffset + curTileX + curTileY * 32];
+    //                 curAttrY = Math.floor(curTileYOffsetted / 4);
+    //                 attrByte = attrtable[(0x23C0 + this.baseNameTblAddr * 1024) + curAttrX + curAttrY * 8];
+    //             }
 
-                //get the tile bits from pre-calculated grid
-                tileToDraw = this.backgroundPatTblAddr[tileToDraw];
+    //             //get the tile bits from pre-calculated grid
+    //             tileToDraw = this.backgroundPatTblAddr[tileToDraw];
 
-                //Determine color palette
-                //Top left of 2x2 tile
-                if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileYOffsetted % 4 == 0) || (curTileYOffsetted % 4 == 1))) {
-                    // paletteNum = attrByte >> 6;
-                    paletteNum = attrByte & 0x03;
-                }
-                //Top right
-                else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileYOffsetted % 4 == 0) || (curTileYOffsetted % 4 == 1))) {
-                    // paletteNum = (attrByte >> 4) & 0x03;
-                    paletteNum = (attrByte >> 2) & 0x03;
-                }
-                //Bottom left
-                else if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
-                    // paletteNum = (attrByte >> 2) & 0x03;
-                    paletteNum = (attrByte >> 4) & 0x03;
-                }
-                //Bottom right
-                else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
-                    // paletteNum = attrByte & 0x03;
-                    paletteNum = attrByte >> 6;
-                }
-                else {
-                    alert("palette not found!!");
-                }
+    //             //Determine color palette
+    //             //Top left of 2x2 tile
+    //             if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileYOffsetted % 4 == 0) || (curTileYOffsetted % 4 == 1))) {
+    //                 // paletteNum = attrByte >> 6;
+    //                 paletteNum = attrByte & 0x03;
+    //             }
+    //             //Top right
+    //             else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileYOffsetted % 4 == 0) || (curTileYOffsetted % 4 == 1))) {
+    //                 // paletteNum = (attrByte >> 4) & 0x03;
+    //                 paletteNum = (attrByte >> 2) & 0x03;
+    //             }
+    //             //Bottom left
+    //             else if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+    //                 // paletteNum = (attrByte >> 2) & 0x03;
+    //                 paletteNum = (attrByte >> 4) & 0x03;
+    //             }
+    //             //Bottom right
+    //             else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+    //                 // paletteNum = attrByte & 0x03;
+    //                 paletteNum = attrByte >> 6;
+    //             }
+    //             else {
+    //                 alert("palette not found!!");
+    //             }
 
-                //We have now determined the background tile(accross nametables) to be rendered
-                //also calculated the color palette using proper attributes
-                //Now start the actual rendering process
+    //             //We have now determined the background tile(accross nametables) to be rendered
+    //             //also calculated the color palette using proper attributes
+    //             //Now start the actual rendering process
 
-                var curY = (this.currentScanline % 8); //get the y co-ordinate of an 8x8 tile from where to start rendering
-                var curX = 0;
-                var pixelXlimit = 8;
-                if (tileCounter == 0) { //now drawing the left most tile so check for pixel offset
-                    if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
-                        curX = pixelXOffset;
-                    }
-                }
-                if (tileCounter == tilesThisScanline - 1) { //now drawing the final tile, so only draw until the offset is normalized
-                    if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
-                        pixelXlimit = pixelXOffset;
-                    }
-                }
+    //             var curY = (this.currentScanline % 8); //get the y co-ordinate of an 8x8 tile from where to start rendering
+    //             var curX = 0;
+    //             var pixelXlimit = 8;
+    //             if (tileCounter == 0) { //now drawing the left most tile so check for pixel offset
+    //                 if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
+    //                     curX = pixelXOffset;
+    //                 }
+    //             }
+    //             if (tileCounter == tilesThisScanline - 1) { //now drawing the final tile, so only draw until the offset is normalized
+    //                 if (pixelXOffset > 0) { //we have offset so start rendering by offseting the tile bits by that amount
+    //                     pixelXlimit = pixelXOffset;
+    //                 }
+    //             }
 
-                //Loop through the pixels for the current tile and store in an array
-                for (curX; curX < pixelXlimit; curX++) {
-                    if (tileToDraw[curY][curX] == 0) { //backdrop color
-                        pixelColor = this.paletteColors[this.palette[0]];
-                        pixelColorArray.push(pixelColor);
-                    }
-                    else {
-                        pixelColor = this.paletteColors[this.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
-                        pixelColorArray.push(pixelColor);
-                    }
-                }
+    //             //Loop through the pixels for the current tile and store in an array
+    //             for (curX; curX < pixelXlimit; curX++) {
+    //                 if (tileToDraw[curY][curX] == 0) { //backdrop color
+    //                     pixelColor = this.paletteColors[this.palette[0]];
+    //                     pixelColorArray.push(pixelColor);
+    //                 }
+    //                 else {
+    //                     pixelColor = this.paletteColors[this.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
+    //                     pixelColorArray.push(pixelColor);
+    //                 }
+    //             }
 
-                tileCounter++;
-                curTileX++;
-                if (tileCounter >= tilesThisScanline) {
-                    bgRenderingDone = true;
-                }
-            }
-        }
+    //             tileCounter++;
+    //             curTileX++;
+    //             if (tileCounter >= tilesThisScanline) {
+    //                 bgRenderingDone = true;
+    //             }
+    //         }
+    //     }
 
-        //Now that we have the color pixel array, update them in the screen buffer
-        //Start from left most pixel (x = 0) from current scanline
-        screenPixel = 0 + (curTileY * 8 + (this.currentScanline % 8)) * 256;
+    //     //Now that we have the color pixel array, update them in the screen buffer
+    //     //Start from left most pixel (x = 0) from current scanline
+    //     screenPixel = 0 + (curTileY * 8 + (this.currentScanline % 8)) * 256;
 
-        //start merging our color pixel array into screen buffer from now on
-        for (var x = screenPixel; x < (screenPixel + pixelColorArray.length); x++) {
-            this.screenBuffer[x] = pixelColorArray[x - screenPixel];
-            Display.updateBuffer(x, pixelColorArray[x - screenPixel]);
-        }
-    };
+    //     //start merging our color pixel array into screen buffer from now on
+    //     for (var x = screenPixel; x < (screenPixel + pixelColorArray.length); x++) {
+    //         this.screenBuffer[x] = pixelColorArray[x - screenPixel];
+    //         Display.updateBuffer(x, pixelColorArray[x - screenPixel]);
+    //     }
+    // };
 
-    this.renderBackGrounds = function(nametable, attrtable) {
-        var paletteNum = 0;
-        var pixelColor = 0;
-        var screenPixel = 0;
-        var nametableOffset = 0x2000 + this.baseNameTblAddr * 1024;
-        var tileXOffset = 0;
-        var tileYOffset = 0;
-        //Fetch the background CHR tile lying on the current scanline
-        var curTileX;
-        var curTileY = Math.floor(this.currentScanline / 8);
-        for (curTileX = 0; curTileX < 32; curTileX++) {
-            tileXOffset = nametableOffset + curTileX;
-            tileYOffset = curTileY;
-            var tileToDraw = nametable[tileXOffset + tileYOffset * 32];
-            tileToDraw = this.backgroundPatTblAddr[tileToDraw];
+    // this.renderBackGrounds = function(nametable, attrtable) {
+    //     var paletteNum = 0;
+    //     var pixelColor = 0;
+    //     var screenPixel = 0;
+    //     var nametableOffset = 0x2000 + this.baseNameTblAddr * 1024;
+    //     var tileXOffset = 0;
+    //     var tileYOffset = 0;
+    //     //Fetch the background CHR tile lying on the current scanline
+    //     var curTileX;
+    //     var curTileY = Math.floor(this.currentScanline / 8);
+    //     for (curTileX = 0; curTileX < 32; curTileX++) {
+    //         tileXOffset = nametableOffset + curTileX;
+    //         tileYOffset = curTileY;
+    //         var tileToDraw = nametable[tileXOffset + tileYOffset * 32];
+    //         tileToDraw = this.backgroundPatTblAddr[tileToDraw];
 
-            //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array            
-            var curAttrX = Math.floor(curTileX / 4);
-            var curAttrY = Math.floor(curTileY / 4);
-            var attrByte = attrtable[(0x23C0 + this.baseNameTblAddr * 1024) + curAttrX + curAttrY * 8];
+    //         //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array            
+    //         var curAttrX = Math.floor(curTileX / 4);
+    //         var curAttrY = Math.floor(curTileY / 4);
+    //         var attrByte = attrtable[(0x23C0 + this.baseNameTblAddr * 1024) + curAttrX + curAttrY * 8];
 
-            //Top left of 2x2 tile
-            if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
-                // paletteNum = attrByte >> 6;
-                paletteNum = attrByte & 0x03;
-            }
-            //Top right
-            else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
-                // paletteNum = (attrByte >> 4) & 0x03;
-                paletteNum = (attrByte >> 2) & 0x03;
-            }
-            //Bottom left
-            else if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
-                // paletteNum = (attrByte >> 2) & 0x03;
-                paletteNum = (attrByte >> 4) & 0x03;
-            }
-            //Bottom right
-            else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
-                // paletteNum = attrByte & 0x03;
-                paletteNum = attrByte >> 6;
-            }
-            else {
-                alert("palette not found!!");
-            }
+    //         //Top left of 2x2 tile
+    //         if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
+    //             // paletteNum = attrByte >> 6;
+    //             paletteNum = attrByte & 0x03;
+    //         }
+    //         //Top right
+    //         else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
+    //             // paletteNum = (attrByte >> 4) & 0x03;
+    //             paletteNum = (attrByte >> 2) & 0x03;
+    //         }
+    //         //Bottom left
+    //         else if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+    //             // paletteNum = (attrByte >> 2) & 0x03;
+    //             paletteNum = (attrByte >> 4) & 0x03;
+    //         }
+    //         //Bottom right
+    //         else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
+    //             // paletteNum = attrByte & 0x03;
+    //             paletteNum = attrByte >> 6;
+    //         }
+    //         else {
+    //             alert("palette not found!!");
+    //         }
 
-            //Loop through the 8 pixels for the current tile
-            var curY = (this.currentScanline % 8);
-            for (var curX = 0; curX < 8; curX++) {
-                //Pallete logic broken down
-                if (tileToDraw[curY][curX] == 0) { //backdrop color
-                    pixelColor = this.paletteColors[this.palette[0]];
-                    screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
-                    this.screenBuffer[screenPixel] = pixelColor;
-                    Display.updateBuffer(screenPixel, pixelColor);
-                }
-                else {
-                    pixelColor = this.paletteColors[this.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
-                    screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
-                    this.screenBuffer[screenPixel] = pixelColor;
-                    Display.updateBuffer(screenPixel, pixelColor);
-                }
-            }
-        }
-    };
+    //         //Loop through the 8 pixels for the current tile
+    //         var curY = (this.currentScanline % 8);
+    //         for (var curX = 0; curX < 8; curX++) {
+    //             //Pallete logic broken down
+    //             if (tileToDraw[curY][curX] == 0) { //backdrop color
+    //                 pixelColor = this.paletteColors[this.palette[0]];
+    //                 screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
+    //                 this.screenBuffer[screenPixel] = pixelColor;
+    //                 Display.updateBuffer(screenPixel, pixelColor);
+    //             }
+    //             else {
+    //                 pixelColor = this.paletteColors[this.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
+    //                 screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
+    //                 this.screenBuffer[screenPixel] = pixelColor;
+    //                 Display.updateBuffer(screenPixel, pixelColor);
+    //             }
+    //         }
+    //     }
+    // };
 
     this.RenderNextScanline = function(oam, nametable, attrtable) {
         //Pre render Scanline
@@ -828,9 +839,9 @@ function ppu(Display) {
         //Visible Scanlines
         else if (this.currentScanline >= 0 && this.currentScanline < 240) {
             if (this.currentScanline == 0) {
-                this.screenBuffer = [
-                    []
-                ];
+                // this.screenBuffer = [
+                //     []
+                // ];
             }
             if (this.renderBackground)
                 this.renderBackGroundsScroll(nametable, attrtable);

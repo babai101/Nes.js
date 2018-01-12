@@ -48,12 +48,30 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-sm-6 viewport">
+            <div class="col-sm-3 viewport">
                 <canvas id="nesCanvas" width="256" height="240"></canvas>
                 <!--<canvas id="nameTableCanvas" width="256" height="240"></canvas>-->
             </div>
-            <div class="col-sm-3 viewport offset-sm-3">
+            <div class="col-sm-3 viewport">
                 <canvas id="oamCanvas" width="64" height="64"></canvas>
+            </div>
+            <div class="col-sm-6">
+                <div class="row mt-0 mb-0 pb-0 mr-0 ml-0">
+                    <div class="col-sm-6 pr-0">
+                        <canvas id="nmTbl0Canvas" width="256" height="240" class="top-left"></canvas>
+                    </div>
+                    <div class="col-sm-6 pl-0">
+                        <canvas id="nmTbl1Canvas" width="256" height="240" class="top-right"></canvas>
+                    </div>
+                </div>
+                <div class="row mt-0 mb-0 pt-0 ml-0 mr-0">
+                    <div class="col-sm-6 pr-0">
+                        <canvas id="nmTbl2Canvas" width="256" height="240" class="bottom-left"></canvas>
+                    </div>
+                    <div class="col-sm-6 pl-0">
+                        <canvas id="nmTbl3Canvas" width="256" height="240" class="bottom-right"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="row">

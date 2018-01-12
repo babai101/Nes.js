@@ -4,56 +4,58 @@ $(document).ready(function() {
     var PPU;
     var MMU;
     var APU;
-    var Display;
+    var mainDisplay;
+    var oamDisplay;
+    var nmTbl0Display;
+    var nmTbl1Display;
+    var nmTbl2Display;
+    var nmTbl3Display;
     // var traceLimitOption;
     var isPaused = false;
     ines = new iNES();
-    var isDebugging = true;
+    // var isDebugging = true;
     var initGame = function(romContent) {
         this.opcodes = new Uint8Array(romContent);
-        Display = new display(document.getElementById('nesCanvas'), document.getElementById('nameTableCanvas'));
-        PPU = new ppu(Display);
+        mainDisplay = new display(document.getElementById('nesCanvas'));
+        oamDisplay = new display(document.getElementById('oamCanvas'));
+        nmTbl0Display = new display(document.getElementById('nmTbl0Canvas'));
+        nmTbl1Display = new display(document.getElementById('nmTbl1Canvas'));
+        nmTbl2Display = new display(document.getElementById('nmTbl2Canvas'));
+        nmTbl3Display = new display(document.getElementById('nmTbl3Canvas'));
+        PPU = new ppu(mainDisplay);
         MMU = new mmu(PPU);
         CPU = new cpu(MMU, PPU);
         APU = new apu(MMU);
         MMU.OAMInit();
         PPU.initScreenBuffer();
-        if (isDebugging) {
-            PPU.initOAMScreenBuffer(document.getElementById('oamCanvas'));
-        }
+        nmTbl0Display.initScreenBuffer();
+        nmTbl1Display.initScreenBuffer();
+        nmTbl2Display.initScreenBuffer();
+        nmTbl3Display.initScreenBuffer();
+        // if (isDebugging) {
+        oamDisplay.initScreenBuffer();
+        // }
         ines.load(this.opcodes, MMU);
         MMU.nameTableMirroring = ines.mirroring;
         PPU.nameTableMirroring = ines.mirroring;
         CPU.reset();
         MMU.copyCHRToGrid();
         MMU.copyBGRCHRToGrid();
-        Display.screenReset();
+        mainDisplay.screenReset();
 
     };
-    var viewNameTable = function() {
-        var selectedTable = document.getElementById("ddlNameTable");
-        var tempAddr = 0x2000;
-        switch (selectedTable.value) {
-            case '0':
-                tempAddr = 0x2000;
-                break;
-            case '1':
-                tempAddr = 0x2400;
-                break;
-            case '2':
-                tempAddr = 0x2800;
-                break;
-            case '3':
-                tempAddr = 0x2C00;
-                break;
+    var showNameTables = function() {
+        var tempAddr = [0x2000, 0x2400, 0x2800, 0x2C00];
+        var nmTblArr = [nmTbl0Display, nmTbl1Display, nmTbl2Display, nmTbl3Display];
+        for (var x = 0; x < tempAddr.length; x++) {
+            var nametable = [];
+            var attrtable = [];
+            for (var i = tempAddr[x]; i < (tempAddr[x] + 960); i++)
+                nametable.push(MMU.ppuMem[i]);
+            for (i = tempAddr[x] + 960; i < (tempAddr[x] + 960 + 64); i++)
+                attrtable.push(MMU.ppuMem[i]);
+            renderNameTable(nametable, attrtable, nmTblArr[x]);
         }
-        var nametable = [];
-        var attrtable = [];
-        for (var i = tempAddr; i < (tempAddr + 960); i++)
-            nametable.push(MMU.ppuMem[i]);
-        for (i = tempAddr + 960; i < (tempAddr + 960 + 64); i++)
-            attrtable.push(MMU.ppuMem[i]);
-        renderNameTable(nametable, attrtable);
     };
 
     var startdownFunction = function() {
@@ -62,8 +64,8 @@ $(document).ready(function() {
     var startupFunction = function() {
         MMU.startBtnState = false;
     };
-    var renderNameTable = function(nameTable, attrtable) {
-        Display.nameTableScreenReset();
+    var renderNameTable = function(nameTable, attrtable, nmTblDisplay) {
+        nmTblDisplay.screenReset();
         var paletteNum = 0;
         var pixelColor = 0;
         var screenPixel = 0; //for debugging
@@ -75,7 +77,13 @@ $(document).ready(function() {
         for (curTileY = 0; curTileY < 30; curTileY++) {
             for (curTileX = 0; curTileX < 32; curTileX++) {
                 var tileToDraw = nameTable[curTileX + curTileY * 32];
-                tileToDraw = PPU.backgroundPatTblAddr[tileToDraw];
+                if (PPU.backgroundPatTblAddr == 'left') {
+                    tileToDraw = PPU.CHRGrid[tileToDraw];
+                }
+                else if (PPU.backgroundPatTblAddr == 'right') {
+                    tileToDraw = PPU.BGRCHRGrid[tileToDraw];
+                }
+                // tileToDraw = PPU.backgroundPatTblAddr[tileToDraw];
                 var curAttrX = Math.floor(curTileX / 4);
                 var curAttrY = Math.floor(curTileY / 4);
 
@@ -112,25 +120,26 @@ $(document).ready(function() {
                             pixelColor = PPU.paletteColors[PPU.palette[0]];
                             screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
                             //this.screenBuffer[screenPixel] = pixelColor;
-                            Display.updateNameTableBuffer(screenPixel, pixelColor);
+                            nmTblDisplay.updateBuffer(screenPixel, pixelColor);
                         }
                         else {
                             pixelColor = PPU.paletteColors[PPU.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
                             screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
                             //this.screenBuffer[screenPixel] = pixelColor;
-                            Display.updateNameTableBuffer(screenPixel, pixelColor);
+                            nmTblDisplay.updateBuffer(screenPixel, pixelColor);
                         }
                     }
                 }
             }
         }
-        Display.updateNameTableCanvas();
+        nmTblDisplay.updateCanvas();
     };
 
     var renderScreen = function() {
-        // Display.oamScreenReset();
-        Display.updateCanvas();
-        Display.updateOamCanvas();
+        mainDisplay.updateCanvas();
+        // drawOAM();
+        // oamDisplay.updateCanvas();
+        // showNameTables();
     };
 
     var drawOAM = function() {
@@ -165,13 +174,19 @@ $(document).ready(function() {
                 spriteY = tempOAM[spritesToDraw[i]];
                 tileNum = tempOAM[spritesToDraw[i] + 1];
                 spriteAttr = tempOAM[spritesToDraw[i] + 2];
-                tile = PPU.spritePatTblAddr[tileNum];
+                if (PPU.spritePatTblAddr == 'left') {
+                    tile = PPU.CHRGrid[tileNum];
+                }
+                else if (PPU.spritePatTblAddr == 'right') {
+                    tile = PPU.BGRCHRGrid[tileNum];
+                }
+                // tile = PPU.spritePatTblAddr[tileNum];
                 tileRow = tile[curY - spriteY * 8];
                 paletteNum = spriteAttr & 0b00000011;
                 for (var x = 0; x < 8; x++) {
                     pixelColorIndex = tileRow[x];
                     pixelColor = PPU.paletteColors[PPU.palette[16 + paletteNum * 4 + pixelColorIndex]];
-                    Display.updateOamBuffer((spriteX * 8) + x + (curY * 64), pixelColor);
+                    oamDisplay.updateBuffer((spriteX * 8) + x + (curY * 64), pixelColor);
                 }
             }
         }
@@ -182,7 +197,6 @@ $(document).ready(function() {
             CPU.runFrame();
             CPU.totalCPUCyclesThisFrame;
             CPU.nmiLoopCounter = 0;
-            drawOAM();
             renderScreen();
         }
         requestAnimationFrame(renderFrame);
@@ -216,7 +230,7 @@ $(document).ready(function() {
         isPaused = !isPaused;
     });
     $('#reset').click(function() {
-        Display = null;
+        mainDisplay = null;
         PPU = null;
         MMU = null;
         CPU = null;
@@ -255,6 +269,79 @@ $(document).ready(function() {
         });
 
     });
+    //KeyPress events
+
+    $(window).keydown(function(e) {
+        var key = e.which;
+        //do stuff with "key" here...
+        switch (key) {
+            //Start
+            case 17:
+                MMU.startBtnState = 1;
+                break;
+            //A
+            case 90:
+                MMU.aBtnState = 1;
+                break;
+            //B
+            case 88:
+                MMU.bBtnState = 1;
+                break;
+            //Up
+            case 38:
+                MMU.upBtnState = 1;
+                break;
+            //Down
+            case 40:
+                MMU.downBtnState = 1;
+                break;
+             //Left
+            case 37:
+                MMU.leftBtnState = 1;
+                break;
+             //Right
+            case 39:
+                MMU.rightBtnState = 1;
+                break;
+        }
+    });
+
+
+    $(window).keyup(function(e) {
+        var key = e.which;
+        //do stuff with "key" here...
+        switch (key) {
+            //Start
+            case 17:
+                MMU.startBtnState = 0;
+                break;
+            //A
+            case 90:
+                MMU.aBtnState = 0;
+                break;
+            //B
+            case 88:
+                MMU.bBtnState = 0;
+                break;
+            //Up
+            case 38:
+                MMU.upBtnState = 0;
+                break;
+            //Down
+            case 40:
+                MMU.downBtnState = 0;
+                break;
+            //Left
+            case 37:
+                MMU.leftBtnState = 0;
+                break;
+            //Right
+            case 39:
+                MMU.rightBtnState = 0;
+                break;
+        }
+    });
+
 
     //Bootstrap events
     $('#inpSearchRoms').on('hidden.bs.popover', function() {
@@ -262,11 +349,3 @@ $(document).ready(function() {
         $('#inpSearchRoms').popover('disable');
     });
 });
-
-
-
-// function init() {
-//     // document.getElementById('file-input')
-//     //     .addEventListener('change', readOpcodeFile, false);
-//     // document.getElementById('viewNameTable')
-//     //     .addEventListener('click', viewNameTable, false);
