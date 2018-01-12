@@ -4,128 +4,33 @@ $(document).ready(function() {
     var PPU;
     var MMU;
     var APU;
-    var Display;
+    var mainDisplay;
     // var traceLimitOption;
     var isPaused = false;
     ines = new iNES();
     var isDebugging = true;
     var initGame = function(romContent) {
         this.opcodes = new Uint8Array(romContent);
-        Display = new display(document.getElementById('nesCanvas'), document.getElementById('nameTableCanvas'));
-        PPU = new ppu(Display);
+        mainDisplay = new display(document.getElementById('nesCanvas'));
+        PPU = new ppu(mainDisplay);
         MMU = new mmu(PPU);
         CPU = new cpu(MMU, PPU);
         APU = new apu(MMU);
         MMU.OAMInit();
         PPU.initScreenBuffer();
+        // if (isDebugging) {
+        // }
         ines.load(this.opcodes, MMU);
         MMU.nameTableMirroring = ines.mirroring;
         PPU.nameTableMirroring = ines.mirroring;
         CPU.reset();
         MMU.copyCHRToGrid();
         MMU.copyBGRCHRToGrid();
-        Display.screenReset();
+        mainDisplay.screenReset();
 
     };
-    var viewNameTable = function() {
-        var selectedTable = document.getElementById("ddlNameTable");
-        var tempAddr = 0x2000;
-        switch (selectedTable.value) {
-            case '0':
-                tempAddr = 0x2000;
-                break;
-            case '1':
-                tempAddr = 0x2400;
-                break;
-            case '2':
-                tempAddr = 0x2800;
-                break;
-            case '3':
-                tempAddr = 0x2C00;
-                break;
-        }
-        var nametable = [];
-        var attrtable = [];
-        for (var i = tempAddr; i < (tempAddr + 960); i++)
-            nametable.push(MMU.ppuMem[i]);
-        for (i = tempAddr + 960; i < (tempAddr + 960 + 64); i++)
-            attrtable.push(MMU.ppuMem[i]);
-        renderNameTable(nametable, attrtable);
-    };
-
-    var startdownFunction = function() {
-        MMU.startBtnState = true;
-    };
-    var startupFunction = function() {
-        MMU.startBtnState = false;
-    };
-    var renderNameTable = function(nameTable, attrtable) {
-        Display.nameTableScreenReset();
-        var paletteNum = 0;
-        var pixelColor = 0;
-        var screenPixel = 0; //for debugging
-
-        //Fetch the background CHR tile lying on the current scanline
-        var curTileX;
-        var curTileY;
-        // var curTileY = Math.floor(this.currentScanline / 8);
-        for (curTileY = 0; curTileY < 30; curTileY++) {
-            for (curTileX = 0; curTileX < 32; curTileX++) {
-                var tileToDraw = nameTable[curTileX + curTileY * 32];
-                tileToDraw = PPU.backgroundPatTblAddr[tileToDraw];
-                var curAttrX = Math.floor(curTileX / 4);
-                var curAttrY = Math.floor(curTileY / 4);
-
-                var attrByte = attrtable[curAttrX + curAttrY * 8];
-                // var attrByte = attrtable[curAttrX + curAttrY * 8];
-                //Top left of 2x2 tile
-                if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
-                    // paletteNum = attrByte >> 6;
-                    paletteNum = attrByte & 0x03;
-                }
-                //Top right
-                else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 == 0) || (curTileY % 4 == 1))) {
-                    // paletteNum = (attrByte >> 4) & 0x03;
-                    paletteNum = (attrByte >> 2) & 0x03;
-                }
-                //Bottom left
-                else if (((curTileX % 4 == 0) || (curTileX % 4 == 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
-                    // paletteNum = (attrByte >> 2) & 0x03;
-                    paletteNum = (attrByte >> 4) & 0x03;
-                }
-                //Bottom right
-                else if (((curTileX % 4 != 0) && (curTileX % 4 != 1)) && ((curTileY % 4 != 0) && (curTileY % 4 != 1))) {
-                    // paletteNum = attrByte & 0x03;
-                    paletteNum = attrByte >> 6;
-                }
-                else {
-                    alert("palette not found!!");
-                }
-                //Loop through the 8 pixels for the current tile
-                for (var curY = 0; curY < 8; curY++) {
-                    for (var curX = 0; curX < 8; curX++) {
-                        //Pallete logic broken down
-                        if (tileToDraw[curY][curX] == 0) { //backdrop color
-                            pixelColor = PPU.paletteColors[PPU.palette[0]];
-                            screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
-                            //this.screenBuffer[screenPixel] = pixelColor;
-                            Display.updateNameTableBuffer(screenPixel, pixelColor);
-                        }
-                        else {
-                            pixelColor = PPU.paletteColors[PPU.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
-                            screenPixel = ((curTileX * 8) + curX) + ((curTileY * 8) + curY) * 256;
-                            //this.screenBuffer[screenPixel] = pixelColor;
-                            Display.updateNameTableBuffer(screenPixel, pixelColor);
-                        }
-                    }
-                }
-            }
-        }
-        Display.updateNameTableCanvas();
-    };
-
     var renderScreen = function() {
-        Display.updateCanvas();
+        mainDisplay.updateCanvas();
     };
 
     var renderFrame = function() {
@@ -166,7 +71,7 @@ $(document).ready(function() {
         isPaused = !isPaused;
     });
     $('#reset').click(function() {
-        Display = null;
+        mainDisplay = null;
         PPU = null;
         MMU = null;
         CPU = null;
@@ -197,6 +102,7 @@ $(document).ready(function() {
             success: function(result) {
                 $('#inpSearchRoms').popover('dispose');
                 initGame(result.romData.data);
+                requestAnimationFrame(renderFrame);
                 // console.log(result);
             },
             error: function(e) {
@@ -206,17 +112,82 @@ $(document).ready(function() {
 
     });
 
+    //KeyPress events
+
+    $(window).keydown(function(e) {
+        var key = e.which;
+        //do stuff with "key" here...
+        switch (key) {
+            //Start
+            case 17:
+                MMU.startBtnState = 1;
+                break;
+                //A
+            case 90:
+                MMU.aBtnState = 1;
+                break;
+                //B
+            case 88:
+                MMU.bBtnState = 1;
+                break;
+                //Up
+            case 38:
+                MMU.upBtnState = 1;
+                break;
+                //Down
+            case 40:
+                MMU.downBtnState = 1;
+                break;
+                //Left
+            case 37:
+                MMU.leftBtnState = 1;
+                break;
+                //Right
+            case 39:
+                MMU.rightBtnState = 1;
+                break;
+        }
+    });
+
+
+    $(window).keyup(function(e) {
+        var key = e.which;
+        //do stuff with "key" here...
+        switch (key) {
+            //Start
+            case 17:
+                MMU.startBtnState = 0;
+                break;
+                //A
+            case 90:
+                MMU.aBtnState = 0;
+                break;
+                //B
+            case 88:
+                MMU.bBtnState = 0;
+                break;
+                //Up
+            case 38:
+                MMU.upBtnState = 0;
+                break;
+                //Down
+            case 40:
+                MMU.downBtnState = 0;
+                break;
+                //Left
+            case 37:
+                MMU.leftBtnState = 0;
+                break;
+                //Right
+            case 39:
+                MMU.rightBtnState = 0;
+                break;
+        }
+    });
+
     //Bootstrap events
     $('#inpSearchRoms').on('hidden.bs.popover', function() {
         // do something…
         $('#inpSearchRoms').popover('disable');
     });
 });
-
-
-
-// function init() {
-//     // document.getElementById('file-input')
-//     //     .addEventListener('change', readOpcodeFile, false);
-//     // document.getElementById('viewNameTable')
-//     //     .addEventListener('click', viewNameTable, false);
