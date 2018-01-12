@@ -129,6 +129,9 @@ function iNES() {
                 MMU.ppuMem[0x0000 + i] = romBytes[i + 16 + (this.prgRomUnits * 16384)];
             }
         }
+        else if(this.chrRomUnits == 0) {
+            MMU.usesCHRRam = true;
+        }
 
         //Initialize memory
         // 2kb Internal RAM
