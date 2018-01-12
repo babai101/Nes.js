@@ -31,6 +31,7 @@ function mmu(PPU) {
     this.PPUADDRFirstWrite = true;
     this.PPUSCROLLFirstWrite == true;
     this.enableNMIGen = false;
+    this.controllerStrobed = false;
     this.controllerLatched = false;
     this.latchCounter = 0;
     this.lsbLastWritePPU = 0;
@@ -40,7 +41,18 @@ function mmu(PPU) {
     this.spriteGrid = [];
     this.spriteTiles = [];
     this.OAM = [];
-
+    this.usesCHRRam = false;
+    
+    //button states
+    this.startBtnState = 0;
+    this.selectBtnState = 0;
+    this.upBtnState = 0;
+    this.downBtnState = 0;
+    this.aBtnState = 0;
+    this.bBtnState = 0;
+    this.leftBtnState = 0;
+    this.rightBtnState = 0;
+    
     this.OAMInit = function() {
         for (var i = 0; i < 64; i++) {
             this.OAM.push(0xFF);
@@ -69,27 +81,56 @@ function mmu(PPU) {
             return this.getAPUReg(location);
         }
         else if (location == 0x4016) {
-            if (this.controllerLatched) {
-                if (this.latchCounter == 3) {
-                    this.latchCounter++;
-                    if (this.startBtnState) {
-                        return 1;
-                    }
-                    else {
-                        return 0;
-                    }
-                }
-                else if (this.latchCounter < 9) {
-                    this.latchCounter++;
-
-                    if (this.latchCounter == 9) {
-                        this.latchCounter = 0;
-                        this.controllerLatched = false;
-                    }
-                    return 0;
-                }
+            var btnStates = 0;
+            if (this.controllerStrobed) {
+                //While strobed Return button A status here 
+                return 0;
             }
-            else return 0;
+            else if (this.controllerLatched) {
+                switch (this.latchCounter) {
+                    //button A
+                    case 0:
+                        btnStates = this.aBtnState;
+                        break;
+                    //button B
+                    case 1: 
+                        btnStates = this.bBtnState;
+                        break;
+                    //button Select
+                    case 2:
+                        btnStates =  this.selectBtnState;
+                        break;
+                    //button Start
+                    case 3:
+                        btnStates = this.startBtnState;
+                        break;
+                    //button Up
+                    case 4: 
+                        btnStates = this.upBtnState;
+                        break;
+                    //button Down
+                    case 5:
+                        btnStates = this.downBtnState;
+                        break;
+                    //button Left
+                    case 6:
+                        btnStates = this.leftBtnState;
+                        break;
+                    //button Right
+                    case 7: 
+                        btnStates = this.rightBtnState;
+                        break;
+                }
+                this.latchCounter++;
+                if(this.latchCounter >= 8) {
+                    this.latchCounter = 0;
+                    this.controllerLatched = false;
+                }
+                return btnStates | 0x40;
+            }
+            else if(!this.controllerLatched) {
+                return 0x40 | 1;
+            }
         }
         else if (location == 0x4017) {
             return 0;
@@ -124,7 +165,14 @@ function mmu(PPU) {
             return this.setAPUReg(location, value);
         }
         else if (location == 0x4016) {
-            this.controllerLatched = true;
+            if(value == 1) {
+                this.controllerStrobed = true;
+                this.controllerLatched = false;
+            }
+            else if ((value == 0) && this.controllerStrobed) {
+                this.controllerStrobed = false;
+                this.controllerLatched = true;
+            }
             return 0;
         }
         else if (location == 0x4017) {
@@ -318,6 +366,15 @@ function mmu(PPU) {
         }
     };
 
+    this.reRenderCHR = function() {
+        if(this.usesCHRRam) {
+            this.copyCHRToGrid();
+            this.copyBGRCHRToGrid();
+            PPU.CHRGrid = this.CHRGrid;
+            PPU.BGRCHRGrid = this.BGRCHRGrid;
+        }
+    };
+
     this.getAPUReg = function(location) {
         //stub;
         return 0;
@@ -337,26 +394,10 @@ function mmu(PPU) {
     };
 
     this.getNameTable = function() {
-        // var nametable = [];
-        // //var tempAddr = PPU.baseNameTblAddr;
-        // var nametableAddrs = [0x2000, 0x2400, 0x2800, 0x2C00];
-        // for (var i = 0; i < 4; i++) {
-        //     for (var x = nametableAddrs[i]; x < (nametableAddrs[i] + 960); x++)
-        //         nametable.push(this.ppuMem[x]);
-        // }
-
         return this.ppuMem;
     };
 
     this.getAttrTable = function() {
-        // var attrtable = [];
-        // var tempAddr = PPU.baseNameTblAddr;
-        // var nametableAddrs = [0x2000, 0x2400, 0x2800, 0x2C00];
-        // for (var i = 0; i < 4; i++) {
-        //     for (var x = (nametableAddrs[i] + 960); x < (nametableAddrs[i] + 960 + 64); x++)
-        //         attrtable.push(this.ppuMem[x]);
-        // }
-        // return attrtable;
         return this.ppuMem;
     };
 
@@ -369,8 +410,6 @@ function mmu(PPU) {
             this.setOAMADDR(this.ppuRegObj.OAMADDR + 1);
         }
         this.OAMDATAwritten = true;
-        // this.ppuRegObj.OAMDATA = value;
-        // PPU.setOAMDATA(this.ppuRegObj.OAMDATA);
     };
 
     this.setOAMADDR = function(value) {
@@ -386,7 +425,6 @@ function mmu(PPU) {
                 // this.OAM[i] = this.getCpuMemVal((this.OAMDMA * 0x100) + i);
                 // this.setOAMDATA(this.getCpuMemVal((this.OAMDMA * 0x100) + i));
                 this.setOAMDATA(this.cpuMem[(this.OAMDMA * 0x100) + i]);
-                // this.setOAMADDR(this.ppuRegObj.OAMADDR + 1);
             }
         }
     };
@@ -437,6 +475,7 @@ function mmu(PPU) {
     };
 
     this.copyCHRToGrid = function() {
+        this.CHRGrid = [];
         var tileLow, tileHigh, mask, lowVal, highVal, compoundVal, compoundTileRow, spriteTile;
         for (var i = 0; i < 4096; i += 16) {
             tileLow = [];
@@ -467,6 +506,7 @@ function mmu(PPU) {
     };
 
     this.copyBGRCHRToGrid = function() {
+        this.BGRCHRGrid = [];
         var tileLow, tileHigh, mask, lowVal, highVal, compoundVal, compoundTileRow, bgrTile;
         for (var i = 4096; i < 8192; i += 16) {
             tileLow = [];
