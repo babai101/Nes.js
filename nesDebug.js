@@ -137,9 +137,9 @@ $(document).ready(function() {
 
     var renderScreen = function() {
         mainDisplay.updateCanvas();
-        // drawOAM();
-        // oamDisplay.updateCanvas();
-        // showNameTables();
+        drawOAM();
+        oamDisplay.updateCanvas();
+        showNameTables();
     };
 
     var drawOAM = function() {

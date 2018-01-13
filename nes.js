@@ -1,3 +1,4 @@
+/*global $*/
 $(document).ready(function() {
     var ines;
     var CPU;
@@ -5,7 +6,6 @@ $(document).ready(function() {
     var MMU;
     var APU;
     var mainDisplay;
-    // var traceLimitOption;
     var isPaused = false;
     ines = new iNES();
     var isDebugging = true;
@@ -18,8 +18,6 @@ $(document).ready(function() {
         APU = new apu(MMU);
         MMU.OAMInit();
         PPU.initScreenBuffer();
-        // if (isDebugging) {
-        // }
         ines.load(this.opcodes, MMU);
         MMU.nameTableMirroring = ines.mirroring;
         PPU.nameTableMirroring = ines.mirroring;
@@ -27,7 +25,6 @@ $(document).ready(function() {
         MMU.copyCHRToGrid();
         MMU.copyBGRCHRToGrid();
         mainDisplay.screenReset();
-
     };
     var renderScreen = function() {
         mainDisplay.updateCanvas();
