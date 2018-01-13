@@ -86,7 +86,7 @@ function ppu(Display) {
     // this.backgroundPatTblAddr = this.BGRCHRGrid;
     this.spritePatTblAddr = 'left';
     this.backgroundPatTblAddr = 'right';
-    this.spriteSize = '8x8';
+    this.spriteSize = 8;
     this.ppuMasterSlave = 'readBackdrop';
     this.enableNMIGen = false;
 
@@ -152,12 +152,12 @@ function ppu(Display) {
         if (temp == 0)
             this.backgroundPatTblAddr = 'left';
         else
-            this.backgroundPatTblAddr = 'right'; 
+            this.backgroundPatTblAddr = 'right';
         temp = (PPUCTRL >> 5) & 0x01;
         if (temp == 0)
-            this.spriteSize = '8x8';
+            this.spriteSize = 8;
         else
-            this.spriteSize = '8x16';
+            this.spriteSize = 16;
         temp = (PPUCTRL >> 6) & 0x01;
         if (temp == 0)
             this.ppuMasterSlave = 'readBackdrop';
@@ -260,115 +260,256 @@ function ppu(Display) {
         Display.initScreenBuffer();
         // Display.initNameTableScreenBuffer();
     };
-    
+
     //Evaluate sprites & Draw to screen buffer
     //TODO: 8x16 tile rendering
     this.renderSprites = function(oam) {
         var spritesToDraw = [],
             tile, paletteNum, spriteX, spriteY, pixelColor, pixelColorIndex, spriteAttr, tileNum, tileRow;
-        //Beginning of Sprite Evaluation
-        //Check which sprites in OAM lie in current scanline
-        for (var i = this.OAMADDR; i < 256; i += 4) {
-            if ((oam[i] + 1) > (this.currentScanline - 8) && (oam[i] + 1) <= this.currentScanline) {
-                //add to list of sprites to draw on current scanline
-                spritesToDraw.push(i);
-            }
-        }
-        //if more than 8 sprites lie in current scanline set sprite overflow to true
-        if (spritesToDraw.length > 8) {
-            this.spriteOverflow = true;
-            this.ppuStatusBits = this.ppuStatusBits & 0xDF;
-            this.ppuStatusBits = this.ppuStatusBits | 0x20;
-        }
-        else this.spriteOverflow = false;
-
-        //Render the portion of the sprite that falls on the current scanline to offscreen buffer 
-        for (i = spritesToDraw.length - 1; i >= 0; i--) { //Reversed looping to maintain sprite priority
-            spriteX = oam[spritesToDraw[i] + 3];
-            spriteY = oam[spritesToDraw[i]] + 1;
-            tileNum = oam[spritesToDraw[i] + 1];
-            spriteAttr = oam[spritesToDraw[i] + 2];
-            //Select tile num from OAM byte 1 and index from CHRGrid already prepared
-            if(this.spritePatTblAddr == 'left') {
-                tile = this.CHRGrid[tileNum];
-            }
-            else if (this.spritePatTblAddr == 'right') {
-                tile = this.BGRCHRGrid[tileNum];
-            }
-            // tile = this.spritePatTblAddr[tileNum];
-            tileRow = tile[this.currentScanline - spriteY];
-            //Select the palette number from OAM for the tile
-            paletteNum = spriteAttr & 0b00000011;
-
-            //Check for flipping of sprite
-            if (((spriteAttr & 0b01000000) == 0b01000000) && ((spriteAttr & 0b10000000) == 0b10000000)) {
-                var tempRow = [];
-                var tempRow2 = [];
-                for (var x = 0; x < 8; x++) {
-                    tempRow.push(tile[Math.abs((this.currentScanline - spriteY) - 7)][x]);
+        if (this.spriteSize == 8) {
+            //Beginning of Sprite Evaluation
+            //Check which sprites in OAM lie in current scanline
+            for (var i = this.OAMADDR; i < 256; i += 4) {
+                if ((oam[i] + 1) > (this.currentScanline - 8) && (oam[i] + 1) <= this.currentScanline) {
+                    // if ((oam[i] + 1) > (this.currentScanline - this.spriteSize) && (oam[i] + 1) <= this.currentScanline) {
+                    //add to list of sprites to draw on current scanline
+                    spritesToDraw.push(i);
                 }
-                for (var x = 7; x >= 0; x--) {
-                    tempRow2.push(tempRow[x]);
-                }
-                tileRow = tempRow2;
             }
-            else if ((spriteAttr & 0b01000000) == 0b01000000) { //horizontally flip sprite
-                var tempRow = [];
-                for (var x = 7; x >= 0; x--) {
-                    tempRow.push(tileRow[x]);
-                }
-                tileRow = tempRow;
+            //if more than 8 sprites lie in current scanline set sprite overflow to true
+            if (spritesToDraw.length > 8) {
+                this.spriteOverflow = true;
+                this.ppuStatusBits = this.ppuStatusBits & 0xDF;
+                this.ppuStatusBits = this.ppuStatusBits | 0x20;
             }
-            else if ((spriteAttr & 0b10000000) == 0b10000000) { //vertically flip sprite
-                var tempRow = [];
-                for (var x = 0; x < 8; x++) {
-                    tempRow.push(tile[Math.abs((this.currentScanline - spriteY) - 7)][x]);
+            else this.spriteOverflow = false;
+
+            //Render the portion of the sprite that falls on the current scanline to offscreen buffer 
+            for (i = spritesToDraw.length - 1; i >= 0; i--) { //Reversed looping to maintain sprite priority
+                spriteX = oam[spritesToDraw[i] + 3];
+                spriteY = oam[spritesToDraw[i]] + 1;
+                tileNum = oam[spritesToDraw[i] + 1];
+                spriteAttr = oam[spritesToDraw[i] + 2];
+                //Select tile num from OAM byte 1 and index from CHRGrid already prepared
+                if (this.spritePatTblAddr == 'left') {
+                    tile = this.CHRGrid[tileNum];
                 }
-                tileRow = tempRow;
-            }
+                else if (this.spritePatTblAddr == 'right') {
+                    tile = this.BGRCHRGrid[tileNum];
+                }
+                // tile = this.spritePatTblAddr[tileNum];
+                tileRow = tile[this.currentScanline - spriteY];
+                //Select the palette number from OAM for the tile
+                paletteNum = spriteAttr & 0b00000011;
 
-            //Draw pixels of the tile that lie on current scanline 
-            for (var x = 0; x < 8; x++) {
-                //X coordinate is fetched from OAM, Y is calculated current scanline - OAM Y coordinate + 1
-                //Color palette is shifted by 16 to ignore the background palettes 
-                //palette number multiplied by 4 to offset the actual tile palette colors 
-                //The actual tile data is added to get the pixel color, tile(x, y) contails value 0-3 
-                //x is the loop counter, y remains constant as offset from tile Y and current scanline
-
-                pixelColorIndex = tileRow[x];
-
-                //for transparent sprite bit show background so don't draw sprite to buffer
-                if (pixelColorIndex != 0) {
-                    var currentBackgroundPixelColor = this.screenBuffer[spriteX + x + (this.currentScanline * 256)];
-
-                    //non-transparent sprite over transparent background
-                    // if (currentBackgroundPixelColor == this.paletteColors[this.palette[0]]) {
-                    if (currentBackgroundPixelColor == 0) {    
-                        pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
-                        // this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColor;
-                        this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
-                        Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
+                //Check for flipping of sprite
+                if (((spriteAttr & 0b01000000) == 0b01000000) && ((spriteAttr & 0b10000000) == 0b10000000)) {
+                    var tempRow = [];
+                    var tempRow2 = [];
+                    for (var x = 0; x < 8; x++) {
+                        tempRow.push(tile[Math.abs((this.currentScanline - spriteY) - 7)][x]);
+                        // tempRow.push(tile[Math.abs((this.currentScanline - spriteY) - this.spriteSize - 1)][x]);
                     }
+                    for (var x = 7; x >= 0; x--) {
+                        tempRow2.push(tempRow[x]);
+                    }
+                    tileRow = tempRow2;
+                }
+                else if ((spriteAttr & 0b01000000) == 0b01000000) { //horizontally flip sprite
+                    var tempRow = [];
+                    for (var x = 7; x >= 0; x--) {
+                        tempRow.push(tileRow[x]);
+                    }
+                    tileRow = tempRow;
+                }
+                else if ((spriteAttr & 0b10000000) == 0b10000000) { //vertically flip sprite
+                    var tempRow = [];
+                    for (var x = 0; x < 8; x++) {
+                        tempRow.push(tile[Math.abs((this.currentScanline - spriteY) - 7)][x]);
+                        // tempRow.push(tile[Math.abs((this.currentScanline - spriteY) - this.spriteSize - 1)][x]);
+                    }
+                    tileRow = tempRow;
+                }
 
-                    //Sprite hit logic: non-transparent Sprite over non-transparent BG REGARDLESS of priority
-                    // else if (currentBackgroundPixelColor != this.paletteColors[this.palette[0]]) {
-                    else if (currentBackgroundPixelColor != 0) {    
+                //Draw pixels of the tile that lie on current scanline 
+                for (var x = 0; x < 8; x++) {
+                    //X coordinate is fetched from OAM, Y is calculated current scanline - OAM Y coordinate + 1
+                    //Color palette is shifted by 16 to ignore the background palettes 
+                    //palette number multiplied by 4 to offset the actual tile palette colors 
+                    //The actual tile data is added to get the pixel color, tile(x, y) contails value 0-3 
+                    //x is the loop counter, y remains constant as offset from tile Y and current scanline
 
-                        //If current sprite is sprite 0 and sprite hit not already set in PPUSTATUS
-                        // if ((i == 0) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
-                        if ((spritesToDraw[i] == this.OAMADDR) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
-                            //set sprite 0 hit bit TODO: Other sprite hit conditions
-                            this.ppuStatusBits = this.ppuStatusBits | 0x40;
-                            this.sprite0Hit = true;
+                    pixelColorIndex = tileRow[x];
+
+                    //for transparent sprite bit show background so don't draw sprite to buffer
+                    if (pixelColorIndex != 0) {
+                        var currentBackgroundPixelColor = this.screenBuffer[spriteX + x + (this.currentScanline * 256)];
+
+                        //non-transparent sprite over transparent background
+                        // if (currentBackgroundPixelColor == this.paletteColors[this.palette[0]]) {
+                        if (currentBackgroundPixelColor == 0) {
+                            pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
+                            // this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColor;
+                            this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
+                            Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
                         }
 
-                        //non-transparent sprite having foreground priority over non-transparent background
-                        // if (currentBackgroundPixelColor != this.paletteColors[this.palette[0]] && ((spriteAttr & 0b00100000) == 0)) {
-                        if ((currentBackgroundPixelColor != 0) && ((spriteAttr & 0b00100000) == 0)) {    
+                        //Sprite hit logic: non-transparent Sprite over non-transparent BG REGARDLESS of priority
+                        // else if (currentBackgroundPixelColor != this.paletteColors[this.palette[0]]) {
+                        else if (currentBackgroundPixelColor != 0) {
+
+                            //If current sprite is sprite 0 and sprite hit not already set in PPUSTATUS
+                            // if ((i == 0) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
+                            if ((spritesToDraw[i] == this.OAMADDR) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
+                                //set sprite 0 hit bit TODO: Other sprite hit conditions
+                                this.ppuStatusBits = this.ppuStatusBits | 0x40;
+                                this.sprite0Hit = true;
+                            }
+
+                            //non-transparent sprite having foreground priority over non-transparent background
+                            // if (currentBackgroundPixelColor != this.paletteColors[this.palette[0]] && ((spriteAttr & 0b00100000) == 0)) {
+                            if ((currentBackgroundPixelColor != 0) && ((spriteAttr & 0b00100000) == 0)) {
+                                pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
+                                this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
+                                // this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColor;
+                                Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else if (this.spriteSize == 16) {
+            var drawingTopTile = true,
+                tileUp, tileDown, tileRowIndex = 0;
+            //Check which sprites in OAM lie in current scanline
+            for (var i = this.OAMADDR; i < 256; i += 4) {
+                if ((oam[i] + 1) > (this.currentScanline - 16) && (oam[i] + 1) <= this.currentScanline) {
+                    //add to list of sprites to draw on current scanline
+                    spritesToDraw.push(i);
+                }
+            }
+            //if more than 8 sprites lie in current scanline set sprite overflow to true
+            if (spritesToDraw.length > 8) {
+                this.spriteOverflow = true;
+                this.ppuStatusBits = this.ppuStatusBits & 0xDF;
+                this.ppuStatusBits = this.ppuStatusBits | 0x20;
+            }
+            else this.spriteOverflow = false;
+            //Render the portion of the sprite that falls on the current scanline to offscreen buffer 
+            for (i = spritesToDraw.length - 1; i >= 0; i--) { //Reversed looping to maintain sprite priority
+                spriteX = oam[spritesToDraw[i] + 3];
+                spriteY = oam[spritesToDraw[i]] + 1;
+                tileRowIndex = this.currentScanline - spriteY;
+                if (tileRowIndex > 7) { //we are now at bottom portion of 8x16 tile
+                    drawingTopTile = false;
+                    tileRowIndex = tileRowIndex - 8;
+                }
+                else {
+                    drawingTopTile = true;
+                }
+                tileNum = oam[spritesToDraw[i] + 1];
+                spriteAttr = oam[spritesToDraw[i] + 2];
+                //Select tile num from OAM byte 1 and index from CHRGrid already prepared
+                if ((tileNum & 0x01) == 0) {
+                    //for bottom of 8x16 tile, select the next tile from pattern table
+                    tileNum = (tileNum & 0xFE);
+                    tileUp = this.CHRGrid[tileNum];
+                    tileDown = this.CHRGrid[tileNum + 1];
+                }
+                else if ((tileNum & 0x01) == 1) {
+                    tileNum = (tileNum & 0xFE);
+                    tileUp = this.BGRCHRGrid[tileNum];
+                    tileDown = this.BGRCHRGrid[tileNum + 1];
+                }
+                // tileRowIndex = tileRowIndex % 8; //we got the specifig tile in tile var already so normalizing
+                if (drawingTopTile) {
+                    tileRow = tileUp[tileRowIndex];
+                }
+                else {
+                    tileRow = tileDown[tileRowIndex];
+                }
+
+                //Select the palette number from OAM for the tile
+                paletteNum = spriteAttr & 0b00000011;
+
+                //Check for flipping of sprite
+                if (((spriteAttr & 0b01000000) == 0b01000000) && ((spriteAttr & 0b10000000) == 0b10000000)) {
+                    var tempRow = [];
+                    var tempRow2 = [];
+                    if (drawingTopTile) {
+                        tile = tileDown;
+                    }
+                    else {
+                        tile = tileUp;
+                    }
+                    for (var x = 0; x < 8; x++) {
+                        tempRow.push(tile[Math.abs((tileRowIndex) - 7)][x]);
+                        // tempRow.push(tile[Math.abs((this.currentScanline - spriteY) - this.spriteSize - 1)][x]);
+                    }
+                    for (var x = 7; x >= 0; x--) {
+                        tempRow2.push(tempRow[x]);
+                    }
+                    tileRow = tempRow2;
+                }
+                else if ((spriteAttr & 0b01000000) == 0b01000000) { //horizontally flip sprite
+                    var tempRow = [];
+                    for (var x = 7; x >= 0; x--) {
+                        tempRow.push(tileRow[x]);
+                    }
+                    tileRow = tempRow;
+                }
+                else if ((spriteAttr & 0b10000000) == 0b10000000) { //vertically flip sprite
+                    var tempRow = [];
+                    if (drawingTopTile) {
+                        tile = tileDown;
+                    }
+                    else {
+                        tile = tileUp;
+                    }
+                    for (var x = 0; x < 8; x++) {
+                        tempRow.push(tile[Math.abs((tileRowIndex) - 7)][x]);
+                    }
+                    tileRow = tempRow;
+                }
+
+                //Draw pixels of the tile that lie on current scanline 
+                for (var x = 0; x < 8; x++) {
+                    //X coordinate is fetched from OAM, Y is calculated current scanline - OAM Y coordinate + 1
+                    //Color palette is shifted by 16 to ignore the background palettes 
+                    //palette number multiplied by 4 to offset the actual tile palette colors 
+                    //The actual tile data is added to get the pixel color, tile(x, y) contails value 0-3 
+                    //x is the loop counter, y remains constant as offset from tile Y and current scanline
+
+                    pixelColorIndex = tileRow[x];
+
+                    //for transparent sprite bit show background so don't draw sprite to buffer
+                    if (pixelColorIndex != 0) {
+                        var currentBackgroundPixelColor = this.screenBuffer[spriteX + x + (this.currentScanline * 256)];
+
+                        //non-transparent sprite over transparent background
+                        if (currentBackgroundPixelColor == 0) {
                             pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
                             this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
-                            // this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColor;
                             Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
+                        }
+
+                        //Sprite hit logic: non-transparent Sprite over non-transparent BG REGARDLESS of priority
+                        else if (currentBackgroundPixelColor != 0) {
+                            //If current sprite is sprite 0 and sprite hit not already set in PPUSTATUS
+                            // if ((i == 0) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
+                            if ((spritesToDraw[i] == this.OAMADDR) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
+                                //set sprite 0 hit bit TODO: Other sprite hit conditions
+                                this.ppuStatusBits = this.ppuStatusBits | 0x40;
+                                this.sprite0Hit = true;
+                            }
+
+                            //non-transparent sprite having foreground priority over non-transparent background
+                            if ((currentBackgroundPixelColor != 0) && ((spriteAttr & 0b00100000) == 0)) {
+                                pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
+                                this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
+                                Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
+                            }
                         }
                     }
                 }
@@ -429,7 +570,7 @@ function ppu(Display) {
             }
 
             //get the tile bits from pre-calculated grid
-            if(this.backgroundPatTblAddr == 'left') {
+            if (this.backgroundPatTblAddr == 'left') {
                 tileToDraw = this.CHRGrid[tileToDraw];
             }
             else if (this.backgroundPatTblAddr == 'right') {
