@@ -354,18 +354,7 @@ function ppu(Display) {
                             Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
                         }
 
-                        //Sprite hit logic: non-transparent Sprite over non-transparent BG REGARDLESS of priority
-                        // else if (currentBackgroundPixelColor != this.paletteColors[this.palette[0]]) {
                         else if (currentBackgroundPixelColor != 0) {
-
-                            //If current sprite is sprite 0 and sprite hit not already set in PPUSTATUS
-                            // if ((i == 0) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
-                            if ((spritesToDraw[i] == this.OAMADDR) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
-                                //set sprite 0 hit bit TODO: Other sprite hit conditions
-                                this.ppuStatusBits = this.ppuStatusBits | 0x40;
-                                this.sprite0Hit = true;
-                            }
-
                             //non-transparent sprite having foreground priority over non-transparent background
                             // if (currentBackgroundPixelColor != this.paletteColors[this.palette[0]] && ((spriteAttr & 0b00100000) == 0)) {
                             if ((currentBackgroundPixelColor != 0) && ((spriteAttr & 0b00100000) == 0)) {
@@ -494,16 +483,7 @@ function ppu(Display) {
                             Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
                         }
 
-                        //Sprite hit logic: non-transparent Sprite over non-transparent BG REGARDLESS of priority
                         else if (currentBackgroundPixelColor != 0) {
-                            //If current sprite is sprite 0 and sprite hit not already set in PPUSTATUS
-                            // if ((i == 0) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
-                            if ((spritesToDraw[i] == this.OAMADDR) && ((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
-                                //set sprite 0 hit bit TODO: Other sprite hit conditions
-                                this.ppuStatusBits = this.ppuStatusBits | 0x40;
-                                this.sprite0Hit = true;
-                            }
-
                             //non-transparent sprite having foreground priority over non-transparent background
                             if ((currentBackgroundPixelColor != 0) && ((spriteAttr & 0b00100000) == 0)) {
                                 pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
@@ -980,13 +960,14 @@ function ppu(Display) {
         //Visible Scanlines
         else if (this.currentScanline >= 0 && this.currentScanline < 240) {
             if (this.currentScanline == 0) {
-                // this.screenBuffer = [
-                //     []
-                // ];
+                
             }
+            //Calculate sprite 0 hit before rendering begins
+            this.setSprite0Hit(oam);
+            
             if (this.renderBackground)
                 this.renderBackGroundsScroll(nametable, attrtable);
-            // this.renderBackGrounds(nametable, attrtable);
+
             if (this.renderSprite)
                 this.renderSprites(oam);
         }
@@ -1007,5 +988,45 @@ function ppu(Display) {
         }
         this.currentScanline++;
         return this.currentScanline - 1;
+    };
+
+    this.setSprite0Hit = function(oam) {
+        var drawSprite0 = false,
+            spriteX, spriteY, tileNum, spriteAttr, tile, tileRow, paletteNum, pixelColor, pixelColorIndex;
+        if ((oam[0] + 1) > (this.currentScanline - 8) && (oam[0] + 1) <= this.currentScanline) {
+            drawSprite0 = true;
+        }
+        if (drawSprite0) {
+            spriteX = oam[3];
+            spriteY = oam[0] + 1;
+            tileNum = oam[1];
+            spriteAttr = oam[2];
+            //Select tile num from OAM byte 1 and index from CHRGrid already prepared
+            if (this.spritePatTblAddr == 'left') {
+                tile = this.CHRGrid[tileNum];
+            }
+            else if (this.spritePatTblAddr == 'right') {
+                tile = this.BGRCHRGrid[tileNum];
+            }
+            // tile = this.spritePatTblAddr[tileNum];
+            tileRow = tile[this.currentScanline - spriteY];
+            //Select the palette number from OAM for the tile
+            paletteNum = spriteAttr & 0b00000011;
+            for (var x = 0; x < 8; x++) {
+                pixelColorIndex = tileRow[x];
+                if (pixelColorIndex != 0) {
+                    var currentBackgroundPixelColor = this.screenBuffer[spriteX + x + (this.currentScanline * 256)];
+                     //Sprite hit logic: non-transparent Sprite over non-transparent BG REGARDLESS of priority
+                    if (currentBackgroundPixelColor != 0) {
+                        //If current sprite is sprite 0 and sprite hit not already set in PPUSTATUS
+                        if (((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
+                            //set sprite 0 hit bit TODO: Other sprite hit conditions
+                            this.ppuStatusBits = this.ppuStatusBits | 0x40;
+                            this.sprite0Hit = true;
+                        }
+                    }
+                }
+            }
+        }
     };
 }
