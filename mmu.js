@@ -450,13 +450,16 @@ function mmu(PPU) {
 
     this.setPPUSCROLL = function(value) {
         this.ppuRegObj.PPUSCROLL = value;
-        if (this.PPUSCROLLFirstWrite) {
+        if (this.PPUADDRFirstWrite) {
+        // if (this.PPUSCROLLFirstWrite) {
             PPU.xScroll = value;
-            this.PPUSCROLLFirstWrite = false;
+            // this.PPUSCROLLFirstWrite = false;
+            this.PPUADDRFirstWrite = false;
         }
         else {
             PPU.yScroll = value;
-            this.PPUSCROLLFirstWrite = true;
+            // this.PPUSCROLLFirstWrite = true;
+            this.PPUADDRFirstWrite = true;
         }
     };
 
