@@ -356,7 +356,7 @@ function cpu(MMU, PPU) {
 		else this.unsetFlag('overflow');
 		this.accumulator = this.writeCarry(this.accumulator + arg + (this.P & 0x01));
 		this.calcFlags(null, false, null);
-		this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 2;
 	};
@@ -426,7 +426,7 @@ function cpu(MMU, PPU) {
 		this.accumulator = this.writeCarry(this.accumulator + arg + (this.P & 0x01));
 		this.calcFlags(null, false, null);
 		//instLen = 3;
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 4;
 	};
 
@@ -505,7 +505,7 @@ function cpu(MMU, PPU) {
 		else this.unsetFlag('overflow');
 		this.accumulator = this.writeCarry(this.accumulator + arg + (this.P & 0x01));
 		this.calcFlags(null, false, null);
-		this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -1011,7 +1011,7 @@ function cpu(MMU, PPU) {
 		this.accumulator = this.accumulator & MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -1059,7 +1059,7 @@ function cpu(MMU, PPU) {
 		this.accumulator = this.accumulator & MMU.getCpuMemVal(index2 | index1);
 		this.calcFlags(null, false, null);
 		var memLogBeforeVar = MMU.getCpuMemVal(index2 | index1);
-		this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -1089,7 +1089,7 @@ function cpu(MMU, PPU) {
 		var param = this.fetchParams();
 		this.accumulator = this.accumulator ^ param;
 		this.calcFlags(null, false, null);
-		this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 2;
 	};
@@ -1176,7 +1176,7 @@ function cpu(MMU, PPU) {
 		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(index2 | index1);
 		var memLogBeforeVar = MMU.getCpuMemVal(index2 | index1);
 		this.calcFlags(null, false, null);
-		this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -1206,7 +1206,7 @@ function cpu(MMU, PPU) {
 		var param = this.fetchParams();
 		this.accumulator = this.accumulator | param;
 		this.calcFlags(null, false, null);
-		this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 2;
 	};
@@ -1218,7 +1218,7 @@ function cpu(MMU, PPU) {
 		this.accumulator = this.accumulator | MMU.getCpuMemVal(param);
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
 	};
@@ -1243,7 +1243,7 @@ function cpu(MMU, PPU) {
 		this.accumulator = this.accumulator | MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -1291,7 +1291,7 @@ function cpu(MMU, PPU) {
 		this.accumulator = this.accumulator | MMU.getCpuMemVal(index2 | index1);
 		this.calcFlags(null, false, null);
 		var memLogBeforeVar = MMU.getCpuMemVal(index2 | index1);
-		this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -1341,7 +1341,7 @@ function cpu(MMU, PPU) {
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
 		MMU.setCpuMemVal(param, MMU.getCpuMemVal(param) << 1);
 		this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 5;
 	};
@@ -1374,7 +1374,7 @@ function cpu(MMU, PPU) {
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
 		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) << 1));
 		this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
 	};
@@ -1405,7 +1405,7 @@ function cpu(MMU, PPU) {
 		this.accumulator = param;
 		this.calcFlags(null, false, null);
 		//instLen = 2;
-		this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 2;
 	};
 
@@ -1491,7 +1491,7 @@ function cpu(MMU, PPU) {
 		index2 = index2 << 8;
 		this.accumulator = MMU.getCpuMemVal(index2 | index1);
 		this.calcFlags(null, false, null);
-		this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.accumulator.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.accumulator.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -1523,7 +1523,7 @@ function cpu(MMU, PPU) {
 		this.X = param;
 		this.calcFlags(this.X, false, null);
 		//instLen = 2;
-		this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 2;
 	};
 
@@ -1533,7 +1533,7 @@ function cpu(MMU, PPU) {
 		var param = this.fetchParams();
 		this.X = MMU.getCpuMemVal(param);
 		this.calcFlags(this.X, false, null);
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + this.X.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + this.X.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
 	};
@@ -1557,7 +1557,7 @@ function cpu(MMU, PPU) {
 		var param = param2 | param1;
 		this.X = MMU.getCpuMemVal(param);
 		this.calcFlags(this.X, false, null);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.X.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.X.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -1589,7 +1589,7 @@ function cpu(MMU, PPU) {
 		this.Y = param;
 		this.calcFlags(this.Y, false, null);
 		//instLen = 2;
-		this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 2;
 	};
 
@@ -1599,7 +1599,7 @@ function cpu(MMU, PPU) {
 		var param = this.fetchParams();
 		this.Y = MMU.getCpuMemVal(param);
 		this.calcFlags(this.Y, false, null);
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + this.Y.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + this.Y.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
 	};
@@ -1623,7 +1623,7 @@ function cpu(MMU, PPU) {
 		var param = param2 | param1;
 		this.Y = MMU.getCpuMemVal(param);
 		this.calcFlags(this.Y, false, null);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.Y.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.Y.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -1672,7 +1672,7 @@ function cpu(MMU, PPU) {
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
 		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) >> 1));
 		this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 5;
 	};
@@ -1705,7 +1705,7 @@ function cpu(MMU, PPU) {
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
 		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) >> 1));
 		this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
 	};
@@ -1763,7 +1763,7 @@ function cpu(MMU, PPU) {
 			MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) | 0b00000001));
 		}
 		this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 5;
 	};
@@ -1804,7 +1804,7 @@ function cpu(MMU, PPU) {
 			MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) | 0b00000001));
 		}
 		this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
 	};
@@ -1909,7 +1909,7 @@ function cpu(MMU, PPU) {
 			MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) | 0b10000000));
 		}
 		this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
 	};
@@ -1968,7 +1968,7 @@ function cpu(MMU, PPU) {
 		var param = param2 | param1;
 		// var memLogBeforeVar = MMU.getCpuMemVal(param);
 		var memLogBeforeVar = MMU.setCpuMemVal(param, (this.accumulator));
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -2009,7 +2009,7 @@ function cpu(MMU, PPU) {
 		index2 = index2 << 8;
 		// var memLogBeforeVar = MMU.getCpuMemVal(index2 | index1);
 		var memLogBeforeVar = MMU.setCpuMemVal((index2 | index1), (this.accumulator));
-		this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -2120,7 +2120,7 @@ function cpu(MMU, PPU) {
 		// var memLogBeforeVar = MMU.getCpuMemVal(param);
 		var memLogBeforeVar = MMU.setCpuMemVal(param, (this.X));
 		//instLen = 2;
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 3;
 	};
 
@@ -2143,7 +2143,7 @@ function cpu(MMU, PPU) {
 		var param = param2 | param1;
 		// var memLogBeforeVar = MMU.getCpuMemVal(param);
 		var memLogBeforeVar = MMU.setCpuMemVal(param, (this.X));
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -2157,7 +2157,7 @@ function cpu(MMU, PPU) {
 		var param = this.fetchParams();
 		// var memLogBeforeVar = MMU.getCpuMemVal(param);
 		var memLogBeforeVar = MMU.setCpuMemVal(param, (this.Y));
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
 	};
@@ -2180,7 +2180,7 @@ function cpu(MMU, PPU) {
 		var param = param2 | param1;
 		// var memLogBeforeVar = MMU.getCpuMemVal(param);
 		var memLogBeforeVar = MMU.setCpuMemVal(param, (this.Y));
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -2300,7 +2300,7 @@ function cpu(MMU, PPU) {
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
 		MMU.setCpuMemVal(param, (this.wrap8bit('increment', MMU.getCpuMemVal(param), null)));
 		this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
 	};
@@ -2325,7 +2325,7 @@ function cpu(MMU, PPU) {
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
 		MMU.setCpuMemVal(param, (this.wrap8bit('decrement', MMU.getCpuMemVal(param), null)));
 		this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 5;
 	};
@@ -2350,7 +2350,7 @@ function cpu(MMU, PPU) {
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
 		MMU.setCpuMemVal(param, (this.wrap8bit('decrement', MMU.getCpuMemVal(param), null)));
 		this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
 	};
@@ -2582,7 +2582,8 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		if(this.loggingEnabled)
+			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if ((this.P >> 7) == 1) {
 			// this.pc--;
 			// var offset = this.calcOffset(param);
@@ -2600,7 +2601,8 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		if(this.loggingEnabled)
+			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if (((this.P >> 6) & 0x01) == 0) {
 			// this.pc--;
 			// var offset = this.calcOffset(param);
@@ -2618,7 +2620,8 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		if(this.loggingEnabled)
+			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if (((this.P >> 6) & 0x01) == 1) {
 			// this.pc--;
 			// var offset = this.calcOffset(param);
@@ -2636,7 +2639,8 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		if(this.loggingEnabled)
+			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if ((this.P & 0x01) == 0) {
 			// this.pc--;
 			// var offset = this.calcOffset(param);
@@ -2654,7 +2658,8 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		if(this.loggingEnabled)
+			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if ((this.P & 0x01) == 1) {
 			// this.pc--;
 			if ((this.pc >> 8) != ((this.pc + offset) >> 8))
@@ -2671,7 +2676,8 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		if(this.loggingEnabled)
+			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if (((this.P >> 1) & 0x01) == 0) {
 			// this.pc--;
 
@@ -2725,7 +2731,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('carry');
 			this.unsetFlag('zero');
 		}
-		this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 2;
 	};
@@ -2752,7 +2758,7 @@ function cpu(MMU, PPU) {
 		}
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
 		//instLen = 2;
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 3;
 	};
 
@@ -2780,7 +2786,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('zero');
 		}
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -2808,7 +2814,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('zero');
 		}
 		//instLen = 2;
-		this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 2;
 	};
 
@@ -2833,7 +2839,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('zero');
 		}
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
 	};
@@ -2862,7 +2868,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('zero');
 		}
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -2889,7 +2895,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('carry');
 			this.unsetFlag('zero');
 		}
-		this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 2;
 	};
@@ -2915,7 +2921,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('zero');
 		}
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
 	};
@@ -2968,7 +2974,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('zero');
 		}
 		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -3059,7 +3065,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('carry');
 			this.unsetFlag('zero');
 		}
-		this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -3121,7 +3127,7 @@ function cpu(MMU, PPU) {
 		else {
 			this.unsetFlag('overflow');
 		}
-		this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + temp.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + temp.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 3;
 	};
 
@@ -3153,7 +3159,7 @@ function cpu(MMU, PPU) {
 		else {
 			this.unsetFlag('overflow');
 		}
-		this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + temp.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + temp.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 4;
 	};
 
@@ -3177,7 +3183,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*NOP';
 		this.pc++;
 		var param = this.fetchParams();
-		this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
+		// this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 2;
 	};
 
