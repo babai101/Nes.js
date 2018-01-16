@@ -42,7 +42,7 @@ function mmu(PPU) {
     this.spriteTiles = [];
     this.OAM = [];
     this.usesCHRRam = false;
-    
+
     //button states
     this.startBtnState = 0;
     this.selectBtnState = 0;
@@ -52,7 +52,7 @@ function mmu(PPU) {
     this.bBtnState = 0;
     this.leftBtnState = 0;
     this.rightBtnState = 0;
-    
+
     this.OAMInit = function() {
         for (var i = 0; i < 64; i++) {
             this.OAM.push(0xFF);
@@ -92,43 +92,43 @@ function mmu(PPU) {
                     case 0:
                         btnStates = this.aBtnState;
                         break;
-                    //button B
-                    case 1: 
+                        //button B
+                    case 1:
                         btnStates = this.bBtnState;
                         break;
-                    //button Select
+                        //button Select
                     case 2:
-                        btnStates =  this.selectBtnState;
+                        btnStates = this.selectBtnState;
                         break;
-                    //button Start
+                        //button Start
                     case 3:
                         btnStates = this.startBtnState;
                         break;
-                    //button Up
-                    case 4: 
+                        //button Up
+                    case 4:
                         btnStates = this.upBtnState;
                         break;
-                    //button Down
+                        //button Down
                     case 5:
                         btnStates = this.downBtnState;
                         break;
-                    //button Left
+                        //button Left
                     case 6:
                         btnStates = this.leftBtnState;
                         break;
-                    //button Right
-                    case 7: 
+                        //button Right
+                    case 7:
                         btnStates = this.rightBtnState;
                         break;
                 }
                 this.latchCounter++;
-                if(this.latchCounter >= 8) {
+                if (this.latchCounter >= 8) {
                     this.latchCounter = 0;
                     this.controllerLatched = false;
                 }
                 return btnStates | 0x40;
             }
-            else if(!this.controllerLatched) {
+            else if (!this.controllerLatched) {
                 return 0x40 | 1;
             }
         }
@@ -165,7 +165,7 @@ function mmu(PPU) {
             return this.setAPUReg(location, value);
         }
         else if (location == 0x4016) {
-            if(value == 1) {
+            if (value == 1) {
                 this.controllerStrobed = true;
                 this.controllerLatched = false;
             }
@@ -179,8 +179,9 @@ function mmu(PPU) {
             return 0;
         }
         else {
-            if (location >= 0x8000 && location <= 0xFFFF)
+            if (location >= 0x8000 && location <= 0xFFFF) {
                 return 0;
+            }
             temp = this.cpuMem[location];
             this.cpuMem[location] = value;
             this.ppuRegWriteFlag = false;
@@ -367,7 +368,7 @@ function mmu(PPU) {
     };
 
     this.reRenderCHR = function() {
-        if(this.usesCHRRam) {
+        if (this.usesCHRRam) {
             this.copyCHRToGrid();
             this.copyBGRCHRToGrid();
             PPU.CHRGrid = this.CHRGrid;
@@ -451,7 +452,7 @@ function mmu(PPU) {
     this.setPPUSCROLL = function(value) {
         this.ppuRegObj.PPUSCROLL = value;
         if (this.PPUADDRFirstWrite) {
-        // if (this.PPUSCROLLFirstWrite) {
+            // if (this.PPUSCROLLFirstWrite) {
             PPU.xScroll = value;
             // this.PPUSCROLLFirstWrite = false;
             this.PPUADDRFirstWrite = false;

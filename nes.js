@@ -8,7 +8,7 @@ $(document).ready(function() {
     var mainDisplay;
     var isPaused = false;
     ines = new iNES();
-    var isDebugging = true;
+    // var isDebugging = true;
     var initGame = function(romContent) {
         this.opcodes = new Uint8Array(romContent);
         mainDisplay = new display(document.getElementById('nesCanvas'));
@@ -31,12 +31,12 @@ $(document).ready(function() {
     };
 
     var renderFrame = function() {
-        if (!isPaused) {
+        // if (!isPaused) {
             CPU.runFrame();
             CPU.totalCPUCyclesThisFrame;
             CPU.nmiLoopCounter = 0;
             renderScreen();
-        }
+        // }
         requestAnimationFrame(renderFrame);
     };
 
