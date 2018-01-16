@@ -261,6 +261,33 @@ function ppu(Display) {
         // Display.initNameTableScreenBuffer();
     };
 
+    this.calcPaletteFromAttr = function(X, Y, attrByte) {
+        var paletteNum = 0;
+        // Top left of 2x2 tile
+        if (((X % 4 == 0) || (X % 4 == 1)) && ((Y % 4 == 0) || (Y % 4 == 1))) {
+            // paletteNum = attrByte >> 6;
+            paletteNum = attrByte & 0x03;
+        }
+        //Top right
+        else if (((X % 4 != 0) && (X % 4 != 1)) && ((Y % 4 == 0) || (Y % 4 == 1))) {
+            // paletteNum = (attrByte >> 4) & 0x03;
+            paletteNum = (attrByte >> 2) & 0x03;
+        }
+        //Bottom left
+        else if (((X % 4 == 0) || (X % 4 == 1)) && ((Y % 4 != 0) && (Y % 4 != 1))) {
+            // paletteNum = (attrByte >> 2) & 0x03;
+            paletteNum = (attrByte >> 4) & 0x03;
+        }
+        //Bottom right
+        else if (((X % 4 != 0) && (X % 4 != 1)) && ((Y % 4 != 0) && (Y % 4 != 1))) {
+            // paletteNum = attrByte & 0x03;
+            paletteNum = attrByte >> 6;
+        }
+        else {
+            alert("palette not found!!");
+        }
+        return paletteNum;
+    };
     //Evaluate sprites & Draw to screen buffer
     //TODO: 8x16 tile rendering
     this.renderSprites = function(oam) {
@@ -497,7 +524,7 @@ function ppu(Display) {
         }
     };
 
-      this.renderBackGrounds = function(nametable, attrtable) {
+    this.renderBackGrounds = function(nametable, attrtable) {
         var paletteNum = 0;
         var pixelColor = 0; //this will hold the final pixel with color calculated 
         var pixelColorArray = []; //array to hold one scanline worth of color pixels
@@ -581,29 +608,7 @@ function ppu(Display) {
             //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array
             attrByte = nametable[0x23C0 | (vReg & 0x0C00) | ((vReg >> 4) & 0x38) | ((vReg >> 2) & 0x07)];
 
-            // Top left of 2x2 tile
-            if (((X % 4 == 0) || (X % 4 == 1)) && ((Y % 4 == 0) || (Y % 4 == 1))) {
-                // paletteNum = attrByte >> 6;
-                paletteNum = attrByte & 0x03;
-            }
-            //Top right
-            else if (((X % 4 != 0) && (X % 4 != 1)) && ((Y % 4 == 0) || (Y % 4 == 1))) {
-                // paletteNum = (attrByte >> 4) & 0x03;
-                paletteNum = (attrByte >> 2) & 0x03;
-            }
-            //Bottom left
-            else if (((X % 4 == 0) || (X % 4 == 1)) && ((Y % 4 != 0) && (Y % 4 != 1))) {
-                // paletteNum = (attrByte >> 2) & 0x03;
-                paletteNum = (attrByte >> 4) & 0x03;
-            }
-            //Bottom right
-            else if (((X % 4 != 0) && (X % 4 != 1)) && ((Y % 4 != 0) && (Y % 4 != 1))) {
-                // paletteNum = attrByte & 0x03;
-                paletteNum = attrByte >> 6;
-            }
-            else {
-                alert("palette not found!!");
-            }
+            paletteNum = this.calcPaletteFromAttr(X, Y, attrByte);
 
             //We have now determined the background tile(accross nametables) to be rendered
             //also calculated the color palette using proper attributes
