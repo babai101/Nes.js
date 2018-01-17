@@ -1,4 +1,5 @@
-function iNES() {
+function iNES(nes) {
+    this.nes = nes;
     this.headers = []; //hold 16 byte iNES headers
     this.prgRomUnits;
     this.chrRomUnits = 1;
@@ -80,7 +81,7 @@ function iNES() {
         }
 
         this.mapperHighBits = this.flag7 >> 4;
-
+        this.mapperNum =  (this.mapperHighBits << 4) | this.mapperLowBits;
         //Flag 9 bit map
         // 76543210
         // ||||||||
@@ -98,51 +99,12 @@ function iNES() {
 
     };
 
-    this.load = function(romBytes, MMU) {
+    this.parseRom = function(romBytes) {
         for (var i = 0; i < 16; i++) {
             this.headers.push(romBytes[i]);
         }
-
         this.parseHeaders();
-
-        //Load PrgRom
-        if (this.prgRomUnits == 1) {
-            for (var i = 0; i < 16384; i++) {
-                // MMU.setCpuMemVal((0xC000 + i), romBytes[i + 16]);
-                MMU.cpuMem[0x8000 + i] = romBytes[i + 16];
-                MMU.cpuMem[0xC000 + i] = romBytes[i + 16];
-            }
-            // MMU.startAddress = 0xC000;
-        }
-        else if (this.prgRomUnits == 2) {
-            for (var i = 0; i < (16384 * 2); i++) {
-                // MMU.setCpuMemVal((0x8000 + i), romBytes[i + 16]);
-                MMU.cpuMem[0x8000 + i] = romBytes[i + 16];
-            }
-            // MMU.startAddress = 0x8000;
-        }
-
-        //Load CHR Rom into pattern tables
-        if (this.chrRomUnits == 1) {
-            for (var i = 0; i < 8192; i++) {
-                // MMU.setPpuMemVal((0x0000 + i), romBytes[i + 16 + (this.prgRomUnits * 16384)]);
-                MMU.ppuMem[0x0000 + i] = romBytes[i + 16 + (this.prgRomUnits * 16384)];
-            }
-        }
-        else if(this.chrRomUnits == 0) {
-            MMU.usesCHRRam = true;
-        }
-
-        //Initialize memory
-        // 2kb Internal RAM
-        for (i = 0; i < 0x2000; i++) {
-            MMU.cpuMem[i] = 0xFF;
-        }
-
-        // All others set to 0.
-        for (i = 0x2000; i < 0x8000; i++) {
-            MMU.cpuMem[i] = 0;
-        }
+        this.nes.Mapper.loadRom(romBytes);
         this.setFlags();
     };
 }

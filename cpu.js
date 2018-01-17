@@ -1,4 +1,5 @@
-function cpu(MMU, PPU) {
+function cpu(nes) {
+	this.nes = nes;
 	this.pc; // 16-Bit Program Counter
 	this.sp; // 8-Bit Stack Pointer
 	this.accumulator; // 8-Bit Accumulator
@@ -41,8 +42,8 @@ function cpu(MMU, PPU) {
 		this.excessCpuCyclesDbg = 0;
 		this.currentOpcode = 0x00;
 		this.elapsedCycles = 0;
-		var vector1 = MMU.getCpuMemVal(MMU.startAddress);
-		var vector2 = MMU.getCpuMemVal(MMU.startAddress + 1);
+		var vector1 = this.nes.MMU.getCpuMemVal(this.nes.MMU.startAddress);
+		var vector2 = this.nes.MMU.getCpuMemVal(this.nes.MMU.startAddress + 1);
 		vector2 = vector2 << 8;
 		this.pc = vector2 | vector1;
 	};
@@ -73,12 +74,12 @@ function cpu(MMU, PPU) {
 	};
 	//Fetch opcode from work ram 
 	this.fetchOpcode = function() {
-		this.currentOpcode = MMU.getCpuMemVal(this.pc); // Fetched opcode only
+		this.currentOpcode = this.nes.MMU.getCpuMemVal(this.pc); // Fetched opcode only
 	};
 
 	//Fetch parameters for opcode
 	this.fetchParams = function() {
-		var param = MMU.getCpuMemVal(this.pc);
+		var param = this.nes.MMU.getCpuMemVal(this.pc);
 
 		// if (this.ArgLog.length > 0) {
 		// 	this.ArgLog = this.ArgLog.concat(' ', ("00" + param.toString(16).toUpperCase()).slice(-2));
@@ -249,7 +250,7 @@ function cpu(MMU, PPU) {
 	};
 
 	this.pushToStack = function(value) {
-		MMU.setCpuMemVal((0x100 + this.sp), (value));
+		this.nes.MMU.setCpuMemVal((0x100 + this.sp), (value));
 		if (this.sp == 0x00)
 			this.sp = 0xFF;
 		else
@@ -262,7 +263,7 @@ function cpu(MMU, PPU) {
 			this.sp = 0x00;
 		else
 			this.sp++;
-		var value = MMU.getCpuMemVal(0x100 + this.sp);
+		var value = this.nes.MMU.getCpuMemVal(0x100 + this.sp);
 		return value;
 	};
 
@@ -365,7 +366,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'ADC';
 		this.pc++;
 		var param = this.fetchParams();
-		var arg = MMU.getCpuMemVal(param);
+		var arg = this.nes.MMU.getCpuMemVal(param);
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
 		// this.calcFlags(arg, true, temp);
@@ -388,7 +389,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'ADC';
 		this.pc++;
 		var param = this.fetchParams();
-		var arg = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var arg = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
 		// this.calcFlags(arg, true, temp);
@@ -412,7 +413,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var arg = MMU.getCpuMemVal(param);
+		var arg = this.nes.MMU.getCpuMemVal(param);
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
 		// this.calcFlags(arg, true, temp);
@@ -437,7 +438,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var arg = MMU.getCpuMemVal(param + this.X);
+		var arg = this.nes.MMU.getCpuMemVal(param + this.X);
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
 		// this.calcFlags(arg, true, temp);
@@ -464,7 +465,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var arg = MMU.getCpuMemVal(param + this.Y);
+		var arg = this.nes.MMU.getCpuMemVal(param + this.Y);
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
 		// this.calcFlags(arg, true, temp);
@@ -489,10 +490,10 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.X;
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
-		var arg = MMU.getCpuMemVal(index2 | index1);
+		var arg = this.nes.MMU.getCpuMemVal(index2 | index1);
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
 		// this.calcFlags(arg, true, temp);
@@ -515,10 +516,10 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += ;
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
-		var arg = MMU.getCpuMemVal((index2 | index1) + this.Y);
+		var arg = this.nes.MMU.getCpuMemVal((index2 | index1) + this.Y);
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
 		// this.calcFlags(arg, true, temp);
@@ -595,7 +596,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'SBC';
 		this.pc++;
 		var param = this.fetchParams();
-		var arg = MMU.getCpuMemVal(param);
+		var arg = this.nes.MMU.getCpuMemVal(param);
 		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
 		// this.F_SIGN = (temp >> 7) & 1;
 		// this.F_ZERO = temp & 0xff;
@@ -618,7 +619,7 @@ function cpu(MMU, PPU) {
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 3;
 		// var param = this.fetchParams();
-		// var arg = MMU.getCpuMemVal(param);
+		// var arg = this.nes.MMU.getCpuMemVal(param);
 		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
 		// if ((this.P & 0x01) == 0x00)
 		// 	temp = temp - 1;
@@ -642,7 +643,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'SBC';
 		this.pc++;
 		var param = this.fetchParams();
-		var arg = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var arg = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
 		// this.F_SIGN = (temp >> 7) & 1;
 		// this.F_ZERO = temp & 0xff;
@@ -665,7 +666,7 @@ function cpu(MMU, PPU) {
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 4;
 		// var param = this.fetchParams();
-		// var arg = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		// var arg = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
 		// if ((this.P & 0x01) == 0x00)
 		// 	temp = temp - 1;
@@ -691,7 +692,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var arg = MMU.getCpuMemVal(param);
+		var arg = this.nes.MMU.getCpuMemVal(param);
 		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
 		// this.F_SIGN = (temp >> 7) & 1;
 		// this.F_ZERO = temp & 0xff;
@@ -717,7 +718,7 @@ function cpu(MMU, PPU) {
 		// var param2 = this.fetchParams();
 		// param2 = param2 << 8;
 		// var param = param2 | param1;
-		// var arg = MMU.getCpuMemVal(param);
+		// var arg = this.nes.MMU.getCpuMemVal(param);
 		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
 		// if ((this.P & 0x01) == 0x00)
 		// 	temp = temp - 1;
@@ -744,7 +745,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var arg = MMU.getCpuMemVal(param + this.X);
+		var arg = this.nes.MMU.getCpuMemVal(param + this.X);
 		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
 		// this.F_SIGN = (temp >> 7) & 1;
 		// this.F_ZERO = temp & 0xff;
@@ -773,7 +774,7 @@ function cpu(MMU, PPU) {
 		// var param2 = this.fetchParams();
 		// param2 = param2 << 8;
 		// var param = param2 | param1;
-		// var arg = MMU.getCpuMemVal(param + this.X);
+		// var arg = this.nes.MMU.getCpuMemVal(param + this.X);
 		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
 		// if ((this.P & 0x01) == 0x00)
 		// 	temp = temp - 1;
@@ -802,7 +803,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var arg = MMU.getCpuMemVal(param + this.Y);
+		var arg = this.nes.MMU.getCpuMemVal(param + this.Y);
 		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
 		// this.F_SIGN = (temp >> 7) & 1;
 		// this.F_ZERO = temp & 0xff;
@@ -831,7 +832,7 @@ function cpu(MMU, PPU) {
 		// var param2 = this.fetchParams();
 		// param2 = param2 << 8;
 		// var param = param2 | param1;
-		// var arg = MMU.getCpuMemVal(param + this.Y);
+		// var arg = this.nes.MMU.getCpuMemVal(param + this.Y);
 		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
 		// if ((this.P & 0x01) == 0x00)
 		// 	temp = temp - 1;
@@ -857,10 +858,10 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'SBC';
 		this.pc++;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
-		var arg = MMU.getCpuMemVal(index2 | index1);
+		var arg = this.nes.MMU.getCpuMemVal(index2 | index1);
 		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
 		// this.F_SIGN = (temp >> 7) & 1;
 		// this.F_ZERO = temp & 0xff;
@@ -883,10 +884,10 @@ function cpu(MMU, PPU) {
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 6;
 		// var param = this.fetchParams();
-		// var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		// var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		// var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		// var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		// index2 = index2 << 8;
-		// var arg = MMU.getCpuMemVal(index2 | index1);
+		// var arg = this.nes.MMU.getCpuMemVal(index2 | index1);
 		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
 		// if ((this.P & 0x01) == 0x00)
 		// 	temp = temp - 1;
@@ -910,10 +911,10 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'SBC';
 		this.pc++;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
-		var arg = MMU.getCpuMemVal((index2 | index1) + this.Y);
+		var arg = this.nes.MMU.getCpuMemVal((index2 | index1) + this.Y);
 		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
 		// this.F_SIGN = (temp >> 7) & 1;
 		// this.F_ZERO = temp & 0xff;
@@ -939,10 +940,10 @@ function cpu(MMU, PPU) {
 		else
 			this.elapsedCycles += 5;
 		// var param = this.fetchParams();
-		// var index1 = MMU.getCpuMemVal(param);
-		// var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		// var index1 = this.nes.MMU.getCpuMemVal(param);
+		// var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		// index2 = index2 << 8;
-		// var arg = MMU.getCpuMemVal((index2 | index1) + this.Y);
+		// var arg = this.nes.MMU.getCpuMemVal((index2 | index1) + this.Y);
 		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
 		// if ((this.P & 0x01) == 0x00)
 		// 	temp = temp - 1;
@@ -982,8 +983,8 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'AND';
 		this.pc++;
 		var param = this.fetchParams();
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(param);
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		if (this.loggingEnabled)
 			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
@@ -995,7 +996,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'AND';
 		this.pc++;
 		var param = this.fetchParams();
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 4;
@@ -1008,9 +1009,9 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(param);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
@@ -1023,7 +1024,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(param + this.X);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(param + this.X);
 		this.calcFlags(null, false, null);
 		//instLen = 3;
 		if ((param1 + this.X) > 0xFF)
@@ -1039,7 +1040,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(param + this.Y);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(null, false, null);
 		//instLen = 3;
 		if ((param1 + this.Y) > 0xFF)
@@ -1053,12 +1054,12 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.X;
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(index2 | index1);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(index2 | index1);
 		this.calcFlags(null, false, null);
-		var memLogBeforeVar = MMU.getCpuMemVal(index2 | index1);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(index2 | index1);
 		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 6;
@@ -1069,10 +1070,10 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.Y;
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
-		this.accumulator = this.accumulator & MMU.getCpuMemVal((index2 | index1) + this.Y);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal((index2 | index1) + this.Y);
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		if ((index1 + this.Y) > 0xFF)
@@ -1098,8 +1099,8 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'EOR';
 		this.pc++;
 		var param = this.fetchParams();
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param);
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		if (this.loggingEnabled)
 			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
@@ -1111,7 +1112,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'EOR';
 		this.pc++;
 		var param = this.fetchParams();
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 4;
@@ -1124,9 +1125,9 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param);
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		if (this.loggingEnabled)
 			this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
@@ -1140,7 +1141,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param + this.X);
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param + this.X);
 		this.calcFlags(null, false, null);
 		//instLen = 3;
 		if ((param1 + this.X) > 0xFF)
@@ -1156,7 +1157,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param + this.Y);
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(null, false, null);
 		//instLen = 3;
 		if ((param1 + this.X) > 0xFF)
@@ -1170,11 +1171,11 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.X;
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(index2 | index1);
-		var memLogBeforeVar = MMU.getCpuMemVal(index2 | index1);
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(index2 | index1);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(index2 | index1);
 		this.calcFlags(null, false, null);
 		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
@@ -1186,10 +1187,10 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.Y;
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal((index2 | index1) + this.Y);
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal((index2 | index1) + this.Y);
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		if ((index1 + this.Y) > 0xFF)
@@ -1215,8 +1216,8 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'ORA';
 		this.pc++;
 		var param = this.fetchParams();
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(param);
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
@@ -1227,7 +1228,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'ORA';
 		this.pc++;
 		var param = this.fetchParams();
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 4;
@@ -1240,9 +1241,9 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(param);
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
@@ -1255,7 +1256,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(param + this.X);
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(param + this.X);
 		this.calcFlags(null, false, null);
 		//instLen = 3;
 		if ((param1 + this.X) > 0xFF)
@@ -1271,7 +1272,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(param + this.Y);
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(null, false, null);
 		//instLen = 3;
 		if ((param1 + this.Y) > 0xFF)
@@ -1285,12 +1286,12 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.X;
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(index2 | index1);
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(index2 | index1);
 		this.calcFlags(null, false, null);
-		var memLogBeforeVar = MMU.getCpuMemVal(index2 | index1);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(index2 | index1);
 		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 6;
@@ -1301,10 +1302,10 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.Y;
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
-		this.accumulator = this.accumulator | MMU.getCpuMemVal((index2 | index1) + this.Y);
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal((index2 | index1) + this.Y);
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		if ((index1 + this.Y) > 0xFF)
@@ -1334,13 +1335,13 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'ASL';
 		this.pc++;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(param) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		MMU.setCpuMemVal(param, MMU.getCpuMemVal(param) << 1);
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, this.nes.MMU.getCpuMemVal(param) << 1);
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 5;
@@ -1350,12 +1351,12 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'ASL';
 		this.pc++;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) << 1));
-		this.calcFlags(MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) << 1));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -1367,13 +1368,13 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) << 1));
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) << 1));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
@@ -1386,12 +1387,12 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.X) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.X) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) << 1));
-		this.calcFlags(MMU.getCpuMemVal(param + this.X), false, null);
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) << 1));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param + this.X), false, null);
 		//instLen = 3;
 		this.elapsedCycles += 7;
 	};
@@ -1414,7 +1415,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'LDA';
 		this.pc++;
 		var param = this.fetchParams();
-		this.accumulator = MMU.getCpuMemVal(param);
+		this.accumulator = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		if (this.loggingEnabled)
 			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + this.accumulator.toString(16).toUpperCase()).slice(-2);
@@ -1426,7 +1427,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'LDA';
 		this.pc++;
 		var param = this.fetchParams();
-		this.accumulator = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.accumulator = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 4;
@@ -1439,7 +1440,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.accumulator = MMU.getCpuMemVal(param);
+		this.accumulator = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		if (this.loggingEnabled)
 			this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.accumulator.toString(16).toUpperCase()).slice(-2);
@@ -1454,8 +1455,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// this.accumulator = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		this.accumulator = MMU.getCpuMemVal(param + this.X);
+		// this.accumulator = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.accumulator = this.nes.MMU.getCpuMemVal(param + this.X);
 		this.calcFlags(null, false, null);
 		//instLen = 3;
 		if ((param1 + this.X) > 0xFF)
@@ -1471,8 +1472,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// this.accumulator = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
-		this.accumulator = MMU.getCpuMemVal(param + this.Y);
+		// this.accumulator = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
+		this.accumulator = this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(null, false, null);
 		//instLen = 3;
 		if ((param1 + this.Y) > 0xFF)
@@ -1486,10 +1487,10 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.X;
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
-		this.accumulator = MMU.getCpuMemVal(index2 | index1);
+		this.accumulator = this.nes.MMU.getCpuMemVal(index2 | index1);
 		this.calcFlags(null, false, null);
 		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.accumulator.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
@@ -1500,11 +1501,11 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'LDA';
 		this.pc++;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
-		this.accumulator = MMU.getCpuMemVal((index2 | index1) + this.Y);
-		// this.accumulator = MMU.getCpuMemVal(this.wrap8bit('sum', (index2 | index1), this.Y));
+		this.accumulator = this.nes.MMU.getCpuMemVal((index2 | index1) + this.Y);
+		// this.accumulator = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', (index2 | index1), this.Y));
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		if ((index1 + this.Y) > 0xFF)
@@ -1531,7 +1532,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'LDX';
 		this.pc++;
 		var param = this.fetchParams();
-		this.X = MMU.getCpuMemVal(param);
+		this.X = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(this.X, false, null);
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + this.X.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
@@ -1542,7 +1543,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'LDX';
 		this.pc++;
 		var param = this.fetchParams();
-		this.X = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
+		this.X = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
 		this.calcFlags(this.X, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 4;
@@ -1555,7 +1556,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.X = MMU.getCpuMemVal(param);
+		this.X = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(this.X, false, null);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.X.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
@@ -1570,8 +1571,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// this.X = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
-		this.X = MMU.getCpuMemVal(param + this.Y);
+		// this.X = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
+		this.X = this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(this.X, false, null);
 		//instLen = 3;
 		if ((param1 + this.Y) > 0xFF)
@@ -1597,7 +1598,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'LDY';
 		this.pc++;
 		var param = this.fetchParams();
-		this.Y = MMU.getCpuMemVal(param);
+		this.Y = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(this.Y, false, null);
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + this.Y.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
@@ -1608,7 +1609,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'LDY';
 		this.pc++;
 		var param = this.fetchParams();
-		this.Y = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.Y = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		this.calcFlags(this.Y, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 4;
@@ -1621,7 +1622,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.Y = MMU.getCpuMemVal(param);
+		this.Y = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(this.Y, false, null);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.Y.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
@@ -1635,8 +1636,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// this.Y = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		this.Y = MMU.getCpuMemVal(param + this.X);
+		// this.Y = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.Y = this.nes.MMU.getCpuMemVal(param + this.X);
 		this.calcFlags(this.Y, false, null);
 		//instLen = 3;
 		if ((param1 + this.X) > 0xFF)
@@ -1665,13 +1666,13 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'LSR';
 		this.pc++;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(param) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) >> 1));
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) >> 1));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 5;
@@ -1681,12 +1682,12 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'LSR';
 		this.pc++;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 1));
-		this.calcFlags(MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 1));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -1698,13 +1699,13 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) >> 1));
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) >> 1));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
@@ -1717,12 +1718,12 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.X) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.X) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) >> 1));
-		this.calcFlags(MMU.getCpuMemVal(param + this.X), false, null);
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) >> 1));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param + this.X), false, null);
 		//instLen = 3;
 		this.elapsedCycles += 7;
 	};
@@ -1753,16 +1754,16 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(param) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) << 1));
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) << 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) | 0b00000001));
+			this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) | 0b00000001));
 		}
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 5;
@@ -1773,15 +1774,15 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) << 1));
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) << 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) | 0b00000001));
+			this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) | 0b00000001));
 		}
-		this.calcFlags(MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
+		this.calcFlags(this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -1794,16 +1795,16 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		if ((MMU.getCpuMemVal(param) >> 7) == 1)
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		if ((this.nes.MMU.getCpuMemVal(param) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) << 1));
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) << 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) | 0b00000001));
+			this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) | 0b00000001));
 		}
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
@@ -1817,15 +1818,15 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.X) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.X) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) << 1));
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) << 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) | 0b00000001));
+			this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) | 0b00000001));
 		}
-		this.calcFlags(MMU.getCpuMemVal(param + this.X), false, null);
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param + this.X), false, null);
 		//instLen = 3;
 		this.elapsedCycles += 7;
 	};
@@ -1855,20 +1856,20 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(param) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
 		if (this.loggingEnabled) {
-			var memLogBeforeVar = MMU.getCpuMemVal(param);
+			var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		}
 
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) >> 1));
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) >> 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) | 0b10000000));
+			this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) | 0b10000000));
 		}
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		//instLen = 2;
 		this.elapsedCycles += 5;
 	};
@@ -1878,15 +1879,15 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 1));
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) | 0b10000000));
+			this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) | 0b10000000));
 		}
-		this.calcFlags(MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
+		this.calcFlags(this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -1899,16 +1900,16 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		if ((MMU.getCpuMemVal(param) & 0x01) == 1)
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		if ((this.nes.MMU.getCpuMemVal(param) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) >> 1));
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) >> 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) | 0b10000000));
+			this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) | 0b10000000));
 		}
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
@@ -1922,15 +1923,15 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.X) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.X) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) >> 1));
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) >> 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) | 0b10000000));
+			this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) | 0b10000000));
 		}
-		this.calcFlags(MMU.getCpuMemVal(param + this.X), false, null);
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param + this.X), false, null);
 		//instLen = 3;
 		this.elapsedCycles += 7;
 	};
@@ -1941,8 +1942,8 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'STA';
 		this.pc++;
 		var param = this.fetchParams();
-		// var memLogBeforeVar = MMU.getCpuMemVal(param);
-		var memLogBeforeVar = MMU.setCpuMemVal(param, (this.accumulator));
+		// var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.setCpuMemVal(param, (this.accumulator));
 		if (this.loggingEnabled) {
 			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		}
@@ -1954,7 +1955,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'STA';
 		this.pc++;
 		var param = this.fetchParams();
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.accumulator));
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.accumulator));
 		//instLen = 2;
 		this.elapsedCycles += 4;
 	};
@@ -1966,8 +1967,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// var memLogBeforeVar = MMU.getCpuMemVal(param);
-		var memLogBeforeVar = MMU.setCpuMemVal(param, (this.accumulator));
+		// var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.setCpuMemVal(param, (this.accumulator));
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
@@ -1980,8 +1981,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.accumulator));
-		MMU.setCpuMemVal((param + this.X), (this.accumulator));
+		// this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.accumulator));
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.accumulator));
 		//instLen = 3;
 		this.elapsedCycles += 5;
 	};
@@ -1993,8 +1994,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// MMU.setCpuMemVal((this.wrap8bit('sum', param, this.Y)), (this.accumulator));
-		MMU.setCpuMemVal((param + this.Y), (this.accumulator));
+		// this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.Y)), (this.accumulator));
+		this.nes.MMU.setCpuMemVal((param + this.Y), (this.accumulator));
 		//instLen = 3;
 		this.elapsedCycles += 5;
 	};
@@ -2004,11 +2005,11 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.X;
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
-		// var memLogBeforeVar = MMU.getCpuMemVal(index2 | index1);
-		var memLogBeforeVar = MMU.setCpuMemVal((index2 | index1), (this.accumulator));
+		// var memLogBeforeVar = this.nes.MMU.getCpuMemVal(index2 | index1);
+		var memLogBeforeVar = this.nes.MMU.setCpuMemVal((index2 | index1), (this.accumulator));
 		// this.memLog = '($' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ',X) @ ' + ('00' + (this.wrap8bit('sum', param, this.X)).toString(16).toUpperCase()).slice(-2) + ' = ' + ('0000' + (index2 | index1).toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 6;
@@ -2018,11 +2019,11 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'STA';
 		this.pc++;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
-		// MMU.setCpuMemVal((this.wrap8bit('sum', (index2 | index1), this.Y)), (this.accumulator));
-		MMU.setCpuMemVal(((index2 | index1) + this.Y), (this.accumulator));
+		// this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', (index2 | index1), this.Y)), (this.accumulator));
+		this.nes.MMU.setCpuMemVal(((index2 | index1) + this.Y), (this.accumulator));
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -2048,7 +2049,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'PHA';
 		this.pc++;
 		this.pushToStack(this.accumulator);
-		// MMU.setCpuMemVal(0x100 + this.sp) = this.accumulator;
+		// this.nes.MMU.setCpuMemVal(0x100 + this.sp) = this.accumulator;
 		// if (this.sp == 0x00)
 		// 	this.sp = 0xFF;
 		// else
@@ -2060,7 +2061,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'PLA';
 		this.pc++;
 		this.accumulator = this.popFromStack();
-		// this.accumulator = MMU.setCpuMemVal(0x100 + this.sp);
+		// this.accumulator = this.nes.MMU.setCpuMemVal(0x100 + this.sp);
 		// if (this.sp == 0xFF)
 		// 	this.sp = 0x00;
 		// else
@@ -2117,8 +2118,8 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'STX';
 		this.pc++;
 		var param = this.fetchParams();
-		// var memLogBeforeVar = MMU.getCpuMemVal(param);
-		var memLogBeforeVar = MMU.setCpuMemVal(param, (this.X));
+		// var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.setCpuMemVal(param, (this.X));
 		//instLen = 2;
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 3;
@@ -2129,7 +2130,7 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.Y)), (this.X));
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.Y)), (this.X));
 		//instLen = 2;
 		this.elapsedCycles += 4;
 	};
@@ -2141,8 +2142,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// var memLogBeforeVar = MMU.getCpuMemVal(param);
-		var memLogBeforeVar = MMU.setCpuMemVal(param, (this.X));
+		// var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.setCpuMemVal(param, (this.X));
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
@@ -2155,8 +2156,8 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'STY';
 		this.pc++;
 		var param = this.fetchParams();
-		// var memLogBeforeVar = MMU.getCpuMemVal(param);
-		var memLogBeforeVar = MMU.setCpuMemVal(param, (this.Y));
+		// var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.setCpuMemVal(param, (this.Y));
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
@@ -2166,7 +2167,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'STY';
 		this.pc++;
 		var param = this.fetchParams();
-		MMU.setCpuMemVal(this.wrap8bit('sum', param, this.X), (this.Y));
+		this.nes.MMU.setCpuMemVal(this.wrap8bit('sum', param, this.X), (this.Y));
 		//instLen = 2;
 		this.elapsedCycles += 4;
 	};
@@ -2178,8 +2179,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// var memLogBeforeVar = MMU.getCpuMemVal(param);
-		var memLogBeforeVar = MMU.setCpuMemVal(param, (this.Y));
+		// var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.setCpuMemVal(param, (this.Y));
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
@@ -2266,9 +2267,9 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'INC';
 		this.pc++;
 		var param = this.fetchParams();
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		MMU.setCpuMemVal(param, (this.wrap8bit('increment', MMU.getCpuMemVal(param), null)));
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(param), null)));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		if (this.loggingEnabled)
 			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
@@ -2280,12 +2281,12 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		var loc = this.wrap8bit('sum', param, this.X);
-		var valueAtLoc = MMU.getCpuMemVal(loc);
+		var valueAtLoc = this.nes.MMU.getCpuMemVal(loc);
 		//increment
 		valueAtLoc = this.wrap8bit('increment', valueAtLoc, null);
-		// MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.wrap8bit('increment', MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), null)));
-		MMU.setCpuMemVal(loc, valueAtLoc);
-		this.calcFlags(MMU.getCpuMemVal(loc), false, null);
+		// this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), null)));
+		this.nes.MMU.setCpuMemVal(loc, valueAtLoc);
+		this.calcFlags(this.nes.MMU.getCpuMemVal(loc), false, null);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -2297,9 +2298,9 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		MMU.setCpuMemVal(param, (this.wrap8bit('increment', MMU.getCpuMemVal(param), null)));
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(param), null)));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
@@ -2312,8 +2313,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		MMU.setCpuMemVal((param + this.X), (this.wrap8bit('increment', MMU.getCpuMemVal(param + this.X), null)));
-		this.calcFlags(MMU.getCpuMemVal(param + this.X), false, null);
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(param + this.X), null)));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param + this.X), false, null);
 		//instLen = 3;
 		this.elapsedCycles += 7;
 	};
@@ -2322,9 +2323,9 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'DEC';
 		this.pc++;
 		var param = this.fetchParams();
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		MMU.setCpuMemVal(param, (this.wrap8bit('decrement', MMU.getCpuMemVal(param), null)));
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.wrap8bit('decrement', this.nes.MMU.getCpuMemVal(param), null)));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 5;
@@ -2334,8 +2335,8 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'DEC';
 		this.pc++;
 		var param = this.fetchParams();
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.wrap8bit('decrement', MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), null)));
-		this.calcFlags(MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.wrap8bit('decrement', this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), null)));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), false, null);
 		//instLen = 2;
 		this.elapsedCycles += 6;
 	};
@@ -2347,9 +2348,9 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
-		MMU.setCpuMemVal(param, (this.wrap8bit('decrement', MMU.getCpuMemVal(param), null)));
-		this.calcFlags(MMU.getCpuMemVal(param), false, null);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.wrap8bit('decrement', this.nes.MMU.getCpuMemVal(param), null)));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 6;
@@ -2362,8 +2363,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		MMU.setCpuMemVal((param + this.X), (this.wrap8bit('decrement', MMU.getCpuMemVal(param + this.X), null)));
-		this.calcFlags(MMU.getCpuMemVal(param + this.X), false, null);
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.wrap8bit('decrement', this.nes.MMU.getCpuMemVal(param + this.X), null)));
+		this.calcFlags(this.nes.MMU.getCpuMemVal(param + this.X), false, null);
 		//instLen = 3;
 		this.elapsedCycles += 7;
 	};
@@ -2451,7 +2452,7 @@ function cpu(MMU, PPU) {
 		var param = param2 | param1;
 		var lowerByte, higherByte;
 		var jmpLocation;
-		//var lowNibble = MMU.getCpuMemVal(param);
+		//var lowNibble = this.nes.MMU.getCpuMemVal(param);
 		if (param1 == 0xFF) {
 			lowerByte = param;
 			higherByte = param2 | 0x00;
@@ -2460,7 +2461,7 @@ function cpu(MMU, PPU) {
 			lowerByte = param;
 			higherByte = param2 | (param1 + 1);
 		}
-		jmpLocation = (MMU.getCpuMemVal(higherByte) << 8) | MMU.getCpuMemVal(lowerByte);
+		jmpLocation = (this.nes.MMU.getCpuMemVal(higherByte) << 8) | this.nes.MMU.getCpuMemVal(lowerByte);
 		this.pc = jmpLocation;
 		//instLen = 3;
 		this.elapsedCycles += 5;
@@ -2740,7 +2741,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'CPX';
 		this.pc++;
 		var param = this.fetchParams();
-		var result = this.compareValsAndSetNegative(this.X, MMU.getCpuMemVal(param));
+		var result = this.compareValsAndSetNegative(this.X, this.nes.MMU.getCpuMemVal(param));
 		if (result > 0) {
 			this.setFlag('carry');
 			// this.unsetFlag('negative');
@@ -2756,7 +2757,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('carry');
 			this.unsetFlag('zero');
 		}
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		//instLen = 2;
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		this.elapsedCycles += 3;
@@ -2769,7 +2770,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var result = this.compareValsAndSetNegative(this.X, MMU.getCpuMemVal(param));
+		var result = this.compareValsAndSetNegative(this.X, this.nes.MMU.getCpuMemVal(param));
 		if (result > 0) {
 			this.setFlag('carry');
 			// this.unsetFlag('negative');
@@ -2785,7 +2786,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('carry');
 			this.unsetFlag('zero');
 		}
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
@@ -2822,7 +2823,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'CPY';
 		this.pc++;
 		var param = this.fetchParams();
-		var result = this.compareValsAndSetNegative(this.Y, MMU.getCpuMemVal(param));
+		var result = this.compareValsAndSetNegative(this.Y, this.nes.MMU.getCpuMemVal(param));
 		if (result > 0) {
 			this.setFlag('carry');
 			// this.unsetFlag('negative');
@@ -2838,7 +2839,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('carry');
 			this.unsetFlag('zero');
 		}
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
@@ -2851,7 +2852,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var result = this.compareValsAndSetNegative(this.Y, MMU.getCpuMemVal(param));
+		var result = this.compareValsAndSetNegative(this.Y, this.nes.MMU.getCpuMemVal(param));
 		if (result > 0) {
 			this.setFlag('carry');
 			// this.unsetFlag('negative');
@@ -2867,7 +2868,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('carry');
 			this.unsetFlag('zero');
 		}
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
@@ -2904,7 +2905,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'CMP';
 		this.pc++;
 		var param = this.fetchParams();
-		var result = this.compareValsAndSetNegative(this.accumulator, MMU.getCpuMemVal(param));
+		var result = this.compareValsAndSetNegative(this.accumulator, this.nes.MMU.getCpuMemVal(param));
 		if (result > 0) {
 			this.setFlag('carry');
 			// this.unsetFlag('negative');
@@ -2920,7 +2921,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('carry');
 			this.unsetFlag('zero');
 		}
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		// this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
@@ -2930,7 +2931,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'CMP';
 		this.pc++;
 		var param = this.fetchParams();
-		var result = this.compareValsAndSetNegative(this.accumulator, MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)));
+		var result = this.compareValsAndSetNegative(this.accumulator, this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)));
 		if (result > 0) {
 			this.setFlag('carry');
 			// this.unsetFlag('negative');
@@ -2957,7 +2958,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var result = this.compareValsAndSetNegative(this.accumulator, MMU.getCpuMemVal(param));
+		var result = this.compareValsAndSetNegative(this.accumulator, this.nes.MMU.getCpuMemVal(param));
 		if (result > 0) {
 			this.setFlag('carry');
 			// this.unsetFlag('negative');
@@ -2973,7 +2974,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('carry');
 			this.unsetFlag('zero');
 		}
-		var memLogBeforeVar = MMU.getCpuMemVal(param);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		// this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
@@ -2986,7 +2987,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var result = this.compareValsAndSetNegative(this.accumulator, MMU.getCpuMemVal(param + this.X));
+		var result = this.compareValsAndSetNegative(this.accumulator, this.nes.MMU.getCpuMemVal(param + this.X));
 		if (result > 0) {
 			this.setFlag('carry');
 			// this.unsetFlag('negative');
@@ -3016,7 +3017,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var result = this.compareValsAndSetNegative(this.accumulator, MMU.getCpuMemVal(param + this.Y));
+		var result = this.compareValsAndSetNegative(this.accumulator, this.nes.MMU.getCpuMemVal(param + this.Y));
 		if (result > 0) {
 			this.setFlag('carry');
 			// this.unsetFlag('negative');
@@ -3044,11 +3045,11 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.X;
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
 		// param = index2 | index1;
-		var memLogBeforeVar = MMU.getCpuMemVal(index2 | index1);
+		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(index2 | index1);
 		var result = this.compareValsAndSetNegative(this.accumulator, memLogBeforeVar);
 		if (result > 0) {
 			this.setFlag('carry');
@@ -3074,11 +3075,11 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'CMP';
 		this.pc++;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		var result = this.compareValsAndSetNegative(this.accumulator, MMU.getCpuMemVal(param + this.Y));
+		var result = this.compareValsAndSetNegative(this.accumulator, this.nes.MMU.getCpuMemVal(param + this.Y));
 		if (result > 0) {
 			this.setFlag('carry');
 			// this.unsetFlag('negative');
@@ -3107,7 +3108,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = 'BIT';
 		this.pc++;
 		var param = this.fetchParams();
-		var temp = MMU.getCpuMemVal(param);
+		var temp = this.nes.MMU.getCpuMemVal(param);
 		var result = this.accumulator & temp;
 		if (result == 0) {
 			this.setFlag('zero');
@@ -3139,7 +3140,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		var temp = MMU.getCpuMemVal(param);
+		var temp = this.nes.MMU.getCpuMemVal(param);
 		var result = this.accumulator & temp;
 		if (result == 0) {
 			this.setFlag('zero');
@@ -3211,8 +3212,8 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*LAX';
 		this.pc++;
 		var param = this.fetchParams();
-		this.accumulator = MMU.getCpuMemVal(param);
-		this.X = MMU.getCpuMemVal(param);
+		this.accumulator = this.nes.MMU.getCpuMemVal(param);
+		this.X = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 3;
@@ -3222,8 +3223,8 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*LAX';
 		this.pc++;
 		var param = this.fetchParams();
-		this.accumulator = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
-		this.X = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
+		this.accumulator = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
+		this.X = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 4;
@@ -3236,8 +3237,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		this.accumulator = MMU.getCpuMemVal(param);
-		this.X = MMU.getCpuMemVal(param);
+		this.accumulator = this.nes.MMU.getCpuMemVal(param);
+		this.X = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		//instLen = 3;
 		this.elapsedCycles += 4;
@@ -3250,9 +3251,9 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// this.X = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
-		this.X = MMU.getCpuMemVal(param + this.Y);
-		this.accumulator = MMU.getCpuMemVal(param + this.Y);
+		// this.X = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.Y));
+		this.X = this.nes.MMU.getCpuMemVal(param + this.Y);
+		this.accumulator = this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(null, false, null);
 		//instLen = 3;
 		if ((param1 + this.Y) > 0xFF)
@@ -3265,11 +3266,11 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*LAX';
 		this.pc++;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
-		this.accumulator = MMU.getCpuMemVal(index2 | index1);
-		this.X = MMU.getCpuMemVal(index2 | index1);
+		this.accumulator = this.nes.MMU.getCpuMemVal(index2 | index1);
+		this.X = this.nes.MMU.getCpuMemVal(index2 | index1);
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 6;
@@ -3279,12 +3280,12 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*LAX';
 		this.pc++;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
-		this.accumulator = MMU.getCpuMemVal((index2 | index1) + this.Y);
-		this.X = MMU.getCpuMemVal((index2 | index1) + this.Y);
-		// this.accumulator = MMU.getCpuMemVal(this.wrap8bit('sum', (index2 | index1), this.Y));
+		this.accumulator = this.nes.MMU.getCpuMemVal((index2 | index1) + this.Y);
+		this.X = this.nes.MMU.getCpuMemVal((index2 | index1) + this.Y);
+		// this.accumulator = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', (index2 | index1), this.Y));
 		this.calcFlags(null, false, null);
 		//instLen = 2;
 		if ((index1 + this.Y) > 0xFF)
@@ -3297,7 +3298,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*SAX';
 		this.pc++;
 		var param = this.fetchParams();
-		MMU.setCpuMemVal(param, (this.accumulator & this.X));
+		this.nes.MMU.setCpuMemVal(param, (this.accumulator & this.X));
 		// this.calcFlags(null, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 3;
@@ -3306,7 +3307,7 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*SAX';
 		this.pc++;
 		var param = this.fetchParams();
-		MMU.setCpuMemVal(this.wrap8bit('sum', param, this.Y), (this.accumulator & this.X));
+		this.nes.MMU.setCpuMemVal(this.wrap8bit('sum', param, this.Y), (this.accumulator & this.X));
 		// this.calcFlags(null, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 4;
@@ -3316,10 +3317,10 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*SAX';
 		this.pc++;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
-		MMU.setCpuMemVal((index2 | index1), (this.accumulator & this.X));
+		this.nes.MMU.setCpuMemVal((index2 | index1), (this.accumulator & this.X));
 		// this.calcFlags(null, false, null);
 		//instLen = 2;
 		this.elapsedCycles += 6;
@@ -3331,7 +3332,7 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		MMU.setCpuMemVal(param, (this.accumulator & this.X));
+		this.nes.MMU.setCpuMemVal(param, (this.accumulator & this.X));
 		// this.calcFlags(null, false, null);
 		//instLen = 3;
 		this.elapsedCycles += 4;
@@ -3341,8 +3342,8 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*DCP';
 		this.pc++;
 		var param = this.fetchParams();
-		MMU.setCpuMemVal(param, (this.wrap8bit('decrement', MMU.getCpuMemVal(param), null)));
-		var temp = MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.wrap8bit('decrement', this.nes.MMU.getCpuMemVal(param), null)));
+		var temp = this.nes.MMU.getCpuMemVal(param);
 		var result = this.compareValsAndSetNegative(this.accumulator, temp);
 		if (result > 0) {
 			this.setFlag('carry');
@@ -3371,7 +3372,7 @@ function cpu(MMU, PPU) {
 		// else
 		// 	this.unsetFlag('negative');
 		// temp = this.wrap8bit('decrement', temp, null);
-		// MMU.setCpuMemVal(param, temp);
+		// this.nes.MMU.setCpuMemVal(param, temp);
 		this.elapsedCycles += 5;
 	};
 
@@ -3379,8 +3380,8 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*DCP';
 		this.pc++;
 		var param = this.fetchParams(param);
-		MMU.setCpuMemVal(this.wrap8bit('sum', param, this.X), (this.wrap8bit('decrement', MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), null)));
-		var temp = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.nes.MMU.setCpuMemVal(this.wrap8bit('sum', param, this.X), (this.wrap8bit('decrement', this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), null)));
+		var temp = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		var result = this.compareValsAndSetNegative(this.accumulator, temp);
 		if (result > 0) {
 			this.setFlag('carry');
@@ -3397,7 +3398,7 @@ function cpu(MMU, PPU) {
 			this.unsetFlag('carry');
 			this.unsetFlag('zero');
 		}
-		// var temp = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		// var temp = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		// if (temp == 0)
 		// 	this.setFlag('carry');
 		// else this.unsetFlag('carry');
@@ -3410,7 +3411,7 @@ function cpu(MMU, PPU) {
 		// else
 		// 	this.unsetFlag('negative');
 		// temp = this.wrap8bit('decrement', temp, null);
-		// MMU.setCpuMemVal(this.wrap8bit('sum', param, this.X), temp);
+		// this.nes.MMU.setCpuMemVal(this.wrap8bit('sum', param, this.X), temp);
 		this.elapsedCycles += 6;
 	};
 
@@ -3421,8 +3422,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		MMU.setCpuMemVal(param, (this.wrap8bit('decrement', MMU.getCpuMemVal(param), null)));
-		var temp = MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.wrap8bit('decrement', this.nes.MMU.getCpuMemVal(param), null)));
+		var temp = this.nes.MMU.getCpuMemVal(param);
 		var result = this.compareValsAndSetNegative(this.accumulator, temp);
 		if (result > 0) {
 			this.setFlag('carry');
@@ -3451,7 +3452,7 @@ function cpu(MMU, PPU) {
 		// else
 		// 	this.unsetFlag('negative');
 		// temp = this.wrap8bit('decrement', temp, null);
-		// MMU.setCpuMemVal(param, temp);
+		// this.nes.MMU.setCpuMemVal(param, temp);
 		//instLen = 3;
 		this.elapsedCycles += 6;
 	};
@@ -3463,9 +3464,9 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// var temp = MMU.getCpuMemVal(param + this.X);
-		MMU.setCpuMemVal(param + this.X, (this.wrap8bit('decrement', MMU.getCpuMemVal(param + this.X), null)));
-		var temp = MMU.getCpuMemVal(param + this.X);
+		// var temp = this.nes.MMU.getCpuMemVal(param + this.X);
+		this.nes.MMU.setCpuMemVal(param + this.X, (this.wrap8bit('decrement', this.nes.MMU.getCpuMemVal(param + this.X), null)));
+		var temp = this.nes.MMU.getCpuMemVal(param + this.X);
 		var result = this.compareValsAndSetNegative(this.accumulator, temp);
 		if (result > 0) {
 			this.setFlag('carry');
@@ -3494,7 +3495,7 @@ function cpu(MMU, PPU) {
 		// else
 		// 	this.unsetFlag('negative');
 		// temp = this.wrap8bit('decrement', temp, null);
-		// MMU.setCpuMemVal(param + this.X, temp);
+		// this.nes.MMU.setCpuMemVal(param + this.X, temp);
 		this.elapsedCycles += 7;
 	};
 	this.DCP_A_Y = function() {
@@ -3504,9 +3505,9 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		// var temp = MMU.getCpuMemVal(param + this.Y);
-		MMU.setCpuMemVal(param + this.Y, (this.wrap8bit('decrement', MMU.getCpuMemVal(param + this.Y), null)));
-		var temp = MMU.getCpuMemVal(param + this.Y);
+		// var temp = this.nes.MMU.getCpuMemVal(param + this.Y);
+		this.nes.MMU.setCpuMemVal(param + this.Y, (this.wrap8bit('decrement', this.nes.MMU.getCpuMemVal(param + this.Y), null)));
+		var temp = this.nes.MMU.getCpuMemVal(param + this.Y);
 		var result = this.compareValsAndSetNegative(this.accumulator, temp);
 		if (result > 0) {
 			this.setFlag('carry');
@@ -3535,17 +3536,17 @@ function cpu(MMU, PPU) {
 		// else
 		// 	this.unsetFlag('negative');
 		// temp = this.wrap8bit('decrement', temp, null);
-		// MMU.setCpuMemVal(param + this.Y, temp);
+		// this.nes.MMU.setCpuMemVal(param + this.Y, temp);
 		this.elapsedCycles += 7;
 	};
 	this.DCP_I_X = function() {
 		this.opcodeType = '*DCP';
 		this.pc++;
 		// var param = this.fetchParams();
-		// var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		// var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		// var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		// var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		// index2 = index2 << 8;
-		// var temp = MMU.getCpuMemVal(index2 | index1);
+		// var temp = this.nes.MMU.getCpuMemVal(index2 | index1);
 		// if (temp == 0)
 		// 	this.setFlag('carry');
 		// else this.unsetFlag('carry');
@@ -3558,15 +3559,15 @@ function cpu(MMU, PPU) {
 		// else
 		// 	this.unsetFlag('negative');
 		// temp = this.wrap8bit('decrement', temp, null);
-		// MMU.setCpuMemVal(index2 | index1, temp);
+		// this.nes.MMU.setCpuMemVal(index2 | index1, temp);
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		MMU.setCpuMemVal(param, (this.wrap8bit('decrement', MMU.getCpuMemVal(param), null)));
-		// this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		var temp = MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.wrap8bit('decrement', this.nes.MMU.getCpuMemVal(param), null)));
+		// this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
+		var temp = this.nes.MMU.getCpuMemVal(param);
 		var result = this.compareValsAndSetNegative(this.accumulator, temp);
 		if (result > 0) {
 			this.setFlag('carry');
@@ -3589,13 +3590,13 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*DCP';
 		this.pc++;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		// var temp = MMU.getCpuMemVal((index2 | index1) + this.Y);
-		MMU.setCpuMemVal(param + this.Y, (this.wrap8bit('decrement', MMU.getCpuMemVal(param + this.Y), null)));
-		var temp = MMU.getCpuMemVal(param + this.Y);
+		// var temp = this.nes.MMU.getCpuMemVal((index2 | index1) + this.Y);
+		this.nes.MMU.setCpuMemVal(param + this.Y, (this.wrap8bit('decrement', this.nes.MMU.getCpuMemVal(param + this.Y), null)));
+		var temp = this.nes.MMU.getCpuMemVal(param + this.Y);
 		var result = this.compareValsAndSetNegative(this.accumulator, temp);
 		if (result > 0) {
 			this.setFlag('carry');
@@ -3624,7 +3625,7 @@ function cpu(MMU, PPU) {
 		// else
 		// 	this.unsetFlag('negative');
 		// temp = this.wrap8bit('decrement', temp, null);
-		// MMU.setCpuMemVal((index2 | index1) + this.Y, temp);
+		// this.nes.MMU.setCpuMemVal((index2 | index1) + this.Y, temp);
 		this.elapsedCycles += 8;
 	};
 
@@ -3632,9 +3633,9 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*ISB';
 		this.pc++;
 		var param = this.fetchParams();
-		MMU.setCpuMemVal(param, (this.wrap8bit('increment', MMU.getCpuMemVal(param), null)));
-		// this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		var arg = MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(param), null)));
+		// this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
+		var arg = this.nes.MMU.getCpuMemVal(param);
 		// arg = ~arg;
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
@@ -3662,9 +3663,9 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*ISB';
 		this.pc++;
 		var param = this.fetchParams();
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.wrap8bit('increment', MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), null)));
-		// this.calcFlags(MMU.getCpuMemVal(param + this.X), false, null);
-		var arg = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)), null)));
+		// this.calcFlags(this.nes.MMU.getCpuMemVal(param + this.X), false, null);
+		var arg = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
 		// this.calcFlags(arg, true, temp);
@@ -3694,9 +3695,9 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		MMU.setCpuMemVal(param, (this.wrap8bit('increment', MMU.getCpuMemVal(param), null)));
-		// this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		var arg = MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(param), null)));
+		// this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
+		var arg = this.nes.MMU.getCpuMemVal(param);
 		// arg = ~arg;
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
@@ -3727,9 +3728,9 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		MMU.setCpuMemVal((param + this.X), (this.wrap8bit('increment', MMU.getCpuMemVal(param + this.X), null)));
-		// this.calcFlags(MMU.getCpuMemVal(param + this.X), false, null);
-		var arg = MMU.getCpuMemVal(param + this.X);
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(param + this.X), null)));
+		// this.calcFlags(this.nes.MMU.getCpuMemVal(param + this.X), false, null);
+		var arg = this.nes.MMU.getCpuMemVal(param + this.X);
 		// arg = ~arg;
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
@@ -3761,8 +3762,8 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		MMU.setCpuMemVal((param + this.Y), (this.wrap8bit('increment', MMU.getCpuMemVal(param + this.Y), null)));
-		var arg = MMU.getCpuMemVal(param + this.Y);
+		this.nes.MMU.setCpuMemVal((param + this.Y), (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(param + this.Y), null)));
+		var arg = this.nes.MMU.getCpuMemVal(param + this.Y);
 		// arg = ~arg;
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
@@ -3791,12 +3792,12 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.X;
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		MMU.setCpuMemVal((param), (this.wrap8bit('increment', MMU.getCpuMemVal(param), null)));
-		var arg = MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal((param), (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(param), null)));
+		var arg = this.nes.MMU.getCpuMemVal(param);
 		// arg = ~arg;
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
@@ -3824,12 +3825,12 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.Y;
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		MMU.setCpuMemVal((param + this.Y), (this.wrap8bit('increment', MMU.getCpuMemVal(param + this.Y), null)));
-		var arg = MMU.getCpuMemVal(param + this.Y);
+		this.nes.MMU.setCpuMemVal((param + this.Y), (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(param + this.Y), null)));
+		var arg = this.nes.MMU.getCpuMemVal(param + this.Y);
 		// arg = ~arg;
 		// var temp = this.accumulator + arg + (this.P & 0x01);
 		// temp = this.writeCarry(temp);
@@ -3857,13 +3858,13 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*SLO';
 		this.pc++;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(param) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal(param, MMU.getCpuMemVal(param) << 1);
-		// this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, this.nes.MMU.getCpuMemVal(param) << 1);
+		// this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 5;
 	};
@@ -3872,12 +3873,12 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*SLO';
 		this.pc++;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) << 1));
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) << 1));
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 6;
 	};
@@ -3888,12 +3889,12 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) << 1));
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) << 1));
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 6;
 	};
@@ -3904,12 +3905,12 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.X) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.X) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) << 1));
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(param + this.X);
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) << 1));
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(param + this.X);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 7;
 	};
@@ -3921,12 +3922,12 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.Y) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.Y) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) << 1));
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(param + this.Y);
+		this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) << 1));
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 7;
 	};
@@ -3935,16 +3936,16 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.X;
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		if ((MMU.getCpuMemVal(param) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param), (MMU.getCpuMemVal(param) << 1));
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal((param), (this.nes.MMU.getCpuMemVal(param) << 1));
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 8;
 	};
@@ -3953,16 +3954,16 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var param = this.fetchParams();
 		// param += this.Y;
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		if ((MMU.getCpuMemVal(param + this.Y) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.Y) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) << 1));
-		this.accumulator = this.accumulator | MMU.getCpuMemVal(param + this.Y);
+		this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) << 1));
+		this.accumulator = this.accumulator | this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 8;
 	};
@@ -3972,16 +3973,16 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(param) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) << 1));
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) << 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) | 0b00000001));
+			this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) | 0b00000001));
 		}
-		// this.calcFlags(MMU.getCpuMemVal(param), false, null);
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(param);
+		// this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 5;
 	};
@@ -3991,15 +3992,15 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) << 1));
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) << 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) | 0b00000001));
+			this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) | 0b00000001));
 		}
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 6;
 	};
@@ -4012,15 +4013,15 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) << 1));
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) << 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) | 0b00000001));
+			this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) | 0b00000001));
 		}
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(param);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 6;
 	};
@@ -4033,15 +4034,15 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.X) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.X) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) << 1));
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) << 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) | 0b00000001));
+			this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) | 0b00000001));
 		}
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(param + this.X);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(param + this.X);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 7;
 	};
@@ -4053,15 +4054,15 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.Y) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.Y) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) << 1));
+		this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) << 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) | 0b00000001));
+			this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) | 0b00000001));
 		}
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(param + this.Y);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 7;
 	};
@@ -4071,19 +4072,19 @@ function cpu(MMU, PPU) {
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
 		// param += this.X;
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		if ((MMU.getCpuMemVal(param) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param), (MMU.getCpuMemVal(param) << 1));
+		this.nes.MMU.setCpuMemVal((param), (this.nes.MMU.getCpuMemVal(param) << 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((param), (MMU.getCpuMemVal(param) | 0b00000001));
+			this.nes.MMU.setCpuMemVal((param), (this.nes.MMU.getCpuMemVal(param) | 0b00000001));
 		}
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(param);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 8;
 	};
@@ -4093,19 +4094,19 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		if ((MMU.getCpuMemVal(param + this.Y) >> 7) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.Y) >> 7) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) << 1));
+		this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) << 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) | 0b00000001));
+			this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) | 0b00000001));
 		}
-		this.accumulator = this.accumulator & MMU.getCpuMemVal(param + this.Y);
+		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 8;
 	};
@@ -4114,12 +4115,12 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*SRE';
 		this.pc++;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(param) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) >> 1));
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) >> 1));
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 5;
 	};
@@ -4128,12 +4129,12 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*SRE';
 		this.pc++;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 1));
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 1));
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 6;
 	};
@@ -4145,12 +4146,12 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) >> 1));
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) >> 1));
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 6;
 	};
@@ -4162,12 +4163,12 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.X) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.X) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) >> 1));
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param + this.X);
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) >> 1));
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param + this.X);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 7;
 	};
@@ -4179,12 +4180,12 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.Y) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.Y) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) >> 1));
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param + this.Y);
+		this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) >> 1));
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 7;
 	};
@@ -4192,16 +4193,16 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*SRE';
 		this.pc++;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		if ((MMU.getCpuMemVal(param) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param), (MMU.getCpuMemVal(param) >> 1));
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param);
+		this.nes.MMU.setCpuMemVal((param), (this.nes.MMU.getCpuMemVal(param) >> 1));
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 8;
 	};
@@ -4210,16 +4211,16 @@ function cpu(MMU, PPU) {
 		this.opcodeType = '*SRE';
 		this.pc++;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		if ((MMU.getCpuMemVal(param + this.Y) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.Y) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) >> 1));
-		this.accumulator = this.accumulator ^ MMU.getCpuMemVal(param + this.Y);
+		this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) >> 1));
+		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param + this.Y);
 		this.calcFlags(null, false, null);
 		this.elapsedCycles += 8;
 	};
@@ -4229,15 +4230,15 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(param) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) >> 1));
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) >> 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) | 0b10000000));
+			this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) | 0b10000000));
 		}
-		var arg = MMU.getCpuMemVal(param);
+		var arg = this.nes.MMU.getCpuMemVal(param);
 		var temp = this.to2sComplement(this.accumulator) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (temp < -128 || temp > 127) {
 			this.setFlag('overflow');
@@ -4253,15 +4254,15 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
-		if ((MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 1));
+		this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) >> 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) | 0b10000000));
+			this.nes.MMU.setCpuMemVal((this.wrap8bit('sum', param, this.X)), (this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X)) | 0b10000000));
 		}
-		var arg = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var arg = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		var temp = this.to2sComplement(this.accumulator) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (temp < -128 || temp > 127) {
 			this.setFlag('overflow');
@@ -4281,15 +4282,15 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) >> 1));
+		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) >> 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal(param, (MMU.getCpuMemVal(param) | 0b10000000));
+			this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) | 0b10000000));
 		}
-		var arg = MMU.getCpuMemVal(param);
+		var arg = this.nes.MMU.getCpuMemVal(param);
 		var temp = this.to2sComplement(this.accumulator) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (temp < -128 || temp > 127) {
 			this.setFlag('overflow');
@@ -4308,15 +4309,15 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.X) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.X) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) >> 1));
+		this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) >> 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((param + this.X), (MMU.getCpuMemVal(param + this.X) | 0b10000000));
+			this.nes.MMU.setCpuMemVal((param + this.X), (this.nes.MMU.getCpuMemVal(param + this.X) | 0b10000000));
 		}
-		var arg = MMU.getCpuMemVal(param + this.X);
+		var arg = this.nes.MMU.getCpuMemVal(param + this.X);
 		var temp = this.to2sComplement(this.accumulator) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (temp < -128 || temp > 127) {
 			this.setFlag('overflow');
@@ -4335,15 +4336,15 @@ function cpu(MMU, PPU) {
 		var param2 = this.fetchParams();
 		param2 = param2 << 8;
 		var param = param2 | param1;
-		if ((MMU.getCpuMemVal(param + this.Y) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.Y) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) >> 1));
+		this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) >> 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) | 0b10000000));
+			this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) | 0b10000000));
 		}
-		var arg = MMU.getCpuMemVal(param + this.Y);
+		var arg = this.nes.MMU.getCpuMemVal(param + this.Y);
 		var temp = this.to2sComplement(this.accumulator) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (temp < -128 || temp > 127) {
 			this.setFlag('overflow');
@@ -4360,19 +4361,19 @@ function cpu(MMU, PPU) {
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
 		// param += this.X;
-		var index1 = MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		if ((MMU.getCpuMemVal(param) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param), (MMU.getCpuMemVal(param) >> 1));
+		this.nes.MMU.setCpuMemVal((param), (this.nes.MMU.getCpuMemVal(param) >> 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((param), (MMU.getCpuMemVal(param) | 0b10000000));
+			this.nes.MMU.setCpuMemVal((param), (this.nes.MMU.getCpuMemVal(param) | 0b10000000));
 		}
-		var arg = MMU.getCpuMemVal(param);
+		var arg = this.nes.MMU.getCpuMemVal(param);
 		var temp = this.to2sComplement(this.accumulator) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (temp < -128 || temp > 127) {
 			this.setFlag('overflow');
@@ -4389,19 +4390,19 @@ function cpu(MMU, PPU) {
 		this.pc++;
 		var currCarry = this.P & 0x01;
 		var param = this.fetchParams();
-		var index1 = MMU.getCpuMemVal(param);
-		var index2 = MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
+		var index1 = this.nes.MMU.getCpuMemVal(param);
+		var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
 		index2 = index2 << 8;
 		param = index2 | index1;
-		if ((MMU.getCpuMemVal(param + this.Y) & 0x01) == 1)
+		if ((this.nes.MMU.getCpuMemVal(param + this.Y) & 0x01) == 1)
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) >> 1));
+		this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) >> 1));
 		if (currCarry == 1) {
-			MMU.setCpuMemVal((param + this.Y), (MMU.getCpuMemVal(param + this.Y) | 0b10000000));
+			this.nes.MMU.setCpuMemVal((param + this.Y), (this.nes.MMU.getCpuMemVal(param + this.Y) | 0b10000000));
 		}
-		var arg = MMU.getCpuMemVal(param + this.Y);
+		var arg = this.nes.MMU.getCpuMemVal(param + this.Y);
 		var temp = this.to2sComplement(this.accumulator) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (temp < -128 || temp > 127) {
 			this.setFlag('overflow');
@@ -5190,8 +5191,8 @@ function cpu(MMU, PPU) {
 	this.serveISR = function(interrupt) {
 		switch (interrupt) {
 			case 'NMI':
-				var vector1 = MMU.getCpuMemVal(0xFFFA);
-				var vector2 = MMU.getCpuMemVal(0xFFFA + 1);
+				var vector1 = this.nes.MMU.getCpuMemVal(0xFFFA);
+				var vector2 = this.nes.MMU.getCpuMemVal(0xFFFA + 1);
 				vector2 = vector2 << 8;
 				//push pc to stack
 				// this.pushToStack(this.pc);
@@ -5203,8 +5204,8 @@ function cpu(MMU, PPU) {
 				this.elapsedCycles += 7;
 				break;
 			case 'BRK':
-				var vector1 = MMU.getCpuMemVal(0xFFFE);
-				var vector2 = MMU.getCpuMemVal(0xFFFE + 1);
+				var vector1 = this.nes.MMU.getCpuMemVal(0xFFFE);
+				var vector2 = this.nes.MMU.getCpuMemVal(0xFFFE + 1);
 				vector2 = vector2 << 8;
 				//push pc to stack
 				this.pushToStack((this.pc & 0xFF00) >> 8); //push high byte
@@ -5240,11 +5241,11 @@ function cpu(MMU, PPU) {
 		this.excessCpuCyclesDbg = 0; //resetting the excess cycles as already adjusted
 		//If enough CPU cycles have been consumed for 1 scanline of ppu cycles (340-341), render sprites and backgroud
 		if ((this.totalCpuCyclesDbg * 3) >= this.ppuCyclesCurrentScanLine) {
-			this.renderedScanLine = PPU.RenderNextScanline();
+			this.renderedScanLine = this.nes.PPU.RenderNextScanline();
 			//Check we are on the verge of vBlank
 			if (this.renderedScanLine == 241) {
 				//Generet NMI Interrupt
-				if (MMU.enableNMIGen)
+				if (this.nes.MMU.enableNMIGen)
 					this.serveISR('NMI');
 			}
 			//Calculating extra cpu cycles run for this scanline
@@ -5260,7 +5261,7 @@ function cpu(MMU, PPU) {
 		// var cpuCyclesElapsed = 0;
 		var renderedScanline = -1;
 		//Need to re render CHR for games using CHR RAM
-		MMU.reRenderCHR();
+		this.nes.MMU.reRenderCHR();
 		// var nmiCounter = 0;
 		//Debug VARs
 		// this.totalCPUCyclesThisFrame = 0;
@@ -5277,40 +5278,40 @@ function cpu(MMU, PPU) {
 			this.excessCpuCycles = 0;
 			if (this.oddFrame) {
 				this.ppuCyclesCurrentScanLine = 340;
-				if (MMU.OAMDMAwritten) {
+				if (this.nes.MMU.OAMDMAwritten) {
 					// this.totalCPUCyclesThisFrame += 514;
 					//exp
 					this.elapsedCycles += 514;
-					MMU.OAMDMAwritten = false;
+					this.nes.MMU.OAMDMAwritten = false;
 				}
 			}
 			else {
 				this.ppuCyclesCurrentScanLine = 341;
-				if (MMU.OAMDMAwritten) {
+				if (this.nes.MMU.OAMDMAwritten) {
 					// this.totalCPUCyclesThisFrame += 514;
 					//exp
 					this.elapsedCycles += 513;
-					MMU.OAMDMAwritten = false;
+					this.nes.MMU.OAMDMAwritten = false;
 				}
 			}
 			if ((this.elapsedCycles * 3) >= this.ppuCyclesCurrentScanLine) {
-				renderedScanline = PPU.RenderNextScanline(MMU.getOAM(), MMU.getNameTable(), MMU.getAttrTable());
+				renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
 				// totalScanLinesRenderedThisFrame++;
-				//Reset OAMADDR, TODO: move this to MMU after refactoring
+				//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring
 				if (renderedScanline == 261 || (renderedScanline >= 0 && renderedScanline < 240)) {
-					MMU.setOAMADDR(0);
+					this.nes.MMU.setOAMADDR(0);
 				}
 				//Check we are on the verge of vBlank
 				if (renderedScanline == 241) {
 					this.nmiLoopCounter++;
-					if (MMU.enableNMIGen && PPU.NMIOccured) { //Generet NMI Interrupt
+					if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) { //Generet NMI Interrupt
 						this.serveISR('NMI');
 						// nmiCounter++;
 					}
 				}
 				else if (renderedScanline == 261) {
 					frameCompleted = true;
-					// MMU.startBtnState = false;
+					// this.nes.MMU.startBtnState = false;
 				}
 				//Calculating extra cpu cycles run for this scanline
 				// this.excessCpuCycles = Math.floor(cpuCyclesElapsed - this.ppuCyclesCurrentScanLine / 3);

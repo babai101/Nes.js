@@ -1,40 +1,32 @@
-/*global $*/
+/*global $ mmu cpu apu ppu display iNES mapper*/
 $(document).ready(function() {
-    var ines;
-    var CPU;
-    var PPU;
-    var MMU;
-    var APU;
-    var mainDisplay;
     var isPaused = false;
-    ines = new iNES();
-    // var isDebugging = true;
     var initGame = function(romContent) {
         this.opcodes = new Uint8Array(romContent);
-        mainDisplay = new display(document.getElementById('nesCanvas'));
-        PPU = new ppu(mainDisplay);
-        MMU = new mmu(PPU);
-        CPU = new cpu(MMU, PPU);
-        APU = new apu(MMU);
-        MMU.OAMInit();
-        PPU.initScreenBuffer();
-        ines.load(this.opcodes, MMU);
-        MMU.nameTableMirroring = ines.mirroring;
-        PPU.nameTableMirroring = ines.mirroring;
-        CPU.reset();
-        MMU.copyCHRToGrid();
-        MMU.copyBGRCHRToGrid();
-        mainDisplay.screenReset();
+        this.mainDisplay = new display(document.getElementById('nesCanvas'));
+        this.ines = new iNES(this);
+        this.Mapper = new mapper(this);
+        this.PPU = new ppu(this);
+        this.MMU = new mmu(this);
+        this.CPU = new cpu(this);
+        this.APU = new apu(this);
+        this.MMU.OAMInit();
+        this.PPU.initScreenBuffer();
+        this.ines.parseRom(this.opcodes);
+        this.MMU.nameTableMirroring = this.ines.mirroring;
+        this.PPU.nameTableMirroring = this.ines.mirroring;
+        this.CPU.reset();
+        this.mainDisplay.screenReset();
     };
     var renderScreen = function() {
-        mainDisplay.updateCanvas();
+        this.mainDisplay.updateCanvas();
     };
 
     var renderFrame = function() {
         // if (!isPaused) {
-            CPU.runFrame();
-            CPU.totalCPUCyclesThisFrame;
-            CPU.nmiLoopCounter = 0;
+            this.CPU.runFrame();
+            this.CPU.totalCPUCyclesThisFrame;
+            this.CPU.nmiLoopCounter = 0;
             renderScreen();
         // }
         requestAnimationFrame(renderFrame);
@@ -68,11 +60,11 @@ $(document).ready(function() {
         isPaused = !isPaused;
     });
     $('#reset').click(function() {
-        mainDisplay = null;
-        PPU = null;
-        MMU = null;
-        CPU = null;
-        APU = null;
+        this.mainDisplay = null;
+        this.PPU = null;
+        this.MMU = null;
+        this.CPU = null;
+        this.APU = null;
     });
     $('#btnSearchRoms').click(function() {
         var url = "/api/getRomListByName/" + $('#inpSearchRoms').val();
@@ -117,31 +109,31 @@ $(document).ready(function() {
         switch (key) {
             //Start
             case 17:
-                MMU.startBtnState = 1;
+                this.MMU.startBtnState = 1;
                 break;
                 //A
             case 90:
-                MMU.aBtnState = 1;
+                this.MMU.aBtnState = 1;
                 break;
                 //B
             case 88:
-                MMU.bBtnState = 1;
+                this.MMU.bBtnState = 1;
                 break;
                 //Up
             case 38:
-                MMU.upBtnState = 1;
+                this.MMU.upBtnState = 1;
                 break;
                 //Down
             case 40:
-                MMU.downBtnState = 1;
+                this.MMU.downBtnState = 1;
                 break;
                 //Left
             case 37:
-                MMU.leftBtnState = 1;
+                this.MMU.leftBtnState = 1;
                 break;
                 //Right
             case 39:
-                MMU.rightBtnState = 1;
+                this.MMU.rightBtnState = 1;
                 break;
         }
     });
@@ -153,31 +145,31 @@ $(document).ready(function() {
         switch (key) {
             //Start
             case 17:
-                MMU.startBtnState = 0;
+                this.MMU.startBtnState = 0;
                 break;
                 //A
             case 90:
-                MMU.aBtnState = 0;
+                this.MMU.aBtnState = 0;
                 break;
                 //B
             case 88:
-                MMU.bBtnState = 0;
+                this.MMU.bBtnState = 0;
                 break;
                 //Up
             case 38:
-                MMU.upBtnState = 0;
+                this.MMU.upBtnState = 0;
                 break;
                 //Down
             case 40:
-                MMU.downBtnState = 0;
+                this.MMU.downBtnState = 0;
                 break;
                 //Left
             case 37:
-                MMU.leftBtnState = 0;
+                this.MMU.leftBtnState = 0;
                 break;
                 //Right
             case 39:
-                MMU.rightBtnState = 0;
+                this.MMU.rightBtnState = 0;
                 break;
         }
     });

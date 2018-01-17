@@ -1,6 +1,7 @@
 //Memory Management Unit to synchronize memory access between CPU and PPU
 
-function mmu(PPU) {
+function mmu(nes) {
+    this.nes = nes;
     this.cpuMem = new Uint8Array(65536);
     this.ppuMem = new Uint8Array(16384);
     this.nameTableMirroring = '';
@@ -65,6 +66,11 @@ function mmu(PPU) {
     this.getCpuMemVal = function(location) {
         location = location & 0xFFFF;
         var temp;
+        //RAM
+        if (location >= 0 && location < 0x800) {
+            return this.cpuMem[location];
+        }
+        //RAM mirrors
         if (location >= 0x800 && location <= 0x1FFF) {
             temp = location % 0x800;
             return this.cpuMem[temp];
@@ -135,9 +141,11 @@ function mmu(PPU) {
         else if (location == 0x4017) {
             return 0;
         }
+        else if (location >= 0x8000 && location <= 0xFFFF) {
+            return this.nes.Mapper.getPRGRom(location);
+        }
         else {
-            this.ppuRegWriteFlag = false;
-            this.ppuRegReadFlag = false;
+            alert('incorrect location to get from!');
             return this.cpuMem[location];
         }
 
@@ -145,6 +153,15 @@ function mmu(PPU) {
 
     this.setCpuMemVal = function(location, value) {
         var temp;
+        
+        //RAM 
+        if (location >= 0 && location < 0x800) {
+            temp = this.cpuMem[location];
+            this.cpuMem[location] = value;
+            return temp;
+        }
+
+        //RAM mirrors
         if (location >= 0x800 && location <= 0x1FFF) {
             temp = location % 0x800;
             var temp2 = this.cpuMem[temp];
@@ -159,8 +176,6 @@ function mmu(PPU) {
             temp = temp % 8;
             return this.setPPUReg((0x2000 + temp), value);
         }
-        // else if (location == 0x4014)
-        //     return 0;
         else if (location >= 0x4000 && location <= 0x4015) {
             return this.setAPUReg(location, value);
         }
@@ -180,17 +195,17 @@ function mmu(PPU) {
         }
         else {
             if (location >= 0x8000 && location <= 0xFFFF) {
+                this.nes.Mapper.setBank(value);
                 return 0;
             }
-            temp = this.cpuMem[location];
-            this.cpuMem[location] = value;
-            this.ppuRegWriteFlag = false;
-            this.ppuRegReadFlag = false;
-            return temp;
+            alert("incorrect location to put data in!");
         }
     };
 
     this.getPpuMemVal = function(location) {
+        if (location >= 0 && location < 0x2000) {
+            return this.nes.Mapper.getCHRRom(location);
+        }
         return this.ppuMem[location];
     };
 
@@ -244,6 +259,9 @@ function mmu(PPU) {
                 this.ppuMem[location - 0x400] = value;
             }
         }
+        else if (location >= 0 && location < 0x2000) {
+            alert('wrong ppu location to write to!');
+        }
         else
             this.ppuMem[location] = value;
     };
@@ -251,7 +269,7 @@ function mmu(PPU) {
 
 
     this.setPPUPalette = function(location, value) {
-        PPU.setPalette(location, value);
+        this.nes.PPU.setPalette(location, value);
     };
 
     this.getPPUReg = function(location) {
@@ -268,14 +286,14 @@ function mmu(PPU) {
                 this.ppuRegObj.PPUSCROLL = 0x00;
                 this.PPUADDRFirstWrite = true;
                 this.PPUSCROLLFirstWrite = true;
-                var temp = PPU.getPPUSTATUS() & 0xF0;
+                var temp = this.nes.PPU.getPPUSTATUS() & 0xF0;
                 temp = temp | (this.lsbLastWritePPU & 0x0F);
                 return temp;
             case 0x2003:
                 break;
                 //OAMDATA
             case 0x2004:
-                if (PPU.currentScanline == 261 || (PPU.currentScanline >= 0 && PPU.currentScanline < 240)) {
+                if (this.nes.PPU.currentScanline == 261 || (this.nes.PPU.currentScanline >= 0 && this.nes.PPU.currentScanline < 240)) {
                     return;
                 }
                 else {
@@ -288,10 +306,10 @@ function mmu(PPU) {
                 //PPUDATA
             case 0x2007:
                 var temp = this.getPPUDATA(this.ppuRegObj.PPUADDR);
-                if (PPU.vRamAddrInc == 'across') {
+                if (this.nes.PPU.vRamAddrInc == 'across') {
                     this.ppuRegObj.PPUADDR += 1;
                 }
-                else if (PPU.vRamAddrInc == 'down') {
+                else if (this.nes.PPU.vRamAddrInc == 'down') {
                     this.ppuRegObj.PPUADDR += 32;
                 }
                 return temp;
@@ -305,7 +323,7 @@ function mmu(PPU) {
             //PPUCTRL
             case 0x2000:
                 this.ppuRegObj.PPUCTRL = value;
-                PPU.setPPUCTRL(this.ppuRegObj.PPUCTRL);
+                this.nes.PPU.setPPUCTRL(this.ppuRegObj.PPUCTRL);
                 var temp = (this.ppuRegObj.PPUCTRL >> 7) & 0x01;
                 if (temp == 0)
                     this.enableNMIGen = false;
@@ -316,7 +334,7 @@ function mmu(PPU) {
                 //PPUMASK    
             case 0x2001:
                 this.ppuRegObj.PPUMASK = value;
-                PPU.setPPUMASK(this.ppuRegObj.PPUMASK);
+                this.nes.PPU.setPPUMASK(this.ppuRegObj.PPUMASK);
                 this.PPUMASKwritten = true;
                 return 0x2001;
             case 0x2002:
@@ -329,14 +347,6 @@ function mmu(PPU) {
                 //OAMDATA
             case 0x2004:
                 this.setOAMDATA(value);
-                // if (PPU.currentScanline == 261 || (PPU.currentScanline >= 0 && PPU.currentScanline < 240)) {
-
-                // }
-                // else {
-                //     this.setOAMDATA(value);
-                //     this.setOAMADDR(this.ppuRegObj.OAMADDR + 1);
-                //     this.OAMDATAwritten = true;
-                // }
                 return 0x2004;
                 //PPUSCROLL
             case 0x2005:
@@ -351,10 +361,10 @@ function mmu(PPU) {
                 //PPUDATA
             case 0x2007:
                 this.setPPUDATA(value);
-                if (PPU.vRamAddrInc == 'across') {
+                if (this.nes.PPU.vRamAddrInc == 'across') {
                     this.ppuRegObj.PPUADDR += 1;
                 }
-                else if (PPU.vRamAddrInc == 'down') {
+                else if (this.nes.PPU.vRamAddrInc == 'down') {
                     this.ppuRegObj.PPUADDR += 32;
                 }
                 this.PPUDATAwritten = true;
@@ -371,8 +381,8 @@ function mmu(PPU) {
         if (this.usesCHRRam) {
             this.copyCHRToGrid();
             this.copyBGRCHRToGrid();
-            PPU.CHRGrid = this.CHRGrid;
-            PPU.BGRCHRGrid = this.BGRCHRGrid;
+            this.nes.PPU.CHRGrid = this.CHRGrid;
+            this.nes.PPU.BGRCHRGrid = this.BGRCHRGrid;
         }
     };
 
@@ -403,7 +413,7 @@ function mmu(PPU) {
     };
 
     this.setOAMDATA = function(value) {
-        if (PPU.currentScanline == 261 || (PPU.currentScanline >= 0 && PPU.currentScanline < 240)) {
+        if (this.nes.PPU.currentScanline == 261 || (this.nes.PPU.currentScanline >= 0 && this.nes.PPU.currentScanline < 240)) {
 
         }
         else {
@@ -415,12 +425,12 @@ function mmu(PPU) {
 
     this.setOAMADDR = function(value) {
         this.ppuRegObj.OAMADDR = value;
-        PPU.setOAMADDR(this.ppuRegObj.OAMADDR);
+        this.nes.PPU.setOAMADDR(this.ppuRegObj.OAMADDR);
     };
 
     //OAM DMA copying
     this.startOAMDMACopy = function() {
-        if ( /*PPU.vBlankStarted*/ true) {
+        if ( /*this.nes.PPU.vBlankStarted*/ true) {
             for (var i = 0; i < 256; i++) {
                 // this.OAM[i] = this.getCpuMemVal((this.OAMDMA << 8) + i);
                 // this.OAM[i] = this.getCpuMemVal((this.OAMDMA * 0x100) + i);
@@ -453,12 +463,12 @@ function mmu(PPU) {
         this.ppuRegObj.PPUSCROLL = value;
         if (this.PPUADDRFirstWrite) {
             // if (this.PPUSCROLLFirstWrite) {
-            PPU.xScroll = value;
+            this.nes.PPU.xScroll = value;
             // this.PPUSCROLLFirstWrite = false;
             this.PPUADDRFirstWrite = false;
         }
         else {
-            PPU.yScroll = value;
+            this.nes.PPU.yScroll = value;
             // this.PPUSCROLLFirstWrite = true;
             this.PPUADDRFirstWrite = true;
         }
@@ -476,67 +486,5 @@ function mmu(PPU) {
     };
     this.setPPUDATA = function(value) {
         this.setPpuMemVal(this.ppuRegObj.PPUADDR, value);
-    };
-
-    this.copyCHRToGrid = function() {
-        this.CHRGrid = [];
-        var tileLow, tileHigh, mask, lowVal, highVal, compoundVal, compoundTileRow, spriteTile;
-        for (var i = 0; i < 4096; i += 16) {
-            tileLow = [];
-            tileHigh = [];
-            for (var j = 0; j < 8; j++) {
-                tileLow.push(this.getPpuMemVal(i + j));
-            }
-            for (var k = 8; k < 16; k++) {
-                tileHigh.push(this.getPpuMemVal(i + k));
-            }
-            spriteTile = [];
-            for (var l = 0; l < 8; l++) {
-                compoundTileRow = [];
-                for (var k = 0; k < 8; k++) {
-                    mask = 0b00000001 << (7 - k);
-                    lowVal = mask & tileLow[l];
-                    highVal = mask & tileHigh[l];
-                    lowVal = lowVal >> (7 - k);
-                    highVal = highVal >> (7 - k);
-                    compoundVal = (highVal << 1) | lowVal;
-                    compoundTileRow.push(compoundVal);
-                }
-                spriteTile.push(compoundTileRow);
-            }
-            this.CHRGrid.push(spriteTile);
-        }
-        PPU.CHRGrid = this.CHRGrid;
-    };
-
-    this.copyBGRCHRToGrid = function() {
-        this.BGRCHRGrid = [];
-        var tileLow, tileHigh, mask, lowVal, highVal, compoundVal, compoundTileRow, bgrTile;
-        for (var i = 4096; i < 8192; i += 16) {
-            tileLow = [];
-            tileHigh = [];
-            for (var j = 0; j < 8; j++) {
-                tileLow.push(this.getPpuMemVal(i + j));
-            }
-            for (var k = 8; k < 16; k++) {
-                tileHigh.push(this.getPpuMemVal(i + k));
-            }
-            bgrTile = [];
-            for (var l = 0; l < 8; l++) {
-                compoundTileRow = [];
-                for (var k = 0; k < 8; k++) {
-                    mask = 0b00000001 << (7 - k);
-                    lowVal = mask & tileLow[l];
-                    highVal = mask & tileHigh[l];
-                    lowVal = lowVal >> (7 - k);
-                    highVal = highVal >> (7 - k);
-                    compoundVal = (highVal << 1) | lowVal;
-                    compoundTileRow.push(compoundVal);
-                }
-                bgrTile.push(compoundTileRow);
-            }
-            this.BGRCHRGrid.push(bgrTile);
-        }
-        PPU.BGRCHRGrid = this.BGRCHRGrid;
     };
 }

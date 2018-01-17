@@ -1,4 +1,5 @@
-function ppu(Display) {
+function ppu(nes) {
+    this.nes = nes;
     //Render VARS
     this.currentScanline = 0;
     this.nameTableMirroring = '';
@@ -257,8 +258,8 @@ function ppu(Display) {
         for (var x = 0; x < 256 * 240; x++) {
             this.screenBuffer.push(0x000000);
         }
-        Display.initScreenBuffer();
-        // Display.initNameTableScreenBuffer();
+        this.nes.mainDisplay.initScreenBuffer();
+        // this.nes.mainDisplay.initNameTableScreenBuffer();
     };
 
     this.calcPaletteFromAttr = function(X, Y, attrByte) {
@@ -318,12 +319,8 @@ function ppu(Display) {
                 tileNum = oam[spritesToDraw[i] + 1];
                 spriteAttr = oam[spritesToDraw[i] + 2];
                 //Select tile num from OAM byte 1 and index from CHRGrid already prepared
-                if (this.spritePatTblAddr == 'left') {
-                    tile = this.CHRGrid[tileNum];
-                }
-                else if (this.spritePatTblAddr == 'right') {
-                    tile = this.BGRCHRGrid[tileNum];
-                }
+                tile = this.nes.Mapper.getCHRGrid(this.spritePatTblAddr, tileNum);
+
                 // tile = this.spritePatTblAddr[tileNum];
                 tileRow = tile[this.currentScanline - spriteY];
                 //Select the palette number from OAM for the tile
@@ -378,7 +375,7 @@ function ppu(Display) {
                             pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
                             // this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColor;
                             this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
-                            Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
+                            this.nes.mainDisplay.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
                         }
 
                         else if (currentBackgroundPixelColor != 0) {
@@ -388,7 +385,7 @@ function ppu(Display) {
                                 pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
                                 this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
                                 // this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColor;
-                                Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
+                                this.nes.mainDisplay.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
                             }
                         }
                     }
@@ -430,13 +427,14 @@ function ppu(Display) {
                 if ((tileNum & 0x01) == 0) {
                     //for bottom of 8x16 tile, select the next tile from pattern table
                     tileNum = (tileNum & 0xFE);
-                    tileUp = this.CHRGrid[tileNum];
-                    tileDown = this.CHRGrid[tileNum + 1];
+                    // tileUp = this.CHRGrid[tileNum];
+                    tileUp = this.nes.Mapper.getCHRGrid('left', tileNum);
+                    tileDown = this.nes.Mapper.getCHRGrid('left', tileNum + 1);
                 }
                 else if ((tileNum & 0x01) == 1) {
                     tileNum = (tileNum & 0xFE);
-                    tileUp = this.BGRCHRGrid[tileNum];
-                    tileDown = this.BGRCHRGrid[tileNum + 1];
+                    tileUp = this.nes.Mapper.getCHRGrid('right', tileNum);
+                    tileDown = this.nes.Mapper.getCHRGrid('right', tileNum + 1);
                 }
                 // tileRowIndex = tileRowIndex % 8; //we got the specifig tile in tile var already so normalizing
                 if (drawingTopTile) {
@@ -507,7 +505,7 @@ function ppu(Display) {
                         if (currentBackgroundPixelColor == 0) {
                             pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
                             this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
-                            Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
+                            this.nes.mainDisplay.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
                         }
 
                         else if (currentBackgroundPixelColor != 0) {
@@ -515,7 +513,7 @@ function ppu(Display) {
                             if ((currentBackgroundPixelColor != 0) && ((spriteAttr & 0b00100000) == 0)) {
                                 pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
                                 this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
-                                Display.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
+                                this.nes.mainDisplay.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
                             }
                         }
                     }
@@ -597,12 +595,7 @@ function ppu(Display) {
             tileToDraw = nametable[0x2000 | vReg];
 
             //get the tile bits from pre-calculated grid
-            if (this.backgroundPatTblAddr == 'left') {
-                tileToDraw = this.CHRGrid[tileToDraw];
-            }
-            else if (this.backgroundPatTblAddr == 'right') {
-                tileToDraw = this.BGRCHRGrid[tileToDraw];
-            }
+            tileToDraw = this.nes.Mapper.getCHRGrid(this.backgroundPatTblAddr, tileToDraw);
 
             //Determine color palette
             //Get the current byte entries in 8x8 (32x32 pixel) attribute byte array
@@ -656,7 +649,7 @@ function ppu(Display) {
         //start merging our color pixel array into screen buffer from now on
         for (var x = screenPixel; x < (screenPixel + pixelColorArray.length); x++) {
             this.screenBuffer[x] = pixelColorIndexArray[x - screenPixel];
-            Display.updateBuffer(x, pixelColorArray[x - screenPixel]);
+            this.nes.mainDisplay.updateBuffer(x, pixelColorArray[x - screenPixel]);
         }
     };
 
@@ -722,12 +715,7 @@ function ppu(Display) {
             spriteY = oam[0] + 1;
             tileNum = oam[1];
             //Select tile num from OAM byte 1 and index from CHRGrid already prepared
-            if (this.spritePatTblAddr == 'left') {
-                tile = this.CHRGrid[tileNum];
-            }
-            else if (this.spritePatTblAddr == 'right') {
-                tile = this.BGRCHRGrid[tileNum];
-            }
+            tile = this.nes.Mapper.getCHRGrid(this.spritePatTblAddr, tileNum);
             tileRow = tile[this.currentScanline - spriteY];
             for (var x = 0; x < 8; x++) {
                 pixelColorIndex = tileRow[x];
