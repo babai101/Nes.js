@@ -111,7 +111,10 @@ function ppu(nes) {
     //PPUSCROLL vars
     this.xScroll = 0;
     this.yScroll = 0;
-
+    this.coarseXScroll = 0;
+    this.coarseYScroll = 0;
+    this.fineXScroll = 0;
+    this.fineYScroll = 0;
     this.OAM = [];
 
     //OAMADDR 
@@ -553,7 +556,10 @@ function ppu(nes) {
         }
         tileXOffset = Math.floor(this.xScroll / 8); //offset tile (see above)
         tileYOffset = Math.floor((this.currentScanline + this.yScroll) / 8); //offset tile (see above)
-        pixelXOffset = this.xScroll % 8; //offset pixel
+
+        // pixelXOffset = this.xScroll % 8; //offset pixel
+        pixelXOffset = this.fineXScroll;
+
         pixelYOffset = (this.currentScanline + this.yScroll) % 8; //offset pixel
         curTileX = tileXOffset; //start rendering from the offsetted tile
         curTileYOffsetted = tileYOffset;
@@ -579,7 +585,7 @@ function ppu(nes) {
             }
 
             if (curTileX >= 32) { //check if current tile lies on next nametable
-                if (this.baseNameTblAddr == 3) {
+                if (nametableOffset == 3) {
                     nametableOffset = 0;
                 }
                 else {
@@ -608,6 +614,9 @@ function ppu(nes) {
             //Now start the actual rendering process
 
             var curY = (this.currentScanline + this.yScroll) % 8; //get the y co-ordinate of an 8x8 tile from where to start rendering
+            // var curY = (this.currentScanline % 8) + this.fineYScroll;
+
+
             var curX = 0;
             var pixelXlimit = 8;
             if (tileCounter == 0) { //now drawing the left most tile so check for pixel offset
@@ -677,7 +686,8 @@ function ppu(nes) {
 
             }
             //Calculate sprite 0 hit before rendering begins
-            this.setSprite0Hit(oam);
+            if (this.renderBackground && this.renderSprite)
+                this.setSprite0Hit(oam);
 
             if (this.renderBackground)
                 this.renderBackGrounds(nametable, attrtable);
@@ -720,14 +730,21 @@ function ppu(nes) {
             for (var x = 0; x < 8; x++) {
                 pixelColorIndex = tileRow[x];
                 if (pixelColorIndex != 0) {
-                    var currentBackgroundPixelColor = this.screenBuffer[spriteX + x + (this.currentScanline * 256)];
-                    //Sprite hit logic: non-transparent Sprite over non-transparent BG REGARDLESS of priority
-                    if (currentBackgroundPixelColor != 0) {
-                        //If current sprite is sprite 0 and sprite hit not already set in PPUSTATUS
-                        if (((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
-                            //set sprite 0 hit bit TODO: Other sprite hit conditions
-                            this.ppuStatusBits = this.ppuStatusBits | 0x40;
-                            this.sprite0Hit = true;
+                    if ((spriteX + x) != 255) {
+                        if ((this.renderBGLeftMost || this.renderSpritesLeftMost) && ((spriteX + x) >= 0 && (spriteX + x) < 8)) {
+
+                        }
+                        else {
+                            var currentBackgroundPixelColor = this.screenBuffer[spriteX + x + (this.currentScanline * 256)];
+                            //Sprite hit logic: non-transparent Sprite over non-transparent BG REGARDLESS of priority
+                            if (currentBackgroundPixelColor != 0) {
+                                //If current sprite is sprite 0 and sprite hit not already set in PPUSTATUS
+                                if (((this.ppuStatusBits & 0x40) == 0x00) && this.renderBackground) {
+                                    //set sprite 0 hit bit TODO: Other sprite hit conditions
+                                    this.ppuStatusBits = this.ppuStatusBits | 0x40;
+                                    this.sprite0Hit = true;
+                                }
+                            }
                         }
                     }
                 }

@@ -182,7 +182,7 @@ function mapper(nes) {
                 this.setPRGBank(bank);
                 break;
             case 3: //CNROM
-                this.setCHRBank(bank);
+                this.setCHRBank(bank & 0x03);
                 break;
         }
     };

@@ -144,7 +144,7 @@ function mmu(nes) {
             return this.nes.Mapper.getPRGRom(location);
         }
         else {
-            alert('incorrect location to get from!');
+            // alert('incorrect location to get from!');
             return this.cpuMem[location];
         }
 
@@ -197,7 +197,7 @@ function mmu(nes) {
                 this.nes.Mapper.setBank(value);
                 return 0;
             }
-            alert("incorrect location to put data in!");
+            // alert("incorrect location to put data in!");
         }
     };
 
@@ -442,12 +442,17 @@ function mmu(nes) {
         if (this.PPUADDRFirstWrite) {
             this.ppuRegObj.PPUADDR = value;
             this.ppuRegObj.PPUADDR = this.ppuRegObj.PPUADDR << 8;
+            this.nes.PPU.fineYScroll = 0;//this.nes.PPU.fineYScroll & 0x04;
+            this.nes.PPU.fineYScroll = this.nes.PPU.fineYScroll | ((value & 0x30) >> 4);
+            this.nes.PPU.baseNameTblAddr = (value & 0x0C) >> 2;
             this.PPUADDRFirstWrite = false;
         }
         else {
             this.ppuRegObj.PPUADDR = this.ppuRegObj.PPUADDR | value;
             if (this.ppuRegObj.PPUADDR > 0x3FFF)
                 this.ppuRegObj.PPUADDR = this.ppuRegObj.PPUADDR - 0x3FFF;
+            this.nes.PPU.coarseXScroll = value & 0x1F;
+            this.nes.PPU.coarseYScroll = (this.coarseYScroll & 0x18) | ((value & 0xE0) >> 5);
             this.PPUADDRFirstWrite = true;
         }
     };
@@ -455,14 +460,15 @@ function mmu(nes) {
     this.setPPUSCROLL = function(value) {
         this.ppuRegObj.PPUSCROLL = value;
         if (this.PPUADDRFirstWrite) {
-            // if (this.PPUSCROLLFirstWrite) {
             this.nes.PPU.xScroll = value;
-            // this.PPUSCROLLFirstWrite = false;
+            this.nes.PPU.coarseXScroll = (value & 0xF8) >> 3;
+            this.nes.PPU.fineXScroll = value & 0x07;
             this.PPUADDRFirstWrite = false;
         }
         else {
             this.nes.PPU.yScroll = value;
-            // this.PPUSCROLLFirstWrite = true;
+            this.nes.PPU.coarseYScroll = (value & 0xF8) >> 3;
+            this.nes.PPU.fineYScroll = value & 0x07;
             this.PPUADDRFirstWrite = true;
         }
     };
