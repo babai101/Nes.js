@@ -5,6 +5,7 @@ function mapper(nes) {
     this.chrRomBanks = [];
     this.currentPRGBank = 0;
     this.currentCHRBank = 0;
+    this.chrRam = false;
 
     this.loadRom = function(romBytes) {
         this.currentMapperNum = this.nes.ines.mapperNum;
@@ -41,6 +42,14 @@ function mapper(nes) {
         }
     };
 
+    this.initCHRRam = function() {
+        var temp = [];
+        for (var i = 0; i < 8192; i++) {
+            temp.push(0);
+        }
+        this.chrRomBanks.push(temp);
+    };
+
     this.loadPRGBanks = function(romBytes) {
         var prgBank;
         this.prgRomBanks = [];
@@ -70,9 +79,10 @@ function mapper(nes) {
             this.chrRomBanks[i] = chrBank;
         }
         //TODO refactor CHR ram loading
-        // else if (this.nes.ines.chrRomUnits == 0) {
-        //     this.nes.MMU.usesCHRRam = true;
-        // }
+        if (this.nes.ines.chrRomUnits == 0) {
+            this.initCHRRam();
+            this.chrRam = true;
+        }
     };
 
     this.renderCHRGrids = function() {
@@ -89,8 +99,7 @@ function mapper(nes) {
     //return PRG rom data 
     this.getPRGRom = function(location) {
         switch (this.currentMapperNum) {
-            //NROM
-            case 0:
+            case 0: //NROM
                 if (location >= 0x8000 && location < 0xC000) {
                     return this.prgRomBanks[0][location - 0x8000];
                 }
@@ -98,42 +107,82 @@ function mapper(nes) {
                     return this.prgRomBanks[1][location - 0xC000];
                 }
                 break;
-                //UnROM
-            case 2:
+            case 2: //UnROM
+                if (location >= 0x8000 && location < 0xC000) {
+                    return this.prgRomBanks[this.currentPRGBank][location - 0x8000];
+                }
+                else if (location >= 0xC000 && location <= 0xFFFF) {
+                    return this.prgRomBanks[this.prgRomBanks.length - 1][location - 0xC000];
+                }
+                break;
+            case 3: //CNROM
+                if (location >= 0x8000 && location < 0xC000) {
+                    return this.prgRomBanks[0][location - 0x8000];
+                }
+                else if (location >= 0xC000 && location <= 0xFFFF) {
+                    return this.prgRomBanks[1][location - 0xC000];
+                }
                 break;
         }
     };
-    
+
     //return CHR rom data
-    this.getCHRRom = function (location) {
+    this.getCHRRom = function(location) {
         switch (this.currentMapperNum) {
-            //NROM
-            case 0:
-                return this.chrRomBanks[0][location];
-                //UnROM
-            case 2:
-                break;
+            case 0: //NROM
+                return this.chrRomBanks[this.currentCHRBank][location];
+            case 2: //UnROM
+                return this.chrRomBanks[this.currentCHRBank][location];
+            case 3: //CNROM
+                return this.chrRomBanks[this.currentCHRBank][location];
         }
     };
-    
+
     this.getCHRGrid = function(patternTblAddr, index) {
-        switch(this.currentMapperNum) {
-            //NROM
-            case 0:
-                if(patternTblAddr == 'left') {
+        switch (this.currentMapperNum) {
+            case 0: //NROM
+                if (patternTblAddr == 'left') {
                     return this.chrGrids[0][0][index];
                 }
                 else if (patternTblAddr == 'right') {
                     return this.chrGrids[0][1][index];
                 }
                 break;
+            case 2: //UnROM
+                if (patternTblAddr == 'left') {
+                    return this.chrGrids[0][0][index];
+                }
+                else if (patternTblAddr == 'right') {
+                    return this.chrGrids[0][1][index];
+                }
+                break;
+            case 3: //CNROM
+                if (patternTblAddr == 'left') {
+                    return this.chrGrids[this.currentCHRBank][0][index];
+                }
+                else if (patternTblAddr == 'right') {
+                    return this.chrGrids[this.currentCHRBank][1][index];
+                }
+                break;
+        }
+    };
+
+    this.setCHRRom = function(location, value) {
+        switch (this.currentMapperNum) {
+            //UnROM
+            case 2:
+                this.chrRomBanks[this.currentCHRBank][location] = value;
+                break;
         }
     };
 
     this.setBank = function(bank) {
         switch (this.currentMapperNum) {
-            //UnROM
-            case 2:
+            case 2: //UnROM
+                this.setPRGBank(bank);
+                break;
+            case 3: //CNROM
+                this.setCHRBank(bank);
                 break;
         }
     };
@@ -177,5 +226,11 @@ function mapper(nes) {
             chrGrid.push(tile);
         }
         return chrGrid;
+    };
+
+    this.reRenderCHR = function() {
+        this.chrGrids[0][0] = this.copyCHRToGrid(this.chrRomBanks[this.currentCHRBank], 0);
+        this.chrGrids[0][1] = this.copyCHRToGrid(this.chrRomBanks[this.currentCHRBank], 4096);
+        this.nes.MMU.chrRamWritten = false;
     };
 }

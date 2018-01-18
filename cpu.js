@@ -2583,7 +2583,7 @@ function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if(this.loggingEnabled)
+		if (this.loggingEnabled)
 			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if ((this.P >> 7) == 1) {
 			// this.pc--;
@@ -2602,7 +2602,7 @@ function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if(this.loggingEnabled)
+		if (this.loggingEnabled)
 			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if (((this.P >> 6) & 0x01) == 0) {
 			// this.pc--;
@@ -2621,7 +2621,7 @@ function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if(this.loggingEnabled)
+		if (this.loggingEnabled)
 			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if (((this.P >> 6) & 0x01) == 1) {
 			// this.pc--;
@@ -2640,7 +2640,7 @@ function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if(this.loggingEnabled)
+		if (this.loggingEnabled)
 			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if ((this.P & 0x01) == 0) {
 			// this.pc--;
@@ -2659,7 +2659,7 @@ function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if(this.loggingEnabled)
+		if (this.loggingEnabled)
 			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if ((this.P & 0x01) == 1) {
 			// this.pc--;
@@ -2677,7 +2677,7 @@ function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if(this.loggingEnabled)
+		if (this.loggingEnabled)
 			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if (((this.P >> 1) & 0x01) == 0) {
 			// this.pc--;
@@ -5261,7 +5261,9 @@ function cpu(nes) {
 		// var cpuCyclesElapsed = 0;
 		var renderedScanline = -1;
 		//Need to re render CHR for games using CHR RAM
-		this.nes.MMU.reRenderCHR();
+		if (this.nes.MMU.chrRamWritten) {
+			this.nes.Mapper.reRenderCHR();
+		}
 		// var nmiCounter = 0;
 		//Debug VARs
 		// this.totalCPUCyclesThisFrame = 0;
@@ -5295,6 +5297,9 @@ function cpu(nes) {
 				}
 			}
 			if ((this.elapsedCycles * 3) >= this.ppuCyclesCurrentScanLine) {
+				// if (this.nes.MMU.chrRamWritten) {
+				// 	this.nes.Mapper.reRenderCHR();
+				// }
 				renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
 				// totalScanLinesRenderedThisFrame++;
 				//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring

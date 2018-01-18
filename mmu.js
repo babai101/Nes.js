@@ -42,8 +42,7 @@ function mmu(nes) {
     this.spriteGrid = [];
     this.spriteTiles = [];
     this.OAM = [];
-    this.usesCHRRam = false;
-
+    this.chrRamWritten = false;
     //button states
     this.startBtnState = 0;
     this.selectBtnState = 0;
@@ -153,7 +152,7 @@ function mmu(nes) {
 
     this.setCpuMemVal = function(location, value) {
         var temp;
-        
+
         //RAM 
         if (location >= 0 && location < 0x800) {
             temp = this.cpuMem[location];
@@ -210,6 +209,12 @@ function mmu(nes) {
     };
 
     this.setPpuMemVal = function(location, value) {
+        if (location >= 0 && location < 0x2000) {
+            this.ppuMem[location] = value;
+            this.nes.Mapper.setCHRRom(location, value);
+            this.chrRamWritten = true;
+            return;
+        }
         if (location >= 0x3000 && location <= 0x3EFF) {
             location = location - 0x1000;
         }
@@ -258,9 +263,6 @@ function mmu(nes) {
                 this.ppuMem[location] = value;
                 this.ppuMem[location - 0x400] = value;
             }
-        }
-        else if (location >= 0 && location < 0x2000) {
-            alert('wrong ppu location to write to!');
         }
         else
             this.ppuMem[location] = value;
@@ -374,15 +376,6 @@ function mmu(nes) {
                 this.setOAMDMA(this.ppuRegObj.OAMDMA);
                 this.OAMDMAwritten = true;
                 return 0x4014;
-        }
-    };
-
-    this.reRenderCHR = function() {
-        if (this.usesCHRRam) {
-            this.copyCHRToGrid();
-            this.copyBGRCHRToGrid();
-            this.nes.PPU.CHRGrid = this.CHRGrid;
-            this.nes.PPU.BGRCHRGrid = this.BGRCHRGrid;
         }
     };
 
