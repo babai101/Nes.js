@@ -152,7 +152,6 @@ function mmu(nes) {
 
     this.setCpuMemVal = function(location, value) {
         var temp;
-
         //RAM 
         if (location >= 0 && location < 0x800) {
             temp = this.cpuMem[location];
@@ -190,7 +189,7 @@ function mmu(nes) {
             return 0;
         }
         else if (location == 0x4017) {
-            return 0;
+            return this.setAPUReg(location, value);
         }
         else {
             if (location >= 0x8000 && location <= 0xFFFF) {
@@ -380,12 +379,62 @@ function mmu(nes) {
     };
 
     this.getAPUReg = function(location) {
-        //stub;
-        return 0;
+        var temp = 0b00000000;
+        switch (location) {
+            case 0x4015:
+                if (this.nes.APU.doIrq) {
+                    this.nes.APU.doIrq = false;
+                    temp = temp | 0b01000000;
+                }
+                if (this.nes.APU.sq1LenCounter > 0) {
+                    temp = temp | 0b00000001;
+                }
+        }
+        return temp;
     };
 
     this.setAPUReg = function(location, value) {
-        //stub;
+        switch (location) {
+            case 0x4000: //SQ1_ENV
+                this.nes.APU.setSQ1_ENV(value);
+                break;
+            case 0x4001:
+                this.nes.APU.setSQ1_SWEEP(value); //SQ1_SWEEP
+                break;
+            case 0x4002: //SQ1_LO
+                this.nes.APU.setSQ1_LO(value);
+                break;
+            case 0x4003: //SQ1_HI
+                this.nes.APU.setSQ1_HI(value);
+                break;
+            case 0x4004: //SQ2_ENV
+                this.nes.APU.setSQ2_ENV(value);
+                break;
+            case 0x4005:
+                this.nes.APU.setSQ2_SWEEP(value);
+                break;
+            case 0x4006:
+                this.nes.APU.setSQ2_LO(value);
+                break;
+            case 0x4007:
+                this.nes.APU.setSQ2_HI(value);
+                break;
+            case 0x4008: 
+                this.nes.APU.setTRIControl(value);
+                break;
+            case 0x400A:
+                this.nes.APU.setTRI_LO(value);
+                break;
+            case 0x400B:
+                this.nes.APU.setTRI_HI(value);
+                break;
+            case 0x4015: //APUFLAGS
+                this.nes.APU.setAPUFlags(value);
+                break;
+            case 0x4017:
+                this.nes.APU.setFrameCounter(value);
+                break;
+        }
         return 0;
     };
 
@@ -442,7 +491,7 @@ function mmu(nes) {
         if (this.PPUADDRFirstWrite) {
             this.ppuRegObj.PPUADDR = value;
             this.ppuRegObj.PPUADDR = this.ppuRegObj.PPUADDR << 8;
-            this.nes.PPU.fineYScroll = 0;//this.nes.PPU.fineYScroll & 0x04;
+            this.nes.PPU.fineYScroll = 0; //this.nes.PPU.fineYScroll & 0x04;
             this.nes.PPU.fineYScroll = this.nes.PPU.fineYScroll | ((value & 0x30) >> 4);
             this.nes.PPU.baseNameTblAddr = (value & 0x0C) >> 2;
             this.PPUADDRFirstWrite = false;

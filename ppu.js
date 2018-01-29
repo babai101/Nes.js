@@ -554,8 +554,10 @@ function ppu(nes) {
         if (this.yScroll > 239) {
             this.yScroll = 0;
         }
-        tileXOffset = Math.floor(this.xScroll / 8); //offset tile (see above)
+        // tileXOffset = Math.floor(this.xScroll / 8); //offset tile (see above)
+        tileXOffset = this.coarseXScroll;
         tileYOffset = Math.floor((this.currentScanline + this.yScroll) / 8); //offset tile (see above)
+        // tileYOffset = this.coarseYScroll;
 
         // pixelXOffset = this.xScroll % 8; //offset pixel
         pixelXOffset = this.fineXScroll;

@@ -2,6 +2,7 @@
 $(document).ready(function() {
     var isPaused = false;
     var initGame = function(romContent) {
+        this.cpuFreq = 1789773; //NTSC CPU freq in Hz
         this.opcodes = new Uint8Array(romContent);
         this.mainDisplay = new display(document.getElementById('nesCanvas'));
         this.ines = new iNES(this);

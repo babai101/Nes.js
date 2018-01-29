@@ -30,7 +30,7 @@ function cpu(nes) {
 	this.masterCpuCyclesElapsed = 0;
 	this.currentOpcode; // Opcode currently processed
 	this.operationType; // Current operation type
-
+	this.apuCycleCount = 0;
 	//Reset CPU and initialize all registers and flags
 	this.reset = function() {
 		this.sp = 0xFD; //Adjusted for comparing with Nintedulator log
@@ -5219,9 +5219,26 @@ function cpu(nes) {
 				//set unused flag
 				//push processor status to stack
 				this.pushToStack(this.P);
+				//Set the I flag
+				this.P = this.P & 0b11111011;
+				this.P = this.P | 0b00000100;
+				this.pc = vector2 | vector1;
+				break;
+			case 'IRQ':
+				var vector1 = this.nes.MMU.getCpuMemVal(0xFFFE);
+				var vector2 = this.nes.MMU.getCpuMemVal(0xFFFE + 1);
+				vector2 = vector2 << 8;
+				//Clear the BRK flag
+				this.P = this.P & 0b11101111;
+				//push pc to stack
+				this.pushToStack((this.pc & 0xFF00) >> 8); //push high byte
+				this.pushToStack(this.pc & 0x00FF); //push low byte
+				//set unused flag
+				this.P = this.P & 0b11011111;
+				this.P = this.P | 0b00100000;
+				//push processor status to stack
+				this.pushToStack(this.P);
 				// //Set the Break flag 
-				// this.P = this.P & 0b11101111;
-				// this.P = this.P | 0b00010000;
 				//Set the I flag
 				this.P = this.P & 0b11111011;
 				this.P = this.P | 0b00000100;
@@ -5258,31 +5275,28 @@ function cpu(nes) {
 
 	this.runFrame = function() {
 		var frameCompleted = false;
-		// var cpuCyclesElapsed = 0;
 		var renderedScanline = -1;
 		//Need to re render CHR for games using CHR RAM
 		if (this.nes.MMU.chrRamWritten) {
 			this.nes.Mapper.reRenderCHR();
 		}
-		// var nmiCounter = 0;
-		//Debug VARs
-		// this.totalCPUCyclesThisFrame = 0;
-		// var totalScanLinesRenderedThisFrame = 0;
+		this.totalCPUCyclesThisFrame = 0;
 		while (!frameCompleted) {
+			if((this.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
+				if(this.nes.APU.doIrq) {
+					this.serveISR('IRQ');
+					this.nes.APU.doIrq = false;
+				}
+			};
 			this.fetchOpcode();
 			this.decodeInstruction();
 			// this.logInConsole(); Enable console logging here
-			// this.totalCPUCyclesThisFrame += this.elapsedCycles;
-			// cpuCyclesElapsed += this.elapsedCycles;
-			// cpuCyclesElapsed += this.excessCpuCycles;
-			//experimental
+
 			this.elapsedCycles += this.excessCpuCycles;
 			this.excessCpuCycles = 0;
 			if (this.oddFrame) {
 				this.ppuCyclesCurrentScanLine = 340;
 				if (this.nes.MMU.OAMDMAwritten) {
-					// this.totalCPUCyclesThisFrame += 514;
-					//exp
 					this.elapsedCycles += 514;
 					this.nes.MMU.OAMDMAwritten = false;
 				}
@@ -5290,18 +5304,15 @@ function cpu(nes) {
 			else {
 				this.ppuCyclesCurrentScanLine = 341;
 				if (this.nes.MMU.OAMDMAwritten) {
-					// this.totalCPUCyclesThisFrame += 514;
-					//exp
 					this.elapsedCycles += 513;
 					this.nes.MMU.OAMDMAwritten = false;
 				}
 			}
+			//Run the APU frame counter
+			this.nes.APU.runFrameCounter(this.elapsedCycles - this.apuCycleCount);
+			this.apuCycleCount = this.elapsedCycles;
 			if ((this.elapsedCycles * 3) >= this.ppuCyclesCurrentScanLine) {
-				// if (this.nes.MMU.chrRamWritten) {
-				// 	this.nes.Mapper.reRenderCHR();
-				// }
 				renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
-				// totalScanLinesRenderedThisFrame++;
 				//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring
 				if (renderedScanline == 261 || (renderedScanline >= 0 && renderedScanline < 240)) {
 					this.nes.MMU.setOAMADDR(0);
@@ -5311,23 +5322,20 @@ function cpu(nes) {
 					this.nmiLoopCounter++;
 					if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) { //Generet NMI Interrupt
 						this.serveISR('NMI');
-						// nmiCounter++;
 					}
 				}
 				else if (renderedScanline == 261) {
 					frameCompleted = true;
-					// this.nes.MMU.startBtnState = false;
 				}
 				//Calculating extra cpu cycles run for this scanline
-				// this.excessCpuCycles = Math.floor(cpuCyclesElapsed - this.ppuCyclesCurrentScanLine / 3);
-				//exp
 				this.excessCpuCycles = Math.floor(this.elapsedCycles - this.ppuCyclesCurrentScanLine / 3);
-				// cpuCyclesElapsed = 0;
+				this.totalCPUCyclesThisFrame += this.elapsedCycles;
 				this.elapsedCycles = 0;
+				this.apuCycleCount = 0;
 			}
 		}
+		this.totalCPUCyclesThisFrame = 0;
 		this.oddFrame = !this.oddFrame;
-		// return nmiCounter;
 		// console.log("Total CPU cycles this frame: " + totalCPUCyclesThisFrame);
 		// console.log("Total scanlines rendered this frame: " + totalScanLinesRenderedThisFrame);
 	};
