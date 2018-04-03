@@ -1,4 +1,5 @@
 /*global Tone pulse triangle*/
+//Audio disabled for 0.0.1 branch
 function apu(nes) {
     this.nes = nes;
     this.sqe1Enabled = false;
