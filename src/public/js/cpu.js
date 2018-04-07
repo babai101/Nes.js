@@ -5309,7 +5309,7 @@ function cpu(nes) {
 				}
 			}
 			//Run the APU frame counter
-			// this.nes.APU.runFrameCounter(this.elapsedCycles - this.apuCycleCount);
+			this.nes.APU.run(this.elapsedCycles - this.apuCycleCount);
 			this.apuCycleCount = this.elapsedCycles;
 			if ((this.elapsedCycles * 3) >= this.ppuCyclesCurrentScanLine) {
 				renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());

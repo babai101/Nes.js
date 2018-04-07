@@ -12,6 +12,7 @@ $(document).ready(function() {
         this.MMU = new mmu(this);
         this.CPU = new cpu(this);
         this.APU = new apu(this);
+        this.APU.init();
         this.MMU.OAMInit();
         this.PPU.initScreenBuffer();
         this.ines.parseRom(this.opcodes);

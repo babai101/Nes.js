@@ -42,8 +42,8 @@ function triangle(nes) {
     this.sweepShiftCount = 0;
     this.sweepCount = 0;
     //Tony JS vars
-    this.triangleOsc = new Tone.OmniOscillator(0, "triangle").toMaster().start();
-    this.triangleOsc.fadeOut = 0.07;
+    // this.triangleOsc = new Tone.OmniOscillator(0, "triangle").toMaster().start();
+    // this.triangleOsc.fadeOut = 0.07;
     // this.triangleOsc.width.value = 0.5;
 
     this.calcDuty = function(duty) {

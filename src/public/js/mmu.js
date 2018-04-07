@@ -394,48 +394,48 @@ function mmu(nes) {
     };
 
     this.setAPUReg = function(location, value) {
-        // switch (location) {
-        //     case 0x4000: //SQ1_ENV
-        //         this.nes.APU.setSQ1_ENV(value);
-        //         break;
-        //     case 0x4001:
-        //         this.nes.APU.setSQ1_SWEEP(value); //SQ1_SWEEP
-        //         break;
-        //     case 0x4002: //SQ1_LO
-        //         this.nes.APU.setSQ1_LO(value);
-        //         break;
-        //     case 0x4003: //SQ1_HI
-        //         this.nes.APU.setSQ1_HI(value);
-        //         break;
-        //     case 0x4004: //SQ2_ENV
-        //         this.nes.APU.setSQ2_ENV(value);
-        //         break;
-        //     case 0x4005:
-        //         this.nes.APU.setSQ2_SWEEP(value);
-        //         break;
-        //     case 0x4006:
-        //         this.nes.APU.setSQ2_LO(value);
-        //         break;
-        //     case 0x4007:
-        //         this.nes.APU.setSQ2_HI(value);
-        //         break;
-        //     case 0x4008: 
-        //         this.nes.APU.setTRIControl(value);
-        //         break;
-        //     case 0x400A:
-        //         this.nes.APU.setTRI_LO(value);
-        //         break;
-        //     case 0x400B:
-        //         this.nes.APU.setTRI_HI(value);
-        //         break;
-        //     case 0x4015: //APUFLAGS
-        //         this.nes.APU.setAPUFlags(value);
-        //         break;
-        //     case 0x4017:
-        //         this.nes.APU.setFrameCounter(value);
-        //         break;
-        // };
-        // return 0
+        switch (location) {
+            case 0x4000: //SQ1_ENV
+                this.nes.APU.setSQ1_ENV(value);
+                break;
+            case 0x4001:
+                this.nes.APU.setSQ1_SWEEP(value); //SQ1_SWEEP
+                break;
+            case 0x4002: //SQ1_LO
+                this.nes.APU.setSQ1_LO(value);
+                break;
+            case 0x4003: //SQ1_HI
+                this.nes.APU.setSQ1_HI(value);
+                break;
+            case 0x4004: //SQ2_ENV
+                this.nes.APU.setSQ2_ENV(value);
+                break;
+            case 0x4005:
+                this.nes.APU.setSQ2_SWEEP(value);
+                break;
+            case 0x4006:
+                this.nes.APU.setSQ2_LO(value);
+                break;
+            case 0x4007:
+                this.nes.APU.setSQ2_HI(value);
+                break;
+            case 0x4008: 
+                this.nes.APU.setTRIControl(value);
+                break;
+            case 0x400A:
+                this.nes.APU.setTRI_LO(value);
+                break;
+            case 0x400B:
+                this.nes.APU.setTRI_HI(value);
+                break;
+            case 0x4015: //APUFLAGS
+                this.nes.APU.setAPUFlags(value);
+                break;
+            case 0x4017:
+                this.nes.APU.setFrameCounter(value);
+                break;
+        };
+        return 0
     };
 
     this.getPPURegObj = function() {

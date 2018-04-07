@@ -10,33 +10,43 @@ function apu(nes) {
     this.seqMode = 0;
     this.cycles = 0;
     this.sampleCycles = 0;
+    this.sampleCycleRate = 0;
     this.step = 0;
     this.doIrq = false;
     this.lengthCounterTbl = [10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14, 12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30];
     this.volumeLkpTbl = [-40.00, -24.44, -19.17, -15.92, -13.15, -11.06, -9.37, -7.96, -6.74, -5.68, -4.73, -2.38, -1.72, -1.11, -0.54, 0.00];
+    this.pulse1Buffer = []
+    this.outputBuffer = new Array(this.bufferLength);
+    this.bufferLength = 4096;
+    this.bufferIndex = 0;
     var pulse1 = new pulse(nes);
     var pulse2 = new pulse(nes);
     var triangle1 = new triangle(nes);
     pulse1.channel = 1;
     pulse2.channel = 2;
-    var pulseOptions = {
-        oscillator: {
-            type: "pulse"
-        },
-        envelope: {
-            release: 0.07
+    this.clock = true;
+    var sampleCount = 0;
+
+    this.init = function() {
+        if (!window.AudioContext) {
+            if (!window.WebkitAudioContext) {
+                console.log("Could not initialize audio!");
+                return;
+            }
+            else {
+                this.audioCtx = new window.WebkitAudioContext();
+            }
         }
+        else {
+            this.audioCtx = new window.AudioContext();
+        }
+        var t1 = perfomance.now();
+        this.scriptNode = this.audioCtx.createScriptProcessor(this.bufferLength, 0, 1);
+        this.scriptNode.onaudioprocess = this.onaudioprocess;
+        this.scriptNode.connect(this.audioCtx.destination);
+        this.sampleCycleRate = Math.floor(this.nes.cpuFreq / this.audioCtx.sampleRate);
     };
-    // var synth = new Tone.Synth(pulseOptions).toMaster();
-    // var synth2 = new Tone.Synth(pulseOptions).toMaster();
-    this.pulseOsc = new Tone.OmniOscillator(0, "pulse").toMaster().start();
-    this.pulseOsc.fadeOut = 0.02;
-    this.pulseOsc.volume.value = -40;
-    this.pulseOsc.width.value = 0.5;
-    this.pulseOsc2 = new Tone.OmniOscillator(0, "pulse").toMaster().start();
-    this.pulseOsc2.fadeOut = 0.02;
-    this.pulseOsc2.volume.value = -40;
-    this.pulseOsc2.width.value = 0.5;
+
     // 0x4015
     this.setAPUFlags = function(value) {
         if (value & 0x01 == 1) {
@@ -76,13 +86,13 @@ function apu(nes) {
     this.setSQ1_ENV = function(value) {
         pulse1.dividerPeriod = (value & 0x0F) + 1; //Env period
         pulse1.dividerOriginalPeriod = pulse1.dividerPeriod;
-        pulse1.setVol(value & 0x0F); //Set volume 
         if ((value & 0x10) == 0x10) {
             pulse1.sawEnvDisable = true; //use Volume for volume
         }
         else {
             pulse1.sawEnvDisable = false; //use internal counter for volume
         }
+        pulse1.volume = value & 0x0F; //Set volume 
         if ((value & 0x20) == 0x20) {
             pulse1.lenCounterDisable = true; //disable Length Counter
         }
@@ -90,10 +100,6 @@ function apu(nes) {
             pulse1.lenCounterDisable = false; //use Length Counter
         }
         pulse1.dutyCycle = value >> 6; //set duty cycle
-
-        //set tone duty here
-        // pulse1.pulseOsc.width.value = pulse1.calcDuty(pulse1.dutyCycle);
-        pulse1.width = pulse1.calcDuty(pulse1.dutyCycle);
     };
 
     //Set the low 8 bits of the period
@@ -116,23 +122,11 @@ function apu(nes) {
         if (pulse1.enabled) {
             pulse1.lenCounter = this.lengthCounterTbl[value >> 3];
         }
-        // if (pulse1.playing) { //Writing to HI restarts the sequence
-        // pulse1.pulseOsc.stop();
-        this.pulseOsc.phase.value = 0;
-        // synth.oscillator.phase.value = 0;
-        // }
-        pulse1.frequency = pulse1.calcFrequency(pulse1.period);
         // pulse1.dividerPeriod = pulse1.dividerOriginalPeriod; //Restart envelop
         pulse1.decayLvlCount = 0x0F;
-        pulse1.setVol(pulse1.dividerOriginalPeriod - 1);
-        // pulse1.pulseOsc.frequency.value = pulse1.frequency;
-        // pulse1.pulseOsc.mute = false;
-        pulse1.mute = false;
-        pulse1.playing = true;
+        // pulse1.setVol(pulse1.dividerOriginalPeriod - 1);
+        pulse1.currentSequence = 0;
         pulse1.envStartFlag = true;
-        // pulse1.pulseOsc.start();
-        // this.pulseOsc.start();
-        pulse1.playing = true;
     };
 
     //0x4001
@@ -154,7 +148,7 @@ function apu(nes) {
     this.setSQ2_ENV = function(value) {
         pulse2.dividerPeriod = (value & 0x0F) + 1; //Env period
         pulse2.dividerOriginalPeriod = pulse2.dividerPeriod;
-        pulse2.setVol(value & 0x0F); //Set volume 
+        pulse2.volume = value & 0x0F; //Set volume 
         if ((value & 0x10) == 0x10) {
             pulse2.sawEnvDisable = true; //use Volume for volume
         }
@@ -168,10 +162,6 @@ function apu(nes) {
             pulse2.lenCounterDisable = false; //use Length Counter
         }
         pulse2.dutyCycle = value >> 6; //set duty cycle
-
-        //set tone duty here
-        // pulse2.pulseOsc.width.value = pulse2.calcDuty(pulse2.dutyCycle);
-        pulse2.width = pulse2.calcDuty(pulse2.dutyCycle);
     };
 
     this.setSQ2_LO = function(value) {
@@ -188,17 +178,10 @@ function apu(nes) {
         if (pulse2.enabled) {
             pulse2.lenCounter = this.lengthCounterTbl[value >> 3];
         }
-        // synth2.oscillator.phase.value = 0;
-        this.pulseOsc2.phase.value = 0;
-        pulse2.frequency = pulse2.calcFrequency(pulse2.period);
         // pulse2.dividerPeriod = pulse2.dividerOriginalPeriod; //Restart envelop
         pulse2.decayLvlCount = 0x0F;
-        pulse2.setVol(pulse2.dividerOriginalPeriod - 1);
-        //start tone generation here
-        // pulse2.pulseOsc.frequency.value = pulse2.frequency;
-        // pulse2.pulseOsc.mute = false;
-        pulse2.mute = false;
-        pulse2.playing = true;
+        // pulse2.setVol(pulse2.dividerOriginalPeriod - 1);
+        pulse1.currentSequence = 0;
         pulse2.envStartFlag = true;
     };
 
@@ -246,39 +229,66 @@ function apu(nes) {
         }
     };
 
-    this.sample = function() {
-        // synth.oscillator.width.value = pulse1.width;
-        // synth.volume.value = this.volumeLkpTbl[pulse1.vol];
-        // synth2.oscillator.width.value = pulse2.width;
-        // synth2.volume.value = this.volumeLkpTbl[pulse2.vol];
-        if (!pulse1.mute) {
-            // synth.triggerAttackRelease(pulse1.frequency, 0.02);
-            this.pulseOsc.width.value = pulse1.width;
-            this.pulseOsc.frequency.value = pulse1.frequency;
-            this.pulseOsc.volume.value = this.volumeLkpTbl[pulse1.vol];
-        }
-        if (!pulse2.mute) {
-            // synth2.triggerAttackRelease(pulse2.frequency, 0.02);
-            this.pulseOsc2.width.value = pulse2.width;
-            this.pulseOsc2.frequency.value = pulse2.frequency;
-            this.pulseOsc2.volume.value = this.volumeLkpTbl[pulse2.vol];
-        }
+    this.onaudioprocess = (e) => {
+        var channelData = e.outputBuffer.getChannelData(0);
+        // var size = channelData.length;
+        // var samples = this.outputBuffer;
+        // for (var i = 0; i < size; i++) {
+        //     channelData[i] = samples[i];
+        // }
+        // this.outputBuffer = [];
+        for (var i = 0, il = this.bufferLength; i < il; i++)
+            channelData[i] = this.outputBuffer[i];
 
-        // var output = 95.88 / ((8128 / (pulse1.vol + pulse2.vol)) + 100);
-        // pulse1.pulseOsc.volume.value = 20 * Math.log10(output);
-        // pulse2.pulseOsc.volume.value = 20 * Math.log10(output);
+        // for (var i = this.bufferIndex, il = this.bufferLength; i < il; i++)
+        //     channelData[i] = this.bufferIndex === 0 ? 0.0 : this.outputBuffer[this.bufferIndex - 1];
+
+        this.bufferIndex = 0;
+    };
+
+    this.sample = function() {
+        var pulse1Output = pulse1.output();
+        var pulse2Output = pulse2.output();
+        var output = 0;
+        if (pulse1Output != 0 || pulse2Output != 0)
+            output = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
+        this.pushToBuffer(output);
+        // if (this.pulse1Buffer.length == this.bufferLength) {
+        //     this.outputBuffer = this.pulse1Buffer.slice();
+        //     this.pulse1Buffer = [];
+        // }
+        // this.pulse1Buffer.push(output);
+        sampleCount++;
+        t2 = perfomance.now();
+        if(t2 - t1 >= 1000) {
+            t1 = t2;
+            console.log("sampling rate = " + sampleCount + " samples per second");
+        }
+    };
+
+    this.pushToBuffer = function(data) {
+        if (this.bufferIndex >= this.bufferLength)
+            return;
+        this.outputBuffer[this.bufferIndex++] = data;
     };
 
     //Main APU clock at 240Hz perform step functions at 240Hz (~7457 CPU cycles)
-    this.runFrameCounter = function(cycles) {
+    this.run = function(cycles) {
+        var clocks = Math.floor(cycles / 2);
+        for (var i = 0; i < clocks; i++) {
+            pulse1.clock();
+            pulse2.clock();
+        }
         //check for 240Hz cycles
         this.cycles += cycles;
         this.sampleCycles += cycles;
-
-        if (this.sampleCycles >= 735) {
-            this.sampleCycles -= 735;
+        if (this.sampleCycles >= this.sampleCycleRate) {
+            this.sampleCycles -= this.sampleCycleRate;
             this.sample();
         }
+        // if (this.cycles % this.sampleCycleRate == 0) {
+        //     this.sample();
+        // }
         if (this.cycles >= 7457) {
             this.cycles -= 7457;
             if (this.seqMode == 0) {
@@ -294,10 +304,9 @@ function apu(nes) {
         pulse1.updateEnvelope();
         pulse2.updateEnvelope();
         // triangle1.updateLinearCounter();
-
         if (this.step % 2 === 1) {
-            // pulse1.updSweepAndLengthCounter();
-            // pulse2.updSweepAndLengthCounter();
+            pulse1.updSweepAndLengthCounter();
+            pulse2.updSweepAndLengthCounter();
         }
         this.step++;
         if (this.step === 4) {
@@ -310,8 +319,8 @@ function apu(nes) {
 
     this.do5StepSeq = function() {
         if (this.step % 2 === 0) {
-            // pulse1.updSweepAndLengthCounter();
-            // pulse2.updSweepAndLengthCounter();
+            pulse1.updSweepAndLengthCounter();
+            pulse2.updSweepAndLengthCounter();
         }
         this.step++;
         if (this.step === 5) {
