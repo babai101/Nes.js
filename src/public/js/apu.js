@@ -1,6 +1,10 @@
-/*global Tone pulse triangle*/
+/*global performance*/
 //cycles per frame 1786830
-function apu(nes) {
+import pulse from './pulse';
+import triangle from './triangle';
+import RingBuffer from 'ringbufferjs';
+
+export default function apu(nes) {
     this.nes = nes;
     this.sqe1Enabled = false;
     this.sq2Enabled = false;
@@ -18,8 +22,9 @@ function apu(nes) {
     this.volumeLkpTbl = [-40.00, -24.44, -19.17, -15.92, -13.15, -11.06, -9.37, -7.96, -6.74, -5.68, -4.73, -2.38, -1.72, -1.11, -0.54, 0.00];
     this.pulse1Buffer = [];
     this.pulse2Buffer = [];
-    this.outputBuffer = new Array(this.bufferLength);
-    this.bufferLength = 8192;
+    // this.outputBuffer = new Array(this.bufferLength);
+    this.bufferLength = 4096;
+    this.outputBuffer = new RingBuffer(this.bufferLength);
     this.bufferIndex = 0;
     var pulse1 = new pulse(nes);
     var pulse2 = new pulse(nes);
@@ -48,7 +53,7 @@ function apu(nes) {
         this.scriptNode = this.audioCtx.createScriptProcessor(this.bufferLength, 0, 1);
         this.scriptNode.onaudioprocess = this.onaudioprocess;
         this.scriptNode.connect(this.audioCtx.destination);
-        this.audioCtx.sampleRate = 44100;
+        // this.audioCtx.sampleRate = 44100;
         // this.sampleCycleRate = Math.floor(this.nes.cpuFreq / this.audioCtx.sampleRate);
     };
 
@@ -234,19 +239,38 @@ function apu(nes) {
 
     this.onaudioprocess = (e) => {
         var channelData = e.outputBuffer.getChannelData(0);
+        var size = channelData.length;
         // var size = channelData.length;
         // var samples = this.outputBuffer;
         // for (var i = 0; i < size; i++) {
         //     channelData[i] = samples[i];
         // }
         // this.outputBuffer = [];
-        for (var i = 0, il = this.bufferLength; i < il; i++)
-            channelData[i] = this.outputBuffer[i];
+        // for (var i = 0, il = this.bufferLength; i < il; i++)
+        //     channelData[i] = this.outputBuffer[i];
 
         // for (var i = this.bufferIndex, il = this.bufferLength; i < il; i++)
         //     channelData[i] = this.bufferIndex === 0 ? 0.0 : this.outputBuffer[this.bufferIndex - 1];
-
-        this.bufferIndex = 0;
+        try {
+            var samples = this.outputBuffer.deqN(size);
+        }
+        catch (e) {
+            // onBufferUnderrun failed to fill the buffer, so handle a real buffer
+            // underrun
+            // ignore empty buffers... assume audio has just stopped
+            var bufferSize = this.outputBuffer.size();
+            if (bufferSize > 0) {
+                console.log(`Buffer underrun (needed ${size}, got ${bufferSize})`);
+            }
+            for (var j = 0; j < size; j++) {
+                channelData[j] = 0;
+            }
+            return;
+        }
+        for (var i = 0; i < size; i++) {
+            channelData[i] = samples[i];
+        }
+        // this.bufferIndex = 0;
     };
 
     this.sample = function() {
@@ -262,10 +286,10 @@ function apu(nes) {
         //     return;
         // }
         var pulse1Output = Math.floor(this.pulse1Buffer.reduce((a, b) => a + b, 0));
-        if(pulse1Output != 0) 
+        if (pulse1Output != 0)
             this.pulse1Output = this.pulse1Output / this.pulse1Buffer.length;
-        var pulse2Output = Math.floor(this.pulse2Buffer.reduce((a, b) => a + b, 0)); 
-        if(pulse2Output != 0) 
+        var pulse2Output = Math.floor(this.pulse2Buffer.reduce((a, b) => a + b, 0));
+        if (pulse2Output != 0)
             this.pulse2Output = this.pulse2Output / this.pulse2Buffer.length;
         this.pulse1Buffer = [];
         this.pulse2Buffer = [];
@@ -273,13 +297,16 @@ function apu(nes) {
         if (pulse1Output != 0 || pulse2Output != 0)
             output = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
         this.pushToBuffer(output);
-        
+
     };
 
     this.pushToBuffer = function(data) {
-        if (this.bufferIndex >= this.bufferLength)
+        // if (this.bufferIndex >= this.bufferLength)
+        //     return;
+        // this.outputBuffer[this.bufferIndex++] = data;
+        if (this.outputBuffer.size() >= this.bufferLength)
             return;
-        this.outputBuffer[this.bufferIndex++] = data;
+        this.outputBuffer.enq(data);
     };
 
     //Main APU clock at 240Hz perform step functions at 240Hz (~7457 CPU cycles)
@@ -299,7 +326,7 @@ function apu(nes) {
             this.sampleCycles -= this.sampleCycleRate;
             if (this.sampleCycleRate == 40)
                 this.sampleCycleRate = 41;
-            else if (this.sampleCycleRate == 41) 
+            else if (this.sampleCycleRate == 41)
                 this.sampleCycleRate = 40;
             this.sample();
         }

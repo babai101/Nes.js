@@ -1,4 +1,4 @@
-function mapper(nes) {
+export default function mapper(nes) {
     this.nes = nes;
     this.chrGrids = [];
     this.prgRomBanks = [];

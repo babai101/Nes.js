@@ -1,5 +1,5 @@
 /*global Tone*/
-function pulse(nes) {
+export default function pulse(nes) {
     this.nes = nes;
     this.Enabled = false;
     this.doIrq = false;
@@ -36,12 +36,12 @@ function pulse(nes) {
         [0, 1, 1, 1, 1, 0, 0, 0],
         [1, 0, 0, 1, 1, 1, 1, 1]
     ];
-    
+
     //calculate the current sequence value
     this.calcSequence = function(duty, sequence) {
         return dutyCycles[duty][sequence];
     };
-    
+
     //Clocks the sequencer
     this.clockSequencer = function() {
         if (this.calcSequence(this.dutyCycle, this.currentSequence) == 1) {
@@ -52,7 +52,7 @@ function pulse(nes) {
         if (this.currentSequence == 8)
             this.currentSequence = 0;
     };
-    
+
     this.clockDecayLevelCounter = function() {
         if (this.decayLvlCount == 0) {
             if (this.lenCounterDisable) { //if loop flag set, reload the decay 
@@ -63,7 +63,7 @@ function pulse(nes) {
             this.decayLvlCount--;
         }
     };
-    
+
     this.updateEnvelope = function() {
         if (!this.envStartFlag) {
             //Now clock divider
@@ -126,7 +126,7 @@ function pulse(nes) {
             this.sweepReloadFlag = false; //clear reload flag
         }
     };
-    
+
     //Clock the sequencer after timer has counted down
     this.clock = function() {
         if (this.period <= 0) {
@@ -137,7 +137,7 @@ function pulse(nes) {
             this.period--;
         }
     };
-    
+
     this.output = function() {
         // if ((this.outputValue) && (this.sweepTargetPeriod <= 0x7FF) && (this.period >= 0x08) && (!this.lenCounterDisable && this.lenCounter > 0)) {
         //     if (!this.sawEnvDisable) {
@@ -148,7 +148,7 @@ function pulse(nes) {
         //     }
         // }
         // else return 0;
-        if(this.outputValue && this.enabled & this.period >= 0x08) {
+        if (this.outputValue && this.enabled & this.period >= 0x08) {
             return this.volume;
         }
         else return 0;

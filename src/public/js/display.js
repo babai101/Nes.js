@@ -1,8 +1,8 @@
-function display(canvas) {
+export default function display(canvas) {
     this.ctx = canvas.getContext('2d');
     this.canvasImageData = this.ctx.getImageData(0, 0, canvas.width, canvas.height);
     this.data = this.canvasImageData.data;
-    
+
     //Update the data for the cavases
     this.updateBuffer = function(screenPixel, pixelColor) {
         this.data[screenPixel * 4] = 0xFF; //alpha

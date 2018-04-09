@@ -1,4 +1,4 @@
-function ppu(nes) {
+export default function ppu(nes) {
     this.nes = nes;
     //Render VARS
     this.currentScanline = 0;

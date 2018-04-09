@@ -1,4 +1,4 @@
-function iNES(nes) {
+export default function iNES(nes) {
     this.nes = nes;
     this.headers = []; //hold 16 byte iNES headers
     this.prgRomUnits;
@@ -81,7 +81,7 @@ function iNES(nes) {
         }
 
         this.mapperHighBits = this.flag7 >> 4;
-        this.mapperNum =  (this.mapperHighBits << 4) | this.mapperLowBits;
+        this.mapperNum = (this.mapperHighBits << 4) | this.mapperLowBits;
         //Flag 9 bit map
         // 76543210
         // ||||||||

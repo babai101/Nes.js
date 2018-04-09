@@ -1,17 +1,19 @@
-/*global $ mmu cpu apu ppu display iNES mapper*/
+/*global $ cancelAnimationFrame NES*/
+ 
 $(document).ready(function() {
     var isPaused = false;
     var requestId;
+    this.NES = new NES();
     var initGame = function(romContent) {
         this.cpuFreq = 1789773; //NTSC CPU freq in Hz
         this.opcodes = new Uint8Array(romContent);
-        this.mainDisplay = new display(document.getElementById('nesCanvas'));
-        this.ines = new iNES(this);
-        this.Mapper = new mapper(this);
-        this.PPU = new ppu(this);
-        this.MMU = new mmu(this);
-        this.CPU = new cpu(this);
-        this.APU = new apu(this);
+        this.mainDisplay = new this.NES.display(document.getElementById('nesCanvas'));
+        this.ines = new this.NES.iNES(this);
+        this.Mapper = new this.NES.mapper(this);
+        this.PPU = new this.NES.ppu(this);
+        this.MMU = new this.NES.mmu(this);
+        this.CPU = new this.NES.cpu(this);
+        this.APU = new this.NES.apu(this);
         this.APU.init();
         this.MMU.OAMInit();
         this.PPU.initScreenBuffer();
@@ -28,10 +30,10 @@ $(document).ready(function() {
 
     var renderFrame = function() {
         // if (!isPaused) {
-            this.CPU.runFrame();
-            this.CPU.totalCPUCyclesThisFrame;
-            this.CPU.nmiLoopCounter = 0;
-            renderScreen();
+        this.CPU.runFrame();
+        this.CPU.totalCPUCyclesThisFrame;
+        this.CPU.nmiLoopCounter = 0;
+        renderScreen();
         // }
         requestId = requestAnimationFrame(renderFrame);
     };
@@ -45,6 +47,7 @@ $(document).ready(function() {
         reader.onload = initGame(this.result);
         reader.readAsArrayBuffer(file);
     };
+
     function reset() {
         this.mainDisplay = null;
         this.PPU = null;
@@ -52,7 +55,8 @@ $(document).ready(function() {
         this.CPU = null;
         this.APU = null;
     }
-    function loadRomsToDropdown () {
+
+    function loadRomsToDropdown() {
         var url = '/api/getPlayableRoms';
         var $dropDown = $('#romDropdown');
         $.ajax({
@@ -62,7 +66,7 @@ $(document).ready(function() {
                 var $dropdown = $("#romSelect");
                 $.each(result.roms, function() {
                     $dropdown.append($("<option />").val(this.file).text(this.name));
-                }); 
+                });
                 // console.log(result);
             },
             error: function(e) {

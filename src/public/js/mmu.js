@@ -1,6 +1,6 @@
 //Memory Management Unit to synchronize memory access between CPU and PPU
 
-function mmu(nes) {
+export default function mmu(nes) {
     this.nes = nes;
     this.cpuMem = new Uint8Array(65536);
     this.ppuMem = new Uint8Array(16384);
@@ -419,7 +419,7 @@ function mmu(nes) {
             case 0x4007:
                 this.nes.APU.setSQ2_HI(value);
                 break;
-            case 0x4008: 
+            case 0x4008:
                 this.nes.APU.setTRIControl(value);
                 break;
             case 0x400A:

@@ -1,4 +1,4 @@
-function cpu(nes) {
+export default function cpu(nes) {
 	this.nes = nes;
 	this.pc; // 16-Bit Program Counter
 	this.sp; // 8-Bit Stack Pointer
@@ -5282,8 +5282,8 @@ function cpu(nes) {
 		}
 		this.totalCPUCyclesThisFrame = 0;
 		while (!frameCompleted) {
-			if((this.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
-				if(this.nes.APU.doIrq) {
+			if ((this.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
+				if (this.nes.APU.doIrq) {
 					this.serveISR('IRQ');
 					this.nes.APU.doIrq = false;
 				}
