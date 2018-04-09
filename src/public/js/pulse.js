@@ -2,9 +2,6 @@
 function pulse(nes) {
     this.nes = nes;
     this.Enabled = false;
-    this.lengthCounterTbl = [10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14, 12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30];
-    // this.volumeLkpTbl = [-40, -37, -34, -31, -28, -25, -22, -19, -16, -13, -10, -7, -4, -1, 0, 0];
-    this.volumeLkpTbl = [-40.00, -24.44, -19.17, -15.92, -13.15, -11.06, -9.37, -7.96, -6.74, -5.68, -4.73, -2.38, -1.72, -1.11, -0.54, 0.00];
     this.doIrq = false;
     this.channel = 0;
     //Square wave channel VARs
@@ -134,7 +131,7 @@ function pulse(nes) {
     this.clock = function() {
         if (this.period <= 0) {
             this.clockSequencer();
-            this.period = this.dividerOriginalPeriod;
+            this.period = this.periodLowBits | (this.periodHighBits << 8) + 1;
         }
         else {
             this.period--;
@@ -142,13 +139,17 @@ function pulse(nes) {
     };
     
     this.output = function() {
-        if ((this.outputValue) && (this.sweepTargetPeriod <= 0x7FF) && (this.period >= 0x08) && (!this.lenCounterDisable && this.lenCounter > 0)) {
-            if (!this.sawEnvDisable) {
-                return this.decayLvlCount;
-            }
-            else {
-                return this.volume;
-            }
+        // if ((this.outputValue) && (this.sweepTargetPeriod <= 0x7FF) && (this.period >= 0x08) && (!this.lenCounterDisable && this.lenCounter > 0)) {
+        //     if (!this.sawEnvDisable) {
+        //         return this.decayLvlCount;
+        //     }
+        //     else {
+        //         return this.volume;
+        //     }
+        // }
+        // else return 0;
+        if(this.outputValue && this.enabled & this.period >= 0x08) {
+            return this.volume;
         }
         else return 0;
     };

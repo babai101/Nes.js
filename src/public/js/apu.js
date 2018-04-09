@@ -1,4 +1,5 @@
 /*global Tone pulse triangle*/
+//cycles per frame 1786830
 function apu(nes) {
     this.nes = nes;
     this.sqe1Enabled = false;
@@ -10,14 +11,15 @@ function apu(nes) {
     this.seqMode = 0;
     this.cycles = 0;
     this.sampleCycles = 0;
-    this.sampleCycleRate = 0;
+    this.sampleCycleRate = 40;
     this.step = 0;
     this.doIrq = false;
     this.lengthCounterTbl = [10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14, 12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30];
     this.volumeLkpTbl = [-40.00, -24.44, -19.17, -15.92, -13.15, -11.06, -9.37, -7.96, -6.74, -5.68, -4.73, -2.38, -1.72, -1.11, -0.54, 0.00];
-    this.pulse1Buffer = []
+    this.pulse1Buffer = [];
+    this.pulse2Buffer = [];
     this.outputBuffer = new Array(this.bufferLength);
-    this.bufferLength = 4096;
+    this.bufferLength = 8192;
     this.bufferIndex = 0;
     var pulse1 = new pulse(nes);
     var pulse2 = new pulse(nes);
@@ -26,6 +28,8 @@ function apu(nes) {
     pulse2.channel = 2;
     this.clock = true;
     var sampleCount = 0;
+    var t1 = 0;
+    var apuExtraClock = 0;
 
     this.init = function() {
         if (!window.AudioContext) {
@@ -40,11 +44,12 @@ function apu(nes) {
         else {
             this.audioCtx = new window.AudioContext();
         }
-        var t1 = perfomance.now();
+        t1 = performance.now();
         this.scriptNode = this.audioCtx.createScriptProcessor(this.bufferLength, 0, 1);
         this.scriptNode.onaudioprocess = this.onaudioprocess;
         this.scriptNode.connect(this.audioCtx.destination);
-        this.sampleCycleRate = Math.floor(this.nes.cpuFreq / this.audioCtx.sampleRate);
+        this.audioCtx.sampleRate = 44100;
+        // this.sampleCycleRate = Math.floor(this.nes.cpuFreq / this.audioCtx.sampleRate);
     };
 
     // 0x4015
@@ -116,7 +121,6 @@ function apu(nes) {
     //0x4003
     this.setSQ1_HI = function(value) {
         pulse1.periodHighBits = value & 0x07;
-        pulse1.periodHighBits = value & 0x07;
         pulse1.period = pulse1.period & 0xFF;
         pulse1.period = pulse1.period | (pulse1.periodHighBits << 8);
         if (pulse1.enabled) {
@@ -171,7 +175,6 @@ function apu(nes) {
     };
 
     this.setSQ2_HI = function(value) {
-        pulse2.periodHighBits = value & 0x07;
         pulse2.periodHighBits = value & 0x07;
         pulse2.period = pulse2.period & 0xFF;
         pulse2.period = pulse2.period | (pulse2.periodHighBits << 8);
@@ -247,23 +250,30 @@ function apu(nes) {
     };
 
     this.sample = function() {
-        var pulse1Output = pulse1.output();
-        var pulse2Output = pulse2.output();
+        // this.pulse1Buffer.push(output);
+        // sampleCount++;  
+        // t2 = performance.now();
+        // if(t2 - t1 >= 1000) {
+        //     t1 = t2;
+        //     // console.log("sampling rate = " + sampleCount/10 + " samples per second");
+        //     sampleCount = 0;
+        // }
+        // if (sampleCount >= 44100) {
+        //     return;
+        // }
+        var pulse1Output = Math.floor(this.pulse1Buffer.reduce((a, b) => a + b, 0));
+        if(pulse1Output != 0) 
+            this.pulse1Output = this.pulse1Output / this.pulse1Buffer.length;
+        var pulse2Output = Math.floor(this.pulse2Buffer.reduce((a, b) => a + b, 0)); 
+        if(pulse2Output != 0) 
+            this.pulse2Output = this.pulse2Output / this.pulse2Buffer.length;
+        this.pulse1Buffer = [];
+        this.pulse2Buffer = [];
         var output = 0;
         if (pulse1Output != 0 || pulse2Output != 0)
             output = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
         this.pushToBuffer(output);
-        // if (this.pulse1Buffer.length == this.bufferLength) {
-        //     this.outputBuffer = this.pulse1Buffer.slice();
-        //     this.pulse1Buffer = [];
-        // }
-        // this.pulse1Buffer.push(output);
-        sampleCount++;
-        t2 = perfomance.now();
-        if(t2 - t1 >= 1000) {
-            t1 = t2;
-            console.log("sampling rate = " + sampleCount + " samples per second");
-        }
+        
     };
 
     this.pushToBuffer = function(data) {
@@ -274,19 +284,26 @@ function apu(nes) {
 
     //Main APU clock at 240Hz perform step functions at 240Hz (~7457 CPU cycles)
     this.run = function(cycles) {
-        var clocks = Math.floor(cycles / 2);
+        var clocks = Math.floor(cycles / 2) + apuExtraClock;
         for (var i = 0; i < clocks; i++) {
             pulse1.clock();
+            this.pulse1Buffer.push(pulse1.output());
             pulse2.clock();
+            this.pulse2Buffer.push(pulse2.output());
         }
+        apuExtraClock = cycles % 2;
         //check for 240Hz cycles
         this.cycles += cycles;
         this.sampleCycles += cycles;
         if (this.sampleCycles >= this.sampleCycleRate) {
             this.sampleCycles -= this.sampleCycleRate;
+            if (this.sampleCycleRate == 40)
+                this.sampleCycleRate = 41;
+            else if (this.sampleCycleRate == 41) 
+                this.sampleCycleRate = 40;
             this.sample();
         }
-        // if (this.cycles % this.sampleCycleRate == 0) {
+        // if (Math.floor(this.sampleCycles % this.sampleCycleRate) == 0) {
         //     this.sample();
         // }
         if (this.cycles >= 7457) {
@@ -301,12 +318,12 @@ function apu(nes) {
     };
 
     this.do4StepSeq = function() {
-        pulse1.updateEnvelope();
-        pulse2.updateEnvelope();
+        // pulse1.updateEnvelope();
+        // pulse2.updateEnvelope();
         // triangle1.updateLinearCounter();
         if (this.step % 2 === 1) {
-            pulse1.updSweepAndLengthCounter();
-            pulse2.updSweepAndLengthCounter();
+            // pulse1.updSweepAndLengthCounter();
+            // pulse2.updSweepAndLengthCounter();
         }
         this.step++;
         if (this.step === 4) {
@@ -319,16 +336,16 @@ function apu(nes) {
 
     this.do5StepSeq = function() {
         if (this.step % 2 === 0) {
-            pulse1.updSweepAndLengthCounter();
-            pulse2.updSweepAndLengthCounter();
+            // pulse1.updSweepAndLengthCounter();
+            // pulse2.updSweepAndLengthCounter();
         }
         this.step++;
         if (this.step === 5) {
             this.step = 0;
         }
         else {
-            pulse1.updateEnvelope();
-            pulse2.updateEnvelope();
+            // pulse1.updateEnvelope();
+            // pulse2.updateEnvelope();
             // triangle1.updateLinearCounter();
         }
     };
