@@ -139,18 +139,20 @@ export default function pulse(nes) {
     };
 
     this.output = function() {
-        // if ((this.outputValue) && (this.sweepTargetPeriod <= 0x7FF) && (this.period >= 0x08) && (!this.lenCounterDisable && this.lenCounter > 0)) {
-        //     if (!this.sawEnvDisable) {
-        //         return this.decayLvlCount;
-        //     }
-        //     else {
-        //         return this.volume;
-        //     }
-        // }
-        // else return 0;
-        if (this.outputValue && this.enabled & this.period >= 0x08) {
-            return this.volume;
+        if ((this.outputValue) && (this.sweepTargetPeriod <= 0x7FF) && (this.period >= 0x08)) {
+            if (!this.lenCounterDisable && this.lenCounter <= 0)
+                return 0;
+            if (!this.sawEnvDisable) {
+                return this.decayLvlCount;
+            }
+            else {
+                return this.volume;
+            }
         }
         else return 0;
+        //     if (this.outputValue && this.enabled & this.period >= 0x08) {
+        //         return this.volume;
+        //     }
+        //     else return 0;
     };
 }

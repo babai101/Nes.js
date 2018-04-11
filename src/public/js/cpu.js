@@ -30,7 +30,12 @@ export default function cpu(nes) {
 	this.masterCpuCyclesElapsed = 0;
 	this.currentOpcode; // Opcode currently processed
 	this.operationType; // Current operation type
-	this.apuCycleCount = 0;
+	this.cpuCyclesGenerated = 0;
+	this.cpuCyclesConsumed = 0;
+	this.ppuCyclesConsumed = 0;
+	this.cpuCyclesThisSecond = 0;
+	this.ppuCyclesThisFrame = 0;
+	this.frameCount = 0;
 	//Reset CPU and initialize all registers and flags
 	this.reset = function() {
 		this.sp = 0xFD; //Adjusted for comparing with Nintedulator log
@@ -5266,7 +5271,7 @@ export default function cpu(nes) {
 					this.serveISR('NMI');
 			}
 			//Calculating extra cpu cycles run for this scanline
-			this.excessCpuCyclesDbg = Math.floor(this.totalCpuCyclesDbg - this.ppuCyclesCurrentScanLine / 3);
+			this.excessCpuCyclesDbg =this.totalCpuCyclesDbg - this.ppuCyclesCurrentScanLine / 3;
 			this.totalCpuCyclesDbg = 0;
 			this.elapsedCycles = 0;
 		}
@@ -5274,24 +5279,24 @@ export default function cpu(nes) {
 	};
 
 	this.runFrame = function() {
-		var frameCompleted = false;
-		var renderedScanline = -1;
+		this.frameCompleted = false;
+		this.renderedScanline = -1;
 		//Need to re render CHR for games using CHR RAM
 		if (this.nes.MMU.chrRamWritten) {
 			this.nes.Mapper.reRenderCHR();
 		}
 		this.totalCPUCyclesThisFrame = 0;
-		while (!frameCompleted) {
+		while (!this.frameCompleted) {
 			if ((this.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
 				if (this.nes.APU.doIrq) {
 					this.serveISR('IRQ');
 					this.nes.APU.doIrq = false;
 				}
-			};
+			}
+			this.cpuCyclesConsumed = this.elapsedCycles;
 			this.fetchOpcode();
 			this.decodeInstruction();
-			// this.logInConsole(); Enable console logging here
-
+			this.cpuCyclesGenerated = this.elapsedCycles - this.cpuCyclesConsumed;
 			this.elapsedCycles += this.excessCpuCycles;
 			this.excessCpuCycles = 0;
 			if (this.oddFrame) {
@@ -5308,35 +5313,57 @@ export default function cpu(nes) {
 					this.nes.MMU.OAMDMAwritten = false;
 				}
 			}
-			//Run the APU frame counter
-			this.nes.APU.run(this.elapsedCycles - this.apuCycleCount);
-			this.apuCycleCount = this.elapsedCycles;
-			if ((this.elapsedCycles * 3) >= this.ppuCyclesCurrentScanLine) {
-				renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
-				//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring
-				if (renderedScanline == 261 || (renderedScanline >= 0 && renderedScanline < 240)) {
-					this.nes.MMU.setOAMADDR(0);
-				}
-				//Check we are on the verge of vBlank
-				if (renderedScanline == 241) {
-					this.nmiLoopCounter++;
-					if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) { //Generet NMI Interrupt
-						this.serveISR('NMI');
-					}
-				}
-				else if (renderedScanline == 261) {
-					frameCompleted = true;
-				}
-				//Calculating extra cpu cycles run for this scanline
-				this.excessCpuCycles = Math.floor(this.elapsedCycles - this.ppuCyclesCurrentScanLine / 3);
-				this.totalCPUCyclesThisFrame += this.elapsedCycles;
-				this.elapsedCycles = 0;
-				this.apuCycleCount = 0;
-			}
+			this.cpuCyclesConsumed = this.elapsedCycles - this.cpuCyclesConsumed;
+			this.clockPPU(this.cpuCyclesConsumed);
+			this.clockAPU(this.cpuCyclesGenerated);
+			this.totalCPUCyclesThisFrame += this.cpuCyclesGenerated;
 		}
-		this.totalCPUCyclesThisFrame = 0;
+		// console.log("PPU cycles per frame = " + this.ppuCyclesThisFrame);
+		// this.ppuCyclesThisFrame = 0;
+		// this.frameCount++;
+		// this.cpuCyclesThisSecond += this.totalCPUCyclesThisFrame;
+		// if (this.frameCount >= 60) {
+		// 	console.log("Cycles per second: " + this.cpuCyclesThisSecond);
+		// 	this.cpuCyclesThisSecond = 0;
+		// 	this.frameCount = 0;
+		// }
+		// console.log("Cpu cycles this frame = " + this.totalCPUCyclesThisFrame);
+		// this.totalCPUCyclesThisFrame = 0;
 		this.oddFrame = !this.oddFrame;
-		// console.log("Total CPU cycles this frame: " + totalCPUCyclesThisFrame);
-		// console.log("Total scanlines rendered this frame: " + totalScanLinesRenderedThisFrame);
+	};
+
+	this.clockPPU = function(cycles) {
+		this.ppuCyclesConsumed += cycles;
+		if(this.oddFrame && (this.renderedScanline == -1)) {
+			this.ppuCyclesCurrentScanLine = 340;
+		}
+		else {
+			this.ppuCyclesCurrentScanLine = 341;
+		}
+		if ((this.ppuCyclesConsumed * 3) >= this.ppuCyclesCurrentScanLine) {
+			this.renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
+			//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring
+			if (this.renderedScanline == 261 || (this.renderedScanline >= 0 && this.renderedScanline < 240)) {
+				this.nes.MMU.setOAMADDR(0);
+			}
+			//Check we are on the verge of vBlank
+			if (this.renderedScanline == 241) {
+				this.nmiLoopCounter++;
+				if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) { //Generet NMI Interrupt
+					this.serveISR('NMI');
+				}
+			}
+			else if (this.renderedScanline == 261) {
+				this.frameCompleted = true;
+			}
+			//Calculating extra cpu cycles run for this scanline
+			this.excessCpuCycles =this.ppuCyclesConsumed - this.ppuCyclesCurrentScanLine / 3;
+			// this.ppuCyclesThisFrame += this.ppuCyclesConsumed;
+			this.ppuCyclesConsumed = 0;
+		}
+	};
+	
+	this.clockAPU = function(cycles) {
+		this.nes.APU.run(cycles);
 	};
 }

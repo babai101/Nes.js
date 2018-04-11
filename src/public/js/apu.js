@@ -1,5 +1,5 @@
 /*global performance*/
-//cycles per frame 1786830
+//cycles per second 1786830
 import pulse from './pulse';
 import triangle from './triangle';
 import RingBuffer from 'ringbufferjs';
@@ -15,7 +15,8 @@ export default function apu(nes) {
     this.seqMode = 0;
     this.cycles = 0;
     this.sampleCycles = 0;
-    this.sampleCycleRate = 40;
+    this.overSamplingCycles = 0;
+    this.sampleCycleRate = 39;
     this.step = 0;
     this.doIrq = false;
     this.lengthCounterTbl = [10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14, 12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30];
@@ -24,7 +25,7 @@ export default function apu(nes) {
     this.pulse2Buffer = [];
     // this.outputBuffer = new Array(this.bufferLength);
     this.bufferLength = 4096;
-    this.outputBuffer = new RingBuffer(this.bufferLength);
+    this.outputBuffer = new RingBuffer(this.bufferLength * 50);
     this.bufferIndex = 0;
     var pulse1 = new pulse(nes);
     var pulse2 = new pulse(nes);
@@ -34,8 +35,13 @@ export default function apu(nes) {
     this.clock = true;
     var sampleCount = 0;
     var t1 = 0;
+    var t3 = 0;
+    var enqueCount = 0;
     var apuExtraClock = 0;
-
+    this.samplingClock = performance.now();
+    this.sampleTimerMax = 1000.0 / 44100.0;
+    this.cyclesPerFrame = 1786830;
+    this.squareTable = new Array(31);
     this.init = function() {
         if (!window.AudioContext) {
             if (!window.WebkitAudioContext) {
@@ -53,8 +59,28 @@ export default function apu(nes) {
         this.scriptNode = this.audioCtx.createScriptProcessor(this.bufferLength, 0, 1);
         this.scriptNode.onaudioprocess = this.onaudioprocess;
         this.scriptNode.connect(this.audioCtx.destination);
-        // this.audioCtx.sampleRate = 44100;
-        // this.sampleCycleRate = Math.floor(this.nes.cpuFreq / this.audioCtx.sampleRate);
+        // Create the filter
+        // var lowPassFilter = this.audioCtx.createBiquadFilter();
+        // var highPassFilter1 = this.audioCtx.createBiquadFilter();
+        // var highPassFilter2 = this.audioCtx.createBiquadFilter();
+        // lowPassFilter.type = 'lowpass';
+        // lowPassFilter.frequency.value = 14000; // Set cutoff to 440 HZ
+        // highPassFilter1.type = 'highpass';
+        // lowPassFilter.frequency.value = 90; // Set cutoff to 440 HZ
+        // highPassFilter2.type = 'highpass';
+        // highPassFilter2.frequency.value = 440; // Set cutoff to 440 HZ
+        // this.scriptNode.connect(highPassFilter1);
+        // highPassFilter1.connect(highPassFilter2);
+        // highPassFilter2.connect(lowPassFilter);
+        // lowPassFilter.connect(this.audioCtx.destination);
+        this.initSqrTable();
+    };
+    
+    this.initSqrTable = function() {
+        this.squareTable[0] = 0;
+        for(var i = 1; i < 31; i++) {
+            this.squareTable[i] = 95.88 / ((8128 / i) + 100);
+        }
     };
 
     // 0x4015
@@ -274,65 +300,63 @@ export default function apu(nes) {
     };
 
     this.sample = function() {
-        // this.pulse1Buffer.push(output);
-        // sampleCount++;  
-        // t2 = performance.now();
-        // if(t2 - t1 >= 1000) {
-        //     t1 = t2;
-        //     // console.log("sampling rate = " + sampleCount/10 + " samples per second");
-        //     sampleCount = 0;
-        // }
+        sampleCount++;
+        var t2 = performance.now();
+        if (t2 - t1 >= 1000) {
+            t1 = performance.now();
+            console.log("sampling rate = " + sampleCount + " samples per second");
+            sampleCount = 0;
+        }
         // if (sampleCount >= 44100) {
         //     return;
         // }
         var pulse1Output = Math.floor(this.pulse1Buffer.reduce((a, b) => a + b, 0));
         if (pulse1Output != 0)
-            this.pulse1Output = this.pulse1Output / this.pulse1Buffer.length;
+            pulse1Output = pulse1Output / this.pulse1Buffer.length;
         var pulse2Output = Math.floor(this.pulse2Buffer.reduce((a, b) => a + b, 0));
         if (pulse2Output != 0)
-            this.pulse2Output = this.pulse2Output / this.pulse2Buffer.length;
+            pulse2Output = pulse2Output / this.pulse2Buffer.length;
         this.pulse1Buffer = [];
         this.pulse2Buffer = [];
         var output = 0;
         if (pulse1Output != 0 || pulse2Output != 0)
             output = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
+        // output = this.squareTable[pulse1Output + pulse2Output];
         this.pushToBuffer(output);
 
     };
 
     this.pushToBuffer = function(data) {
-        // if (this.bufferIndex >= this.bufferLength)
+        // if (this.outputBuffer.size() >= this.bufferLength)
         //     return;
-        // this.outputBuffer[this.bufferIndex++] = data;
-        if (this.outputBuffer.size() >= this.bufferLength)
-            return;
         this.outputBuffer.enq(data);
     };
 
     //Main APU clock at 240Hz perform step functions at 240Hz (~7457 CPU cycles)
     this.run = function(cycles) {
         var clocks = Math.floor(cycles / 2) + apuExtraClock;
+        // var clocks = cycles;
         for (var i = 0; i < clocks; i++) {
             pulse1.clock();
-            this.pulse1Buffer.push(pulse1.output());
             pulse2.clock();
-            this.pulse2Buffer.push(pulse2.output());
         }
         apuExtraClock = cycles % 2;
-        //check for 240Hz cycles
         this.cycles += cycles;
         this.sampleCycles += cycles;
+        this.overSamplingCycles += cycles;
+        if (this.overSamplingCycles >= 2) {
+            this.pulse1Buffer.push(pulse1.output());
+            this.pulse2Buffer.push(pulse2.output());
+            this.overSamplingCycles -= 2;
+        }
         if (this.sampleCycles >= this.sampleCycleRate) {
             this.sampleCycles -= this.sampleCycleRate;
-            if (this.sampleCycleRate == 40)
-                this.sampleCycleRate = 41;
-            else if (this.sampleCycleRate == 41)
-                this.sampleCycleRate = 40;
             this.sample();
+            if (this.sampleCycleRate == 39)
+                this.sampleCycleRate = 40;
+            else if (this.sampleCycleRate == 40)
+                this.sampleCycleRate = 39;
         }
-        // if (Math.floor(this.sampleCycles % this.sampleCycleRate) == 0) {
-        //     this.sample();
-        // }
         if (this.cycles >= 7457) {
             this.cycles -= 7457;
             if (this.seqMode == 0) {
@@ -345,12 +369,12 @@ export default function apu(nes) {
     };
 
     this.do4StepSeq = function() {
-        // pulse1.updateEnvelope();
-        // pulse2.updateEnvelope();
+        pulse1.updateEnvelope();
+        pulse2.updateEnvelope();
         // triangle1.updateLinearCounter();
         if (this.step % 2 === 1) {
-            // pulse1.updSweepAndLengthCounter();
-            // pulse2.updSweepAndLengthCounter();
+            pulse1.updSweepAndLengthCounter();
+            pulse2.updSweepAndLengthCounter();
         }
         this.step++;
         if (this.step === 4) {
@@ -363,16 +387,16 @@ export default function apu(nes) {
 
     this.do5StepSeq = function() {
         if (this.step % 2 === 0) {
-            // pulse1.updSweepAndLengthCounter();
-            // pulse2.updSweepAndLengthCounter();
+            pulse1.updSweepAndLengthCounter();
+            pulse2.updSweepAndLengthCounter();
         }
         this.step++;
         if (this.step === 5) {
             this.step = 0;
         }
         else {
-            // pulse1.updateEnvelope();
-            // pulse2.updateEnvelope();
+            pulse1.updateEnvelope();
+            pulse2.updateEnvelope();
             // triangle1.updateLinearCounter();
         }
     };
