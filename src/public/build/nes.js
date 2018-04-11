@@ -30,7 +30,7 @@ $(document).ready(function() {
 
     var renderFrame = function() {
         // if (!isPaused) {
-        this.CPU.runFrame();
+        this.CPU.run();
         this.CPU.totalCPUCyclesThisFrame;
         this.CPU.nmiLoopCounter = 0;
         renderScreen();

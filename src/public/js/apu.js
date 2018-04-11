@@ -1,5 +1,4 @@
 /*global performance*/
-//cycles per second 1786830
 import pulse from './pulse';
 import triangle from './triangle';
 import RingBuffer from 'ringbufferjs';
@@ -15,15 +14,12 @@ export default function apu(nes) {
     this.seqMode = 0;
     this.cycles = 0;
     this.sampleCycles = 0;
-    this.overSamplingCycles = 0;
-    this.sampleCycleRate = 39;
     this.step = 0;
     this.doIrq = false;
     this.lengthCounterTbl = [10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14, 12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30];
     this.volumeLkpTbl = [-40.00, -24.44, -19.17, -15.92, -13.15, -11.06, -9.37, -7.96, -6.74, -5.68, -4.73, -2.38, -1.72, -1.11, -0.54, 0.00];
     this.pulse1Buffer = [];
     this.pulse2Buffer = [];
-    // this.outputBuffer = new Array(this.bufferLength);
     this.bufferLength = 4096;
     this.outputBuffer = new RingBuffer(this.bufferLength * 50);
     this.bufferIndex = 0;
@@ -36,8 +32,8 @@ export default function apu(nes) {
     var sampleCount = 0;
     var t1 = 0;
     var t3 = 0;
-    var enqueCount = 0;
-    var apuExtraClock = 0;
+    var overSamplingCycleRate = 10.0;
+    var sampleCycleRate = 40.0;
     this.samplingClock = performance.now();
     this.sampleTimerMax = 1000.0 / 44100.0;
     this.cyclesPerFrame = 1786830;
@@ -75,10 +71,10 @@ export default function apu(nes) {
         // lowPassFilter.connect(this.audioCtx.destination);
         this.initSqrTable();
     };
-    
+
     this.initSqrTable = function() {
         this.squareTable[0] = 0;
-        for(var i = 1; i < 31; i++) {
+        for (var i = 1; i < 31; i++) {
             this.squareTable[i] = 95.88 / ((8128 / i) + 100);
         }
     };
@@ -266,17 +262,6 @@ export default function apu(nes) {
     this.onaudioprocess = (e) => {
         var channelData = e.outputBuffer.getChannelData(0);
         var size = channelData.length;
-        // var size = channelData.length;
-        // var samples = this.outputBuffer;
-        // for (var i = 0; i < size; i++) {
-        //     channelData[i] = samples[i];
-        // }
-        // this.outputBuffer = [];
-        // for (var i = 0, il = this.bufferLength; i < il; i++)
-        //     channelData[i] = this.outputBuffer[i];
-
-        // for (var i = this.bufferIndex, il = this.bufferLength; i < il; i++)
-        //     channelData[i] = this.bufferIndex === 0 ? 0.0 : this.outputBuffer[this.bufferIndex - 1];
         try {
             var samples = this.outputBuffer.deqN(size);
         }
@@ -296,19 +281,15 @@ export default function apu(nes) {
         for (var i = 0; i < size; i++) {
             channelData[i] = samples[i];
         }
-        // this.bufferIndex = 0;
     };
 
     this.sample = function() {
-        sampleCount++;
-        var t2 = performance.now();
-        if (t2 - t1 >= 1000) {
-            t1 = performance.now();
-            console.log("sampling rate = " + sampleCount + " samples per second");
-            sampleCount = 0;
-        }
-        // if (sampleCount >= 44100) {
-        //     return;
+        // sampleCount++;
+        // var t2 = performance.now();
+        // if (t2 - t1 >= 1000) {
+        //     t1 = performance.now();
+        //     console.log("sampling rate = " + sampleCount + " samples per second");
+        //     sampleCount = 0;
         // }
         var pulse1Output = Math.floor(this.pulse1Buffer.reduce((a, b) => a + b, 0));
         if (pulse1Output != 0)
@@ -321,7 +302,6 @@ export default function apu(nes) {
         var output = 0;
         if (pulse1Output != 0 || pulse2Output != 0)
             output = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
-        // output = this.squareTable[pulse1Output + pulse2Output];
         this.pushToBuffer(output);
 
     };
@@ -333,32 +313,24 @@ export default function apu(nes) {
     };
 
     //Main APU clock at 240Hz perform step functions at 240Hz (~7457 CPU cycles)
-    this.run = function(cycles) {
-        var clocks = Math.floor(cycles / 2) + apuExtraClock;
-        // var clocks = cycles;
-        for (var i = 0; i < clocks; i++) {
+    this.run = function() {
+        this.cycles++;
+        if (this.cycles % 2 == 0) {
             pulse1.clock();
             pulse2.clock();
         }
-        apuExtraClock = cycles % 2;
-        this.cycles += cycles;
-        this.sampleCycles += cycles;
-        this.overSamplingCycles += cycles;
-        if (this.overSamplingCycles >= 2) {
+        if (this.cycles % overSamplingCycleRate == 0) {
             this.pulse1Buffer.push(pulse1.output());
             this.pulse2Buffer.push(pulse2.output());
-            this.overSamplingCycles -= 2;
         }
-        if (this.sampleCycles >= this.sampleCycleRate) {
-            this.sampleCycles -= this.sampleCycleRate;
+        if (this.cycles % sampleCycleRate == 0) {
             this.sample();
-            if (this.sampleCycleRate == 39)
+            if (this.sampleCycleRate == 40)
+                this.sampleCycleRate = 41;
+            else if (this.sampleCycleRate == 41)
                 this.sampleCycleRate = 40;
-            else if (this.sampleCycleRate == 40)
-                this.sampleCycleRate = 39;
         }
-        if (this.cycles >= 7457) {
-            this.cycles -= 7457;
+        if (this.cycles % 7457 == 0) {
             if (this.seqMode == 0) {
                 this.do4StepSeq();
             }
