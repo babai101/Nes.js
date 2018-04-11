@@ -175,6 +175,16 @@ export default function triangle(nes) {
             this.pulseOsc.mute = false;
         }
     };
+    
+    this.clock = function() {
+        if (this.period <= 0) {
+            this.clockSequencer();
+            this.period = this.periodLowBits | (this.periodHighBits << 8) + 1;
+        }
+        else {
+            this.period--;
+        }
+    };
 
     this.updateLinearCounter = function() {
         if (this.lenCounterReloadFlag) {

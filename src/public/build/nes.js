@@ -22,6 +22,8 @@ $(document).ready(function() {
         this.PPU.nameTableMirroring = this.ines.mirroring;
         this.CPU.reset();
         this.mainDisplay.screenReset();
+        this.frameCount = 0;
+        this.cyclesPerSecond = 0;
     };
     loadRomsToDropdown();
     var renderScreen = function() {
@@ -29,11 +31,13 @@ $(document).ready(function() {
     };
 
     var renderFrame = function() {
-        // if (!isPaused) {
-        this.CPU.run();
-        this.CPU.totalCPUCyclesThisFrame;
-        this.CPU.nmiLoopCounter = 0;
+        this.cyclesPerSecond += this.CPU.run();
         renderScreen();
+        // this.frameCount++;
+        // if(this.frameCount >= 60) {
+        //     // console.log("Cycles per second = " + this.cyclesPerSecond);
+        //     this.frameCount = 0;
+        //     this.cyclesPerSecond = 0;
         // }
         requestId = requestAnimationFrame(renderFrame);
     };

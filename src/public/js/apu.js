@@ -1,4 +1,5 @@
 /*global performance*/
+//cycles per second = 1786830
 import pulse from './pulse';
 import triangle from './triangle';
 import RingBuffer from 'ringbufferjs';
@@ -12,28 +13,27 @@ export default function apu(nes) {
     this.dmcEnabled = false;
     this.inhibitInterrupt = true;
     this.seqMode = 0;
-    this.cycles = 0;
-    this.sampleCycles = 0;
     this.step = 0;
     this.doIrq = false;
     this.lengthCounterTbl = [10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14, 12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30];
-    this.volumeLkpTbl = [-40.00, -24.44, -19.17, -15.92, -13.15, -11.06, -9.37, -7.96, -6.74, -5.68, -4.73, -2.38, -1.72, -1.11, -0.54, 0.00];
     this.pulse1Buffer = [];
     this.pulse2Buffer = [];
     this.bufferLength = 4096;
-    this.outputBuffer = new RingBuffer(this.bufferLength * 50);
-    this.bufferIndex = 0;
+    this.outputBuffer = new RingBuffer(this.bufferLength * 10);
     var pulse1 = new pulse(nes);
     var pulse2 = new pulse(nes);
     var triangle1 = new triangle(nes);
     pulse1.channel = 1;
     pulse2.channel = 2;
-    this.clock = true;
     var sampleCount = 0;
     var t1 = 0;
     var t3 = 0;
-    var overSamplingCycleRate = 10.0;
-    var sampleCycleRate = 40.0;
+    this.overSamplingCycles = 0;
+    var overSamplingCycleRate = 20;
+    var sampleCycleRate = 41;
+    this.samplingCycles = 0;
+    this.clockCycles = 0;
+    this.frameCycles = 0;
     this.samplingClock = performance.now();
     this.sampleTimerMax = 1000.0 / 44100.0;
     this.cyclesPerFrame = 1786830;
@@ -55,20 +55,6 @@ export default function apu(nes) {
         this.scriptNode = this.audioCtx.createScriptProcessor(this.bufferLength, 0, 1);
         this.scriptNode.onaudioprocess = this.onaudioprocess;
         this.scriptNode.connect(this.audioCtx.destination);
-        // Create the filter
-        // var lowPassFilter = this.audioCtx.createBiquadFilter();
-        // var highPassFilter1 = this.audioCtx.createBiquadFilter();
-        // var highPassFilter2 = this.audioCtx.createBiquadFilter();
-        // lowPassFilter.type = 'lowpass';
-        // lowPassFilter.frequency.value = 14000; // Set cutoff to 440 HZ
-        // highPassFilter1.type = 'highpass';
-        // lowPassFilter.frequency.value = 90; // Set cutoff to 440 HZ
-        // highPassFilter2.type = 'highpass';
-        // highPassFilter2.frequency.value = 440; // Set cutoff to 440 HZ
-        // this.scriptNode.connect(highPassFilter1);
-        // highPassFilter1.connect(highPassFilter2);
-        // highPassFilter2.connect(lowPassFilter);
-        // lowPassFilter.connect(this.audioCtx.destination);
         this.initSqrTable();
     };
 
@@ -260,8 +246,20 @@ export default function apu(nes) {
     };
 
     this.onaudioprocess = (e) => {
+        //Thansk Ben Firshman!!!
         var channelData = e.outputBuffer.getChannelData(0);
         var size = channelData.length;
+        if (this.outputBuffer.size() < size) {
+            console.log(
+                "Buffer underrun, running another frame to try and catch up"
+            );
+            this.nes.CPU.run();
+            
+            if (this.outputBuffer.size() < size) {
+                console.log("Still buffer underrun, running a second frame");
+                this.nes.CPU.run();
+            }
+        }
         try {
             var samples = this.outputBuffer.deqN(size);
         }
@@ -271,9 +269,9 @@ export default function apu(nes) {
             // ignore empty buffers... assume audio has just stopped
             var bufferSize = this.outputBuffer.size();
             if (bufferSize > 0) {
-                console.log(`Buffer underrun (needed ${size}, got ${bufferSize})`);
+                // console.log(`Buffer underrun (needed ${size}, got ${bufferSize})`);
             }
-            for (var j = 0; j < size; j++) {
+            for (var j = 0; j < bufferSize; j++) {
                 channelData[j] = 0;
             }
             return;
@@ -284,13 +282,8 @@ export default function apu(nes) {
     };
 
     this.sample = function() {
-        // sampleCount++;
-        // var t2 = performance.now();
-        // if (t2 - t1 >= 1000) {
-        //     t1 = performance.now();
-        //     console.log("sampling rate = " + sampleCount + " samples per second");
-        //     sampleCount = 0;
-        // }
+        // var pulse1Output = pulse1.output();
+        // var pulse2Output = pulse2.output();
         var pulse1Output = Math.floor(this.pulse1Buffer.reduce((a, b) => a + b, 0));
         if (pulse1Output != 0)
             pulse1Output = pulse1Output / this.pulse1Buffer.length;
@@ -302,8 +295,8 @@ export default function apu(nes) {
         var output = 0;
         if (pulse1Output != 0 || pulse2Output != 0)
             output = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
+        // output = this.squareTable[pulse1Output + pulse2Output];
         this.pushToBuffer(output);
-
     };
 
     this.pushToBuffer = function(data) {
@@ -314,23 +307,30 @@ export default function apu(nes) {
 
     //Main APU clock at 240Hz perform step functions at 240Hz (~7457 CPU cycles)
     this.run = function() {
-        this.cycles++;
-        if (this.cycles % 2 == 0) {
+        this.clockCycles++;
+        if (this.clockCycles % 2 == 0) {
             pulse1.clock();
             pulse2.clock();
+            this.clockCycles = 0;
         }
-        if (this.cycles % overSamplingCycleRate == 0) {
+        this.overSamplingCycles++;
+        if (this.overSamplingCycles >= overSamplingCycleRate) {
+            this.overSamplingCycles -= overSamplingCycleRate;
             this.pulse1Buffer.push(pulse1.output());
             this.pulse2Buffer.push(pulse2.output());
         }
-        if (this.cycles % sampleCycleRate == 0) {
+        this.samplingCycles++;
+        if (this.samplingCycles >= sampleCycleRate) {
+            this.samplingCycles -= sampleCycleRate;
             this.sample();
-            if (this.sampleCycleRate == 40)
-                this.sampleCycleRate = 41;
-            else if (this.sampleCycleRate == 41)
-                this.sampleCycleRate = 40;
+            if (sampleCycleRate == 40)
+                sampleCycleRate = 41;
+            else if (sampleCycleRate == 41)
+                sampleCycleRate = 40;
         }
-        if (this.cycles % 7457 == 0) {
+        this.frameCycles++;
+        if (this.frameCycles >= 7457) {
+            this.frameCycles -= 7457;
             if (this.seqMode == 0) {
                 this.do4StepSeq();
             }
