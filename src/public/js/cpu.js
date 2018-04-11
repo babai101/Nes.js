@@ -5268,47 +5268,47 @@ export default function cpu(nes) {
 		return this.totalCPUCyclesThisFrame;
 	};
 
-	this.runFrame = function() {
-		this.frameCompleted = false;
-		this.renderedScanline = -1;
-		//Need to re render CHR for games using CHR RAM
-		if (this.nes.MMU.chrRamWritten) {
-			this.nes.Mapper.reRenderCHR();
-		}
-		this.totalCPUCyclesThisFrame = 0;
-		while (!this.frameCompleted) {
-			if ((this.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
-				if (this.nes.APU.doIrq) {
-					this.serveISR('IRQ');
-					this.nes.APU.doIrq = false;
-				}
-			}
-			this.cpuCyclesConsumed = this.elapsedCycles;
-			this.fetchOpcode();
-			this.decodeInstruction();
-			this.cpuCyclesGenerated = this.elapsedCycles - this.cpuCyclesConsumed;
-			this.elapsedCycles += this.excessCpuCycles;
-			this.excessCpuCycles = 0;
-			if (this.oddFrame) {
-				this.ppuCyclesCurrentScanLine = 340;
-				if (this.nes.MMU.OAMDMAwritten) {
-					this.elapsedCycles += 514;
-					this.nes.MMU.OAMDMAwritten = false;
-				}
-			}
-			else {
-				this.ppuCyclesCurrentScanLine = 341;
-				if (this.nes.MMU.OAMDMAwritten) {
-					this.elapsedCycles += 513;
-					this.nes.MMU.OAMDMAwritten = false;
-				}
-			}
-			this.cpuCyclesConsumed = this.elapsedCycles - this.cpuCyclesConsumed;
-			this.runPPU();
-			this.totalCPUCyclesThisFrame += this.cpuCyclesGenerated;
-		}
-		this.oddFrame = !this.oddFrame;
-	};
+	// this.runFrame = function() {
+	// 	this.frameCompleted = false;
+	// 	this.renderedScanline = -1;
+	// 	//Need to re render CHR for games using CHR RAM
+	// 	if (this.nes.MMU.chrRamWritten) {
+	// 		this.nes.Mapper.reRenderCHR();
+	// 	}
+	// 	this.totalCPUCyclesThisFrame = 0;
+	// 	while (!this.frameCompleted) {
+	// 		if ((this.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
+	// 			if (this.nes.APU.doIrq) {
+	// 				this.serveISR('IRQ');
+	// 				this.nes.APU.doIrq = false;
+	// 			}
+	// 		}
+	// 		this.cpuCyclesConsumed = this.elapsedCycles;
+	// 		this.fetchOpcode();
+	// 		this.decodeInstruction();
+	// 		this.cpuCyclesGenerated = this.elapsedCycles - this.cpuCyclesConsumed;
+	// 		this.elapsedCycles += this.excessCpuCycles;
+	// 		this.excessCpuCycles = 0;
+	// 		if (this.oddFrame) {
+	// 			this.ppuCyclesCurrentScanLine = 340;
+	// 			if (this.nes.MMU.OAMDMAwritten) {
+	// 				this.elapsedCycles += 514;
+	// 				this.nes.MMU.OAMDMAwritten = false;
+	// 			}
+	// 		}
+	// 		else {
+	// 			this.ppuCyclesCurrentScanLine = 341;
+	// 			if (this.nes.MMU.OAMDMAwritten) {
+	// 				this.elapsedCycles += 513;
+	// 				this.nes.MMU.OAMDMAwritten = false;
+	// 			}
+	// 		}
+	// 		this.cpuCyclesConsumed = this.elapsedCycles - this.cpuCyclesConsumed;
+	// 		this.runPPU();
+	// 		this.totalCPUCyclesThisFrame += this.cpuCyclesGenerated;
+	// 	}
+	// 	this.oddFrame = !this.oddFrame;
+	// };
 	
 	this.clockPPU = function() {
 		this.ppuCyclesConsumed++;
@@ -5339,28 +5339,28 @@ export default function cpu(nes) {
 		}
 	};
 	
-	this.runPPU = function() {
-		if ((this.elapsedCycles * 3) >= this.ppuCyclesCurrentScanLine) {
-			this.renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
-			//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring
-			if (this.renderedScanline == 261 || (this.renderedScanline >= 0 && this.renderedScanline < 240)) {
-				this.nes.MMU.setOAMADDR(0);
-			}
-			//Check we are on the verge of vBlank
-			if (this.renderedScanline == 241) {
-				this.nmiLoopCounter++;
-				if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) { //Generet NMI Interrupt
-					this.serveISR('NMI');
-				}
-			}
-			else if (this.renderedScanline == 261) {
-				this.frameCompleted = true;
-			}
-			//Calculating extra cpu cycles run for this scanline
-			this.excessCpuCycles = Math.floor(this.elapsedCycles - this.ppuCyclesCurrentScanLine / 3);
-			this.totalCPUCyclesThisFrame += this.elapsedCycles;
-			this.elapsedCycles = 0;
-		}
-	};
+	// this.runPPU = function() {
+	// 	if ((this.elapsedCycles * 3) >= this.ppuCyclesCurrentScanLine) {
+	// 		this.renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
+	// 		//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring
+	// 		if (this.renderedScanline == 261 || (this.renderedScanline >= 0 && this.renderedScanline < 240)) {
+	// 			this.nes.MMU.setOAMADDR(0);
+	// 		}
+	// 		//Check we are on the verge of vBlank
+	// 		if (this.renderedScanline == 241) {
+	// 			this.nmiLoopCounter++;
+	// 			if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) { //Generet NMI Interrupt
+	// 				this.serveISR('NMI');
+	// 			}
+	// 		}
+	// 		else if (this.renderedScanline == 261) {
+	// 			this.frameCompleted = true;
+	// 		}
+	// 		//Calculating extra cpu cycles run for this scanline
+	// 		this.excessCpuCycles = Math.floor(this.elapsedCycles - this.ppuCyclesCurrentScanLine / 3);
+	// 		this.totalCPUCyclesThisFrame += this.elapsedCycles;
+	// 		this.elapsedCycles = 0;
+	// 	}
+	// };
 
 }

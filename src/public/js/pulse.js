@@ -1,6 +1,5 @@
 /*global Tone*/
-export default function pulse(nes) {
-    this.nes = nes;
+export default function pulse() {
     this.Enabled = false;
     this.doIrq = false;
     this.channel = 0;
@@ -17,7 +16,6 @@ export default function pulse(nes) {
     this.envVolume = 0; //Envelop value
     this.envStartFlag = false;
     this.dividerPeriod = 0;
-    this.dividerOriginalPeriod = 0;
     this.decayLvlCount = 0;
     this.envCounter = 0; //Counter to countdown to 0 from envelope period
     this.inhibitInterrupt = true; //Inhibit the frame counter IR
@@ -68,7 +66,7 @@ export default function pulse(nes) {
         if (!this.envStartFlag) {
             //Now clock divider
             if (this.dividerPeriod == 0) { //Reload divider period
-                this.dividerPeriod = this.dividerOriginalPeriod;
+                this.dividerPeriod = this.volume + 1;
                 //Now clock Decay level counter
                 this.clockDecayLevelCounter();
             }
@@ -81,7 +79,7 @@ export default function pulse(nes) {
         else {
             this.envStartFlag = false; //Clear Start flag
             this.decayLvlCount = 15; //Reload Decay level counter
-            this.dividerPeriod = this.dividerOriginalPeriod; //Reload divider period
+            this.dividerPeriod = this.volume + 1; //Reload divider period
         }
         // if (this.dividerOriginalPeriod > 0)
         //     this.setVol(this.dividerOriginalPeriod - 1);
@@ -150,9 +148,5 @@ export default function pulse(nes) {
             }
         }
         else return 0;
-        //     if (this.outputValue && this.enabled & this.period >= 0x08) {
-        //         return this.volume;
-        //     }
-        //     else return 0;
     };
 }

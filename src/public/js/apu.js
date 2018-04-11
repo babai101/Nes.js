@@ -2,6 +2,7 @@
 //cycles per second = 1786830
 import pulse from './pulse';
 import triangle from './triangle';
+import noise from './noise';
 import RingBuffer from 'ringbufferjs';
 
 export default function apu(nes) {
@@ -18,17 +19,20 @@ export default function apu(nes) {
     this.lengthCounterTbl = [10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14, 12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30];
     this.pulse1Buffer = [];
     this.pulse2Buffer = [];
+    this.triangleBuffer = [];
     this.bufferLength = 4096;
     this.outputBuffer = new RingBuffer(this.bufferLength * 10);
-    var pulse1 = new pulse(nes);
-    var pulse2 = new pulse(nes);
-    var triangle1 = new triangle(nes);
+    var pulse1 = new pulse();
+    var pulse2 = new pulse();
+    var triangle1 = new triangle();
+    var noise = new noise();
     pulse1.channel = 1;
     pulse2.channel = 2;
     var sampleCount = 0;
     var t1 = 0;
     var t3 = 0;
-    this.overSamplingCycles = 0;
+    this.pulseOverSamplingCycles = 0;
+    this.triangleOverSamplingCycles = 0;
     var overSamplingCycleRate = 20;
     var sampleCycleRate = 41;
     this.samplingCycles = 0;
@@ -102,8 +106,8 @@ export default function apu(nes) {
     //Square channel 1 methods
     //0x4000
     this.setSQ1_ENV = function(value) {
-        pulse1.dividerPeriod = (value & 0x0F) + 1; //Env period
-        pulse1.dividerOriginalPeriod = pulse1.dividerPeriod;
+        // pulse1.dividerPeriod = (value & 0x0F) + 1; //Env period
+        // pulse1.dividerOriginalPeriod = pulse1.dividerPeriod;
         if ((value & 0x10) == 0x10) {
             pulse1.sawEnvDisable = true; //use Volume for volume
         }
@@ -140,7 +144,7 @@ export default function apu(nes) {
             pulse1.lenCounter = this.lengthCounterTbl[value >> 3];
         }
         // pulse1.dividerPeriod = pulse1.dividerOriginalPeriod; //Restart envelop
-        pulse1.decayLvlCount = 0x0F;
+        // pulse1.decayLvlCount = 0x0F;
         // pulse1.setVol(pulse1.dividerOriginalPeriod - 1);
         pulse1.currentSequence = 0;
         pulse1.envStartFlag = true;
@@ -195,7 +199,7 @@ export default function apu(nes) {
             pulse2.lenCounter = this.lengthCounterTbl[value >> 3];
         }
         // pulse2.dividerPeriod = pulse2.dividerOriginalPeriod; //Restart envelop
-        pulse2.decayLvlCount = 0x0F;
+        // pulse2.decayLvlCount = 0x0F;
         // pulse2.setVol(pulse2.dividerOriginalPeriod - 1);
         pulse1.currentSequence = 0;
         pulse2.envStartFlag = true;
@@ -226,13 +230,17 @@ export default function apu(nes) {
     };
 
     this.setTRI_LO = function(value) {
-        triangle1.timerLowBits = value & 0xFF;
+        triangle1.periodLowBits = value & 0xFF;
+        triangle1.period = triangle1.period & 0x700;
+        triangle1.period = triangle1.period | triangle1.periodLowBits;
     };
 
     this.setTRI_HI = function(value) {
-        triangle1.timerHighBits = value & 0x07;
-        triangle1.lenCounter = value >> 3;
-        triangle1.lenCounterReloadFlag = true;
+        triangle1.periodHighBits = value & 0x07;
+        triangle1.period = triangle1.period & 0xFF;
+        triangle1.period = triangle1.period | (triangle1.periodHighBits << 8);
+        triangle1.lenCounter = this.lengthCounterTbl[value >> 3];
+        triangle1.linearCounterReloadFlag = true;
     };
 
     this.setFrameCounter = function(value) {
@@ -282,21 +290,26 @@ export default function apu(nes) {
     };
 
     this.sample = function() {
-        // var pulse1Output = pulse1.output();
-        // var pulse2Output = pulse2.output();
         var pulse1Output = Math.floor(this.pulse1Buffer.reduce((a, b) => a + b, 0));
         if (pulse1Output != 0)
             pulse1Output = pulse1Output / this.pulse1Buffer.length;
         var pulse2Output = Math.floor(this.pulse2Buffer.reduce((a, b) => a + b, 0));
         if (pulse2Output != 0)
             pulse2Output = pulse2Output / this.pulse2Buffer.length;
+        var triangleOutput = Math.floor(this.triangleBuffer.reduce((a, b) => a + b, 0));
+        if (triangleOutput != 0)
+            triangleOutput = triangleOutput / this.triangleBuffer.length;
         this.pulse1Buffer = [];
         this.pulse2Buffer = [];
-        var output = 0;
+        this.triangleBuffer = [];
+        var pulseOutput = 0;
+        if(triangleOutput != 0) 
+            triangleOutput = 159.79 / (1 / (triangleOutput / 8227) + 100);
         if (pulse1Output != 0 || pulse2Output != 0)
-            output = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
+            pulseOutput = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
         // output = this.squareTable[pulse1Output + pulse2Output];
-        this.pushToBuffer(output);
+        this.pushToBuffer(pulseOutput + triangleOutput);
+        // this.pushToBuffer(triangleOutput);
     };
 
     this.pushToBuffer = function(data) {
@@ -305,7 +318,6 @@ export default function apu(nes) {
         this.outputBuffer.enq(data);
     };
 
-    //Main APU clock at 240Hz perform step functions at 240Hz (~7457 CPU cycles)
     this.run = function() {
         this.clockCycles++;
         if (this.clockCycles % 2 == 0) {
@@ -313,11 +325,18 @@ export default function apu(nes) {
             pulse2.clock();
             this.clockCycles = 0;
         }
-        this.overSamplingCycles++;
-        if (this.overSamplingCycles >= overSamplingCycleRate) {
-            this.overSamplingCycles -= overSamplingCycleRate;
+        triangle1.clock();
+
+        this.pulseOverSamplingCycles++;
+        if (this.pulseOverSamplingCycles >= overSamplingCycleRate) {
+            this.pulseOverSamplingCycles -= overSamplingCycleRate;
             this.pulse1Buffer.push(pulse1.output());
             this.pulse2Buffer.push(pulse2.output());
+        }
+        this.triangleOverSamplingCycles++;
+        if (this.triangleOverSamplingCycles >= overSamplingCycleRate) {
+            this.triangleOverSamplingCycles -= overSamplingCycleRate;
+            this.triangleBuffer.push(triangle1.output());
         }
         this.samplingCycles++;
         if (this.samplingCycles >= sampleCycleRate) {
@@ -343,10 +362,11 @@ export default function apu(nes) {
     this.do4StepSeq = function() {
         pulse1.updateEnvelope();
         pulse2.updateEnvelope();
-        // triangle1.updateLinearCounter();
+        triangle1.updateLinearCounter();
         if (this.step % 2 === 1) {
             pulse1.updSweepAndLengthCounter();
             pulse2.updSweepAndLengthCounter();
+            triangle1.updateLenCounter();
         }
         this.step++;
         if (this.step === 4) {
@@ -361,6 +381,7 @@ export default function apu(nes) {
         if (this.step % 2 === 0) {
             pulse1.updSweepAndLengthCounter();
             pulse2.updSweepAndLengthCounter();
+            triangle1.updateLenCounter();
         }
         this.step++;
         if (this.step === 5) {
@@ -369,7 +390,7 @@ export default function apu(nes) {
         else {
             pulse1.updateEnvelope();
             pulse2.updateEnvelope();
-            // triangle1.updateLinearCounter();
+            triangle1.updateLinearCounter();
         }
     };
 }

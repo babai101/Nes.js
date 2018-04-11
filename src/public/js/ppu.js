@@ -687,7 +687,7 @@ export default function ppu(nes) {
             if (this.currentScanline == 0) {
 
             }
-            //Calculate sprite 0 hit before rendering begins
+            // Calculate sprite 0 hit before rendering begins
             if (this.renderBackground && this.renderSprite)
                 this.setSprite0Hit(oam);
 

@@ -428,6 +428,9 @@ export default function mmu(nes) {
             case 0x400B:
                 this.nes.APU.setTRI_HI(value);
                 break;
+            case 0x400C:
+                this.nes.APU.setNoise_ENV(value);
+                break;
             case 0x4015: //APUFLAGS
                 this.nes.APU.setAPUFlags(value);
                 break;
