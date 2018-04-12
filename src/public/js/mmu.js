@@ -431,14 +431,20 @@ export default function mmu(nes) {
             case 0x400C:
                 this.nes.APU.setNoise_ENV(value);
                 break;
+            case 0x400E:
+                this.nes.APU.setNoise_Period(value);
+                break;
+            case 0x400F:
+                this.nes.APU.setNoise_LenEnv(value);
+                break;
             case 0x4015: //APUFLAGS
                 this.nes.APU.setAPUFlags(value);
                 break;
             case 0x4017:
                 this.nes.APU.setFrameCounter(value);
                 break;
-        };
-        return 0
+        }
+        return 0;
     };
 
     this.getPPURegObj = function() {

@@ -1,12 +1,16 @@
 export default function noise() {
-	this.dividerPeriod = 0;
-	this.volume = 0;
-	this.envStartFlag = false;
-	this.decayLvlCount = 0;
-	this.lenCounterDisable = false;
-	this.period = 0;
+    this.dividerPeriod = 0;
+    this.volume = 0;
+    this.envStartFlag = false;
+    this.decayLvlCount = 0;
+    this.sawEnvDisable = true;
+    this.lenCounterDisable = false;
+    this.modeFlag = false;
+    this.period = 0;
+    this.register = 1;
+    this.originalPeriod = 0;
 
-	this.clockDecayLevelCounter = function() {
+    this.clockDecayLevelCounter = function() {
         if (this.decayLvlCount == 0) {
             if (this.lenCounterDisable) { //if loop flag set, reload the decay 
                 this.decayLvlCount = 15;
@@ -17,16 +21,16 @@ export default function noise() {
         }
     };
 
-	this.updateEnvelope = function() {
-		if (!this.envStartFlag) {
+    this.updateEnvelope = function() {
+        if (!this.envStartFlag) {
             //Now clock divider
             if (this.dividerPeriod == 0) { //Reload divider period
-            	this.dividerPeriod = this.volume + 1;
+                this.dividerPeriod = this.volume + 1;
                 //Now clock Decay level counter
                 this.clockDecayLevelCounter();
             }
             else {
-            	this.dividerPeriod--;
+                this.dividerPeriod--;
                 //Now clock Decay level counter
                 this.clockDecayLevelCounter();
             }
@@ -36,12 +40,12 @@ export default function noise() {
             this.decayLvlCount = 15; //Reload Decay level counter
             this.dividerPeriod = this.volume + 1; //Reload divider period
         }
-    };	
+    };
 
     this.clock = function() {
         if (this.period <= 0) {
-            this.clockSequencer();
-            this.period = this.periodLowBits | (this.periodHighBits << 8) + 1;
+            this.shiftRegister();
+            this.period = this.originalPeriod;
         }
         else {
             this.period--;
@@ -58,7 +62,29 @@ export default function noise() {
     };
 
     this.output = function() {
-        return this.outputValue;
+        if (((this.register & 0x01) == 0x01) || this.lenCounter <= 0) {
+            return 0;
+        }
+        if (!this.sawEnvDisable) {
+            return this.decayLvlCount;
+        }
+        else {
+            return this.volume;
+        }
+    };
+
+    this.shiftRegister = function() {
+        var feedback = 0;
+        if (this.modeFlag) {
+            feedback = (this.register & 0x01) ^ ((this.register & 0x40) >> 6);
+        }
+        else {
+            feedback = (this.register & 0x01) ^ ((this.register & 0x02) >> 1);
+        }
+        this.register = this.register >> 1;
+        if (feedback == 1) {
+            this.register = this.register | 0x8000;
+        }
     };
 
 }

@@ -55,7 +55,7 @@ export default function triangle() {
         else if (!this.controlFlag && this.lenCounter > 0) {
             this.lenCounter--;
         }
-    }
+    };
 
     this.output = function() {
         return this.outputValue;
