@@ -100,62 +100,62 @@ export default function cpu(nes) {
 	this.setFlag = function(flagToSet) {
 		switch (flagToSet) {
 			case 'carry':
-				this.P = this.P & 0b11111110;
-				this.P = this.P | 0b00000001;
-				break;
+			this.P = this.P & 0b11111110;
+			this.P = this.P | 0b00000001;
+			break;
 
 			case 'zero':
-				this.P = this.P & 0b11111101;
-				this.P = this.P | 0b00000010;
-				break;
+			this.P = this.P & 0b11111101;
+			this.P = this.P | 0b00000010;
+			break;
 
 			case 'irqDisable':
-				this.P = this.P & 0b11111011;
-				this.P = this.P | 0b00000100;
-				break;
+			this.P = this.P & 0b11111011;
+			this.P = this.P | 0b00000100;
+			break;
 
 			case 'decimal':
-				this.P = this.P & 0b11110111;
-				this.P = this.P | 0b00001000;
-				break;
+			this.P = this.P & 0b11110111;
+			this.P = this.P | 0b00001000;
+			break;
 
 			case 'overflow':
-				this.P = this.P & 0b10111111;
-				this.P = this.P | 0b01000000;
-				break;
+			this.P = this.P & 0b10111111;
+			this.P = this.P | 0b01000000;
+			break;
 
 			case 'negative':
-				this.P = this.P & 0b01111111;
-				this.P = this.P | 0b10000000;
-				break;
+			this.P = this.P & 0b01111111;
+			this.P = this.P | 0b10000000;
+			break;
 		}
 	};
 
 	this.unsetFlag = function(flagToUnset) {
 		switch (flagToUnset) {
 			case 'carry':
-				this.P = this.P & 0b11111110;
-				break;
+			this.P = this.P & 0b11111110;
+			break;
 
 			case 'zero':
-				this.P = this.P & 0b11111101;
-				break;
+			this.P = this.P & 0b11111101;
+			break;
 
 			case 'irqDisable':
-				this.P = this.P & 0b11111011;
-				break;
+			this.P = this.P & 0b11111011;
+			break;
 
 			case 'decimal':
-				this.P = this.P & 0b11110111;
-				break;
+			this.P = this.P & 0b11110111;
+			break;
 
 			case 'overflow':
-				this.P = this.P & 0b10111111;
-				break;
+			this.P = this.P & 0b10111111;
+			break;
 
 			case 'negative':
-				this.P = this.P & 0b01111111;
-				break;
+			this.P = this.P & 0b01111111;
+			break;
 		}
 	};
 
@@ -206,14 +206,14 @@ export default function cpu(nes) {
 				else output = operand + 1;
 				break;
 
-			case 'decrement':
+				case 'decrement':
 				//Simple one off wrap around
 				if (operand == 0x00)
 					output = 0xFF;
 				else output = operand - 1;
 				break;
 
-			case 'sum':
+				case 'sum':
 				//Wrap around from zero and go upwards 
 				var temp = operand + input;
 				if (temp > 0xFF) {
@@ -223,7 +223,7 @@ export default function cpu(nes) {
 					output = temp;
 				break;
 
-			case 'subtract':
+				case 'subtract':
 				//Wrap around from FF and go downwards
 				if (input > operand) {
 					output = 0xFF - (input - operand - 1);
@@ -231,72 +231,72 @@ export default function cpu(nes) {
 				else
 					output = operand - input;
 				break;
-		}
-		return output;
-	};
+			}
+			return output;
+		};
 
-	this.to2sComplement = function(val) {
-		if (val == 128)
-			return -128;
-		else if (val >= 129 && val <= 255)
-			return val - 256;
-		else return val;
-	};
+		this.to2sComplement = function(val) {
+			if (val == 128)
+				return -128;
+			else if (val >= 129 && val <= 255)
+				return val - 256;
+			else return val;
+		};
 
-	this.toSigned8bit = function(val) {
-		if (val == -128)
-			return 128;
-		else if (val >= 0 && val <= 127)
-			return val;
-		else return val + 256;
-	};
+		this.toSigned8bit = function(val) {
+			if (val == -128)
+				return 128;
+			else if (val >= 0 && val <= 127)
+				return val;
+			else return val + 256;
+		};
 
-	this.pushToStack = function(value) {
-		this.nes.MMU.setCpuMemVal((0x100 + this.sp), (value));
-		if (this.sp == 0x00)
-			this.sp = 0xFF;
-		else
-			this.sp--;
-	};
+		this.pushToStack = function(value) {
+			this.nes.MMU.setCpuMemVal((0x100 + this.sp), (value));
+			if (this.sp == 0x00)
+				this.sp = 0xFF;
+			else
+				this.sp--;
+		};
 
 
-	this.popFromStack = function() {
-		if (this.sp == 0xFF)
-			this.sp = 0x00;
-		else
-			this.sp++;
-		var value = this.nes.MMU.getCpuMemVal(0x100 + this.sp);
-		return value;
-	};
+		this.popFromStack = function() {
+			if (this.sp == 0xFF)
+				this.sp = 0x00;
+			else
+				this.sp++;
+			var value = this.nes.MMU.getCpuMemVal(0x100 + this.sp);
+			return value;
+		};
 
-	this.calcOffset = function(param) {
-		if (param > 0x7F) {
-			param = param ^ 0b11111111;
-			param++;
-			param = 0 - param;
-		}
-		return param;
-	};
+		this.calcOffset = function(param) {
+			if (param > 0x7F) {
+				param = param ^ 0b11111111;
+				param++;
+				param = 0 - param;
+			}
+			return param;
+		};
 
-	this.compareValsAndSetNegative = function(val1, val2) {
+		this.compareValsAndSetNegative = function(val1, val2) {
 		//Turns out compare instructions do unsigned comparison :(
-		var temp = val1 - val2;
-		if (((temp >> 7) & 1) == 1)
-			this.setFlag('negative');
-		else
-			this.unsetFlag('negative');
+			var temp = val1 - val2;
+			if (((temp >> 7) & 1) == 1)
+				this.setFlag('negative');
+			else
+				this.unsetFlag('negative');
 
-		if (val1 > val2) {
-			return 1;
-		}
-		else if (val1 == val2) {
-			this.unsetFlag('negative');
-			return 0;
-		}
-		else if (val1 < val2) {
-			return -1;
-		}
-	};
+			if (val1 > val2) {
+				return 1;
+			}
+			else if (val1 == val2) {
+				this.unsetFlag('negative');
+				return 0;
+			}
+			else if (val1 < val2) {
+				return -1;
+			}
+		};
 
 	//Opcode implementaions
 
@@ -521,21 +521,21 @@ export default function cpu(nes) {
 		if (
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
-		) {
+			) {
 			this.setFlag('overflow');
-		}
-		else {
-			this.unsetFlag('overflow');
-		}
-		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
-		}
-		else {
-			this.unsetFlag('carry');
-		}
-		this.accumulator = temp & 0xff;
-		this.calcFlags(null, false, null);
-		this.elapsedCycles += 2;
+	}
+	else {
+		this.unsetFlag('overflow');
+	}
+	if (temp < 0 ? 0 : 1) {
+		this.setFlag('carry');
+	}
+	else {
+		this.unsetFlag('carry');
+	}
+	this.accumulator = temp & 0xff;
+	this.calcFlags(null, false, null);
+	this.elapsedCycles += 2;
 
 		// var arg = this.fetchParams();
 		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
@@ -569,21 +569,21 @@ export default function cpu(nes) {
 		if (
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
-		) {
+			) {
 			this.setFlag('overflow');
-		}
-		else {
-			this.unsetFlag('overflow');
-		}
-		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
-		}
-		else {
-			this.unsetFlag('carry');
-		}
-		this.accumulator = temp & 0xff;
-		this.calcFlags(null, false, null);
-		this.elapsedCycles += 3;
+	}
+	else {
+		this.unsetFlag('overflow');
+	}
+	if (temp < 0 ? 0 : 1) {
+		this.setFlag('carry');
+	}
+	else {
+		this.unsetFlag('carry');
+	}
+	this.accumulator = temp & 0xff;
+	this.calcFlags(null, false, null);
+	this.elapsedCycles += 3;
 		// var param = this.fetchParams();
 		// var arg = this.nes.MMU.getCpuMemVal(param);
 		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
@@ -616,21 +616,21 @@ export default function cpu(nes) {
 		if (
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
-		) {
+			) {
 			this.setFlag('overflow');
-		}
-		else {
-			this.unsetFlag('overflow');
-		}
-		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
-		}
-		else {
-			this.unsetFlag('carry');
-		}
-		this.accumulator = temp & 0xff;
-		this.calcFlags(null, false, null);
-		this.elapsedCycles += 4;
+	}
+	else {
+		this.unsetFlag('overflow');
+	}
+	if (temp < 0 ? 0 : 1) {
+		this.setFlag('carry');
+	}
+	else {
+		this.unsetFlag('carry');
+	}
+	this.accumulator = temp & 0xff;
+	this.calcFlags(null, false, null);
+	this.elapsedCycles += 4;
 		// var param = this.fetchParams();
 		// var arg = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		// var temp = this.to2sComplement(this.accumulator) - this.to2sComplement(arg);
@@ -665,21 +665,21 @@ export default function cpu(nes) {
 		if (
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
-		) {
+			) {
 			this.setFlag('overflow');
-		}
-		else {
-			this.unsetFlag('overflow');
-		}
-		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
-		}
-		else {
-			this.unsetFlag('carry');
-		}
-		this.accumulator = temp & 0xff;
-		this.calcFlags(null, false, null);
-		this.elapsedCycles += 4;
+	}
+	else {
+		this.unsetFlag('overflow');
+	}
+	if (temp < 0 ? 0 : 1) {
+		this.setFlag('carry');
+	}
+	else {
+		this.unsetFlag('carry');
+	}
+	this.accumulator = temp & 0xff;
+	this.calcFlags(null, false, null);
+	this.elapsedCycles += 4;
 		// var param1 = this.fetchParams();
 		// var param2 = this.fetchParams();
 		// param2 = param2 << 8;
@@ -718,24 +718,24 @@ export default function cpu(nes) {
 		if (
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
-		) {
+			) {
 			this.setFlag('overflow');
-		}
-		else {
-			this.unsetFlag('overflow');
-		}
-		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
-		}
-		else {
-			this.unsetFlag('carry');
-		}
-		this.accumulator = temp & 0xff;
-		this.calcFlags(null, false, null);
-		if ((param1 + this.X) > 0xFF)
-			this.elapsedCycles += 5;
-		else
-			this.elapsedCycles += 4;
+	}
+	else {
+		this.unsetFlag('overflow');
+	}
+	if (temp < 0 ? 0 : 1) {
+		this.setFlag('carry');
+	}
+	else {
+		this.unsetFlag('carry');
+	}
+	this.accumulator = temp & 0xff;
+	this.calcFlags(null, false, null);
+	if ((param1 + this.X) > 0xFF)
+		this.elapsedCycles += 5;
+	else
+		this.elapsedCycles += 4;
 		// var param1 = this.fetchParams();
 		// var param2 = this.fetchParams();
 		// param2 = param2 << 8;
@@ -776,24 +776,24 @@ export default function cpu(nes) {
 		if (
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
-		) {
+			) {
 			this.setFlag('overflow');
-		}
-		else {
-			this.unsetFlag('overflow');
-		}
-		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
-		}
-		else {
-			this.unsetFlag('carry');
-		}
-		this.accumulator = temp & 0xff;
-		this.calcFlags(null, false, null);
-		if ((param1 + this.Y) > 0xFF)
-			this.elapsedCycles += 5;
-		else
-			this.elapsedCycles += 4;
+	}
+	else {
+		this.unsetFlag('overflow');
+	}
+	if (temp < 0 ? 0 : 1) {
+		this.setFlag('carry');
+	}
+	else {
+		this.unsetFlag('carry');
+	}
+	this.accumulator = temp & 0xff;
+	this.calcFlags(null, false, null);
+	if ((param1 + this.Y) > 0xFF)
+		this.elapsedCycles += 5;
+	else
+		this.elapsedCycles += 4;
 		// var param1 = this.fetchParams();
 		// var param2 = this.fetchParams();
 		// param2 = param2 << 8;
@@ -834,21 +834,21 @@ export default function cpu(nes) {
 		if (
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
-		) {
+			) {
 			this.setFlag('overflow');
-		}
-		else {
-			this.unsetFlag('overflow');
-		}
-		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
-		}
-		else {
-			this.unsetFlag('carry');
-		}
-		this.accumulator = temp & 0xff;
-		this.calcFlags(null, false, null);
-		this.elapsedCycles += 6;
+	}
+	else {
+		this.unsetFlag('overflow');
+	}
+	if (temp < 0 ? 0 : 1) {
+		this.setFlag('carry');
+	}
+	else {
+		this.unsetFlag('carry');
+	}
+	this.accumulator = temp & 0xff;
+	this.calcFlags(null, false, null);
+	this.elapsedCycles += 6;
 		// var param = this.fetchParams();
 		// var index1 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, this.X));
 		// var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param + this.X, 1));
@@ -887,24 +887,24 @@ export default function cpu(nes) {
 		if (
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
-		) {
+			) {
 			this.setFlag('overflow');
-		}
-		else {
-			this.unsetFlag('overflow');
-		}
-		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
-		}
-		else {
-			this.unsetFlag('carry');
-		}
-		this.accumulator = temp & 0xff;
-		this.calcFlags(null, false, null);
-		if ((index1 + this.Y) > 0xFF)
-			this.elapsedCycles += 6;
-		else
-			this.elapsedCycles += 5;
+	}
+	else {
+		this.unsetFlag('overflow');
+	}
+	if (temp < 0 ? 0 : 1) {
+		this.setFlag('carry');
+	}
+	else {
+		this.unsetFlag('carry');
+	}
+	this.accumulator = temp & 0xff;
+	this.calcFlags(null, false, null);
+	if ((index1 + this.Y) > 0xFF)
+		this.elapsedCycles += 6;
+	else
+		this.elapsedCycles += 5;
 		// var param = this.fetchParams();
 		// var index1 = this.nes.MMU.getCpuMemVal(param);
 		// var index2 = this.nes.MMU.getCpuMemVal(this.wrap8bit('sum', param, 1));
@@ -4385,781 +4385,781 @@ export default function cpu(nes) {
 		switch (this.currentOpcode) {
 			//ADC Instructions
 			case 0x69:
-				this.ADC_I();
-				break;
+			this.ADC_I();
+			break;
 			case 0x65:
-				this.ADC_Z();
-				break;
+			this.ADC_Z();
+			break;
 			case 0x75:
-				this.ADC_Z_X();
-				break;
+			this.ADC_Z_X();
+			break;
 			case 0x6D:
-				this.ADC_A();
-				break;
+			this.ADC_A();
+			break;
 			case 0x7D:
-				this.ADC_A_X();
-				break;
+			this.ADC_A_X();
+			break;
 			case 0x79:
-				this.ADC_A_Y();
-				break;
+			this.ADC_A_Y();
+			break;
 			case 0x61:
-				this.ADC_I_X();
-				break;
+			this.ADC_I_X();
+			break;
 			case 0x71:
-				this.ADC_I_Y();
-				break;
+			this.ADC_I_Y();
+			break;
 
 				//AND Instructions
-			case 0x29:
+				case 0x29:
 				this.AND_I();
 				break;
-			case 0x25:
+				case 0x25:
 				this.AND_Z();
 				break;
-			case 0x35:
+				case 0x35:
 				this.AND_Z_X();
 				break;
-			case 0x2D:
+				case 0x2D:
 				this.AND_A();
 				break;
-			case 0x3D:
+				case 0x3D:
 				this.AND_A_X();
 				break;
-			case 0x39:
+				case 0x39:
 				this.AND_A_Y();
 				break;
-			case 0x21:
+				case 0x21:
 				this.AND_I_X();
 				break;
-			case 0x31:
+				case 0x31:
 				this.AND_I_Y();
 				break;
 
 				//ASL Instructions
-			case 0x0A:
+				case 0x0A:
 				this.ASL_AC();
 				break;
-			case 0x06:
+				case 0x06:
 				this.ASL_Z();
 				break;
-			case 0x16:
+				case 0x16:
 				this.ASL_Z_X();
 				break;
-			case 0x0E:
+				case 0x0E:
 				this.ASL_A();
 				break;
-			case 0x1E:
+				case 0x1E:
 				this.ASL_A_X();
 				break;
 
 				//BIT Instructions
-			case 0x24:
+				case 0x24:
 				this.BIT_Z();
 				break;
-			case 0x2C:
+				case 0x2C:
 				this.BIT_A();
 				break;
 
 				//Branch Instructions
-			case 0x10:
+				case 0x10:
 				this.BPL();
 				break;
-			case 0x30:
+				case 0x30:
 				this.BMI();
 				break;
-			case 0x50:
+				case 0x50:
 				this.BVC();
 				break;
-			case 0x70:
+				case 0x70:
 				this.BVS();
 				break;
-			case 0x90:
+				case 0x90:
 				this.BCC();
 				break;
-			case 0xB0:
+				case 0xB0:
 				this.BCS();
 				break;
-			case 0xD0:
+				case 0xD0:
 				this.BNE();
 				break;
-			case 0xF0:
+				case 0xF0:
 				this.BEQ();
 				break;
 
 				//BRK Instructions
-			case 0x00:
+				case 0x00:
 				this.BRK();
 				break;
 
 				//CMP Instructions
-			case 0xC9:
+				case 0xC9:
 				this.CMP_I();
 				break;
-			case 0xC5:
+				case 0xC5:
 				this.CMP_Z();
 				break;
-			case 0xD5:
+				case 0xD5:
 				this.CMP_Z_X();
 				break;
-			case 0xCD:
+				case 0xCD:
 				this.CMP_A();
 				break;
-			case 0xDD:
+				case 0xDD:
 				this.CMP_A_X();
 				break;
-			case 0xD9:
+				case 0xD9:
 				this.CMP_A_Y();
 				break;
-			case 0xC1:
+				case 0xC1:
 				this.CMP_I_X();
 				break;
-			case 0xD1:
+				case 0xD1:
 				this.CMP_I_Y();
 				break;
 
 				//CPX Instructions
-			case 0xE0:
+				case 0xE0:
 				this.CPX_I();
 				break;
-			case 0xE4:
+				case 0xE4:
 				this.CPX_Z();
 				break;
-			case 0xEC:
+				case 0xEC:
 				this.CPX_A();
 				break;
 
 				//CPY Instructions
-			case 0xC0:
+				case 0xC0:
 				this.CPY_I();
 				break;
-			case 0xC4:
+				case 0xC4:
 				this.CPY_Z();
 				break;
-			case 0xCC:
+				case 0xCC:
 				this.CPY_A();
 				break;
 
 				//DEC Instructions
-			case 0xC6:
+				case 0xC6:
 				this.DEC_Z();
 				break;
-			case 0xD6:
+				case 0xD6:
 				this.DEC_Z_X();
 				break;
-			case 0xCE:
+				case 0xCE:
 				this.DEC_A();
 				break;
-			case 0xDE:
+				case 0xDE:
 				this.DEC_A_X();
 				break;
 
 				//EOR Instructions
-			case 0x49:
+				case 0x49:
 				this.EOR_I();
 				break;
-			case 0x45:
+				case 0x45:
 				this.EOR_Z();
 				break;
-			case 0x55:
+				case 0x55:
 				this.EOR_Z_X();
 				break;
-			case 0x4D:
+				case 0x4D:
 				this.EOR_A();
 				break;
-			case 0x5D:
+				case 0x5D:
 				this.EOR_A_X();
 				break;
-			case 0x59:
+				case 0x59:
 				this.EOR_A_Y();
 				break;
-			case 0x41:
+				case 0x41:
 				this.EOR_I_X();
 				break;
-			case 0x51:
+				case 0x51:
 				this.EOR_I_Y();
 				break;
 
 				//Flag Instructions
-			case 0x18:
+				case 0x18:
 				this.CLC();
 				break;
-			case 0x38:
+				case 0x38:
 				this.SEC();
 				break;
-			case 0x58:
+				case 0x58:
 				this.CLI();
 				break;
-			case 0x78:
+				case 0x78:
 				this.SEI();
 				break;
-			case 0xB8:
+				case 0xB8:
 				this.CLV();
 				break;
-			case 0xD8:
+				case 0xD8:
 				this.CLD();
 				break;
-			case 0xF8:
+				case 0xF8:
 				this.SED();
 				break;
 
 				//INC Instructions
-			case 0xE6:
+				case 0xE6:
 				this.INC_Z();
 				break;
-			case 0xF6:
+				case 0xF6:
 				this.INC_Z_X();
 				break;
-			case 0xEE:
+				case 0xEE:
 				this.INC_A();
 				break;
-			case 0xFE:
+				case 0xFE:
 				this.INC_A_X();
 				break;
 
 				//JMP Instructions
-			case 0x4C:
+				case 0x4C:
 				this.JMP_A();
 				break;
-			case 0x6C:
+				case 0x6C:
 				this.JMP_I();
 				break;
 
 				//JSR Instructions
-			case 0x20:
+				case 0x20:
 				this.JSR_A();
 				break;
 
 				//LDA Instuctions
-			case 0xA9:
+				case 0xA9:
 				this.LDA_I();
 				break;
-			case 0xA5:
+				case 0xA5:
 				this.LDA_Z();
 				break;
-			case 0xB5:
+				case 0xB5:
 				this.LDA_Z_X();
 				break;
-			case 0xAD:
+				case 0xAD:
 				this.LDA_A();
 				break;
-			case 0xBD:
+				case 0xBD:
 				this.LDA_A_X();
 				break;
-			case 0xB9:
+				case 0xB9:
 				this.LDA_A_Y();
 				break;
-			case 0xA1:
+				case 0xA1:
 				this.LDA_I_X();
 				break;
-			case 0xB1:
+				case 0xB1:
 				this.LDA_I_Y();
 				break;
 
 
 				//LDX Instructions
-			case 0xA2:
+				case 0xA2:
 				this.LDX_I();
 				break;
-			case 0xA6:
+				case 0xA6:
 				this.LDX_Z();
 				break;
-			case 0xB6:
+				case 0xB6:
 				this.LDX_Z_Y();
 				break;
-			case 0xAE:
+				case 0xAE:
 				this.LDX_A();
 				break;
-			case 0xBE:
+				case 0xBE:
 				this.LDX_A_Y();
 				break;
 
 				//LDY Instructions
-			case 0xA0:
+				case 0xA0:
 				this.LDY_I();
 				break;
-			case 0xA4:
+				case 0xA4:
 				this.LDY_Z();
 				break;
-			case 0xB4:
+				case 0xB4:
 				this.LDY_Z_X();
 				break;
-			case 0xAC:
+				case 0xAC:
 				this.LDY_A();
 				break;
-			case 0xBC:
+				case 0xBC:
 				this.LDY_A_X();
 				break;
 
 				//LSR Instructions
-			case 0x4A:
+				case 0x4A:
 				this.LSR_AC();
 				break;
-			case 0x46:
+				case 0x46:
 				this.LSR_Z();
 				break;
-			case 0x56:
+				case 0x56:
 				this.LSR_Z_X();
 				break;
-			case 0x4E:
+				case 0x4E:
 				this.LSR_A();
 				break;
-			case 0x5E:
+				case 0x5E:
 				this.LSR_A_X();
 				break;
 
 				//NOP
-			case 0xEA:
+				case 0xEA:
 				this.NOP();
 				break;
 
 				//ORA Instructions
-			case 0x09:
+				case 0x09:
 				this.ORA_I();
 				break;
-			case 0x05:
+				case 0x05:
 				this.ORA_Z();
 				break;
-			case 0x15:
+				case 0x15:
 				this.ORA_Z_X();
 				break;
-			case 0x0D:
+				case 0x0D:
 				this.ORA_A();
 				break;
-			case 0x1D:
+				case 0x1D:
 				this.ORA_A_X();
 				break;
-			case 0x19:
+				case 0x19:
 				this.ORA_A_Y();
 				break;
-			case 0x01:
+				case 0x01:
 				this.ORA_I_X();
 				break;
-			case 0x11:
+				case 0x11:
 				this.ORA_I_Y();
 				break;
 
 				//Register Instructions
-			case 0xAA:
+				case 0xAA:
 				this.TAX();
 				break;
-			case 0x8A:
+				case 0x8A:
 				this.TXA();
 				break;
-			case 0xCA:
+				case 0xCA:
 				this.DEX();
 				break;
-			case 0xE8:
+				case 0xE8:
 				this.INX();
 				break;
-			case 0xA8:
+				case 0xA8:
 				this.TAY();
 				break;
-			case 0x98:
+				case 0x98:
 				this.TYA();
 				break;
-			case 0x88:
+				case 0x88:
 				this.DEY();
 				break;
-			case 0xC8:
+				case 0xC8:
 				this.INY();
 				break;
 
 				//ROL Instructions
-			case 0x2A:
+				case 0x2A:
 				this.ROL_AC();
 				break;
-			case 0x26:
+				case 0x26:
 				this.ROL_Z();
 				break;
-			case 0x36:
+				case 0x36:
 				this.ROL_Z_X();
 				break;
-			case 0x2E:
+				case 0x2E:
 				this.ROL_A();
 				break;
-			case 0x3E:
+				case 0x3E:
 				this.ROL_A_X();
 				break;
 
 
 				//ROR Instructions
-			case 0x6A:
+				case 0x6A:
 				this.ROR_AC();
 				break;
-			case 0x66:
+				case 0x66:
 				this.ROR_Z();
 				break;
-			case 0x76:
+				case 0x76:
 				this.ROR_Z_X();
 				break;
-			case 0x6E:
+				case 0x6E:
 				this.ROR_A();
 				break;
-			case 0x7E:
+				case 0x7E:
 				this.ROR_A_X();
 				break;
 
 				//RTI Instructions
-			case 0x40:
+				case 0x40:
 				this.RTI();
 				break;
 
 				//RTS Instructions
-			case 0x60:
+				case 0x60:
 				this.RTS();
 				break;
 
 				//SBC Instructions
-			case 0xE9:
+				case 0xE9:
 				this.SBC_I();
 				break;
-			case 0xE5:
+				case 0xE5:
 				this.SBC_Z();
 				break;
-			case 0xF5:
+				case 0xF5:
 				this.SBC_Z_X();
 				break;
-			case 0xED:
+				case 0xED:
 				this.SBC_A();
 				break;
-			case 0xFD:
+				case 0xFD:
 				this.SBC_A_X();
 				break;
-			case 0xF9:
+				case 0xF9:
 				this.SBC_A_Y();
 				break;
-			case 0xE1:
+				case 0xE1:
 				this.SBC_I_X();
 				break;
-			case 0xF1:
+				case 0xF1:
 				this.SBC_I_Y();
 				break;
 
 
 				//STA Instructions
-			case 0x85:
+				case 0x85:
 				this.STA_Z();
 				break;
-			case 0x95:
+				case 0x95:
 				this.STA_Z_X();
 				break;
-			case 0x8D:
+				case 0x8D:
 				this.STA_A();
 				break;
-			case 0x9D:
+				case 0x9D:
 				this.STA_A_X();
 				break;
-			case 0x99:
+				case 0x99:
 				this.STA_A_Y();
 				break;
-			case 0x81:
+				case 0x81:
 				this.STA_I_X();
 				break;
-			case 0x91:
+				case 0x91:
 				this.STA_I_Y();
 				break;
 
 				//Stack Instructions
-			case 0x9A:
+				case 0x9A:
 				this.TXS();
 				break;
-			case 0xBA:
+				case 0xBA:
 				this.TSX();
 				break;
-			case 0x48:
+				case 0x48:
 				this.PHA();
 				break;
-			case 0x68:
+				case 0x68:
 				this.PLA();
 				break;
-			case 0x08:
+				case 0x08:
 				this.PHP();
 				break;
-			case 0x28:
+				case 0x28:
 				this.PLP();
 				break;
 
 				//STX Instructions
-			case 0x86:
+				case 0x86:
 				this.STX_Z();
 				break;
-			case 0x96:
+				case 0x96:
 				this.STX_Z_Y();
 				break;
-			case 0x8E:
+				case 0x8E:
 				this.STX_A();
 				break;
 
 
 				//STY Instructions
-			case 0x84:
+				case 0x84:
 				this.STY_Z();
 				break;
-			case 0x94:
+				case 0x94:
 				this.STY_Z_X();
 				break;
-			case 0x8C:
+				case 0x8C:
 				this.STY_A();
 				break;
 
 				//Unofficial opcodes
 				//http://www.oxyron.de/html/opcodes02.html
-			case 0x04:
+				case 0x04:
 				this.DOP_Z();
 				break;
-			case 0x14:
+				case 0x14:
 				this.DOP_Z_X();
 				break;
-			case 0x34:
+				case 0x34:
 				this.DOP_Z_X();
 				break;
-			case 0x44:
+				case 0x44:
 				this.DOP_Z();
 				break;
-			case 0x54:
+				case 0x54:
 				this.DOP_Z_X();
 				break;
-			case 0x64:
+				case 0x64:
 				this.DOP_Z();
 				break;
-			case 0x74:
+				case 0x74:
 				this.DOP_Z_X();
 				break;
-			case 0x80:
+				case 0x80:
 				this.DOP_I();
 				break;
-			case 0x82:
+				case 0x82:
 				this.DOP_I();
 				break;
-			case 0x89:
+				case 0x89:
 				this.DOP_I();
 				break;
-			case 0xC2:
+				case 0xC2:
 				this.DOP_I();
 				break;
-			case 0xD4:
+				case 0xD4:
 				this.DOP_Z_X();
 				break;
-			case 0xE2:
+				case 0xE2:
 				this.DOP_I();
 				break;
-			case 0xF4:
+				case 0xF4:
 				this.DOP_Z_X();
 				break;
-			case 0x0C:
+				case 0x0C:
 				this.TOP_A();
 				break;
-			case 0x1C:
+				case 0x1C:
 				this.TOP_A_X();
 				break;
-			case 0x3C:
+				case 0x3C:
 				this.TOP_A_X();
 				break;
-			case 0x5C:
+				case 0x5C:
 				this.TOP_A_X();
 				break;
-			case 0x7C:
+				case 0x7C:
 				this.TOP_A_X();
 				break;
-			case 0xDC:
+				case 0xDC:
 				this.TOP_A_X();
 				break;
-			case 0xFC:
+				case 0xFC:
 				this.TOP_A_X();
 				break;
-			case 0x1A:
+				case 0x1A:
 				this.NOP();
 				break;
-			case 0x3A:
+				case 0x3A:
 				this.NOP();
 				break;
-			case 0x5A:
+				case 0x5A:
 				this.NOP();
 				break;
-			case 0x7A:
+				case 0x7A:
 				this.NOP();
 				break;
-			case 0xDA:
+				case 0xDA:
 				this.NOP();
 				break;
-			case 0xFA:
+				case 0xFA:
 				this.NOP();
 				break;
-			case 0x0A7:
+				case 0x0A7:
 				this.LAX_Z();
 				break;
-			case 0xB7:
+				case 0xB7:
 				this.LAX_Z_Y();
 				break;
-			case 0xAF:
+				case 0xAF:
 				this.LAX_A();
 				break;
-			case 0xBF:
+				case 0xBF:
 				this.LAX_A_Y();
 				break;
-			case 0xA3:
+				case 0xA3:
 				this.LAX_I_X();
 				break;
-			case 0xB3:
+				case 0xB3:
 				this.LAX_I_Y();
 				break;
-			case 0x87:
+				case 0x87:
 				this.SAX_Z();
 				break;
-			case 0x97:
+				case 0x97:
 				this.SAX_Z_Y();
 				break;
-			case 0x83:
+				case 0x83:
 				this.SAX_I_X();
 				break;
-			case 0x8F:
+				case 0x8F:
 				this.SAX_A();
 				break;
-			case 0xEB:
+				case 0xEB:
 				this.SBC_I();
 				break;
-			case 0xC7:
+				case 0xC7:
 				this.DCP_Z();
 				break;
-			case 0xD7:
+				case 0xD7:
 				this.DCP_Z_X();
 				break;
-			case 0xCF:
+				case 0xCF:
 				this.DCP_A();
 				break;
-			case 0xDF:
+				case 0xDF:
 				this.DCP_A_X();
 				break;
-			case 0xDB:
+				case 0xDB:
 				this.DCP_A_Y();
 				break;
-			case 0xC3:
+				case 0xC3:
 				this.DCP_I_X();
 				break;
-			case 0xD3:
+				case 0xD3:
 				this.DCP_I_Y();
 				break;
-			case 0xE7:
+				case 0xE7:
 				this.ISB_Z();
 				break;
-			case 0xF7:
+				case 0xF7:
 				this.ISB_Z_X();
 				break;
-			case 0xEF:
+				case 0xEF:
 				this.ISB_A();
 				break;
-			case 0xFF:
+				case 0xFF:
 				this.ISB_A_X();
 				break;
-			case 0xFB:
+				case 0xFB:
 				this.ISB_A_Y();
 				break;
-			case 0xE3:
+				case 0xE3:
 				this.ISB_I_X();
 				break;
-			case 0xF3:
+				case 0xF3:
 				this.ISB_I_Y();
 				break;
-			case 0x07:
+				case 0x07:
 				this.SLO_Z();
 				break;
-			case 0x17:
+				case 0x17:
 				this.SLO_Z_X();
 				break;
-			case 0x0F:
+				case 0x0F:
 				this.SLO_A();
 				break;
-			case 0x1F:
+				case 0x1F:
 				this.SLO_A_X();
 				break;
-			case 0x1B:
+				case 0x1B:
 				this.SLO_A_Y();
 				break;
-			case 0x03:
+				case 0x03:
 				this.SLO_I_X();
 				break;
-			case 0x13:
+				case 0x13:
 				this.SLO_I_Y();
 				break;
-			case 0x27:
+				case 0x27:
 				this.RLA_Z();
 				break;
-			case 0x37:
+				case 0x37:
 				this.RLA_Z_X();
 				break;
-			case 0x2F:
+				case 0x2F:
 				this.RLA_A();
 				break;
-			case 0x3F:
+				case 0x3F:
 				this.RLA_A_X();
 				break;
-			case 0x3B:
+				case 0x3B:
 				this.RLA_A_Y();
 				break;
-			case 0x23:
+				case 0x23:
 				this.RLA_I_X();
 				break;
-			case 0x33:
+				case 0x33:
 				this.RLA_I_Y();
 				break;
-			case 0x47:
+				case 0x47:
 				this.SRE_Z();
 				break;
-			case 0x57:
+				case 0x57:
 				this.SRE_Z_X();
 				break;
-			case 0x4F:
+				case 0x4F:
 				this.SRE_A();
 				break;
-			case 0x5F:
+				case 0x5F:
 				this.SRE_A_X();
 				break;
-			case 0x5B:
+				case 0x5B:
 				this.SRE_A_Y();
 				break;
-			case 0x43:
+				case 0x43:
 				this.SRE_I_X();
 				break;
-			case 0x53:
+				case 0x53:
 				this.SRE_I_Y();
 				break;
-			case 0x67:
+				case 0x67:
 				this.RRA_Z();
 				break;
-			case 0x77:
+				case 0x77:
 				this.RRA_Z_X();
 				break;
-			case 0x6F:
+				case 0x6F:
 				this.RRA_A();
 				break;
-			case 0x7F:
+				case 0x7F:
 				this.RRA_A_X();
 				break;
-			case 0x7B:
+				case 0x7B:
 				this.RRA_A_Y();
 				break;
-			case 0x63:
+				case 0x63:
 				this.RRA_I_X();
 				break;
-			case 0x73:
+				case 0x73:
 				this.RRA_I_Y();
 				break;
 
-			default:
+				default:
 				console.log("Unknown opcode: " + this.currentOpcode.toString('16'));
 				this.errorFlag = true;
 				this.pc++;
 				break;
-		}
+			}
 		// return this.opcodeLog;
 	};
 
 	this.serveISR = function(interrupt) {
 		switch (interrupt) {
 			case 'NMI':
-				var vector1 = this.nes.MMU.getCpuMemVal(0xFFFA);
-				var vector2 = this.nes.MMU.getCpuMemVal(0xFFFA + 1);
-				vector2 = vector2 << 8;
+			var vector1 = this.nes.MMU.getCpuMemVal(0xFFFA);
+			var vector2 = this.nes.MMU.getCpuMemVal(0xFFFA + 1);
+			vector2 = vector2 << 8;
 				//push pc to stack
 				// this.pushToStack(this.pc);
 				this.pushToStack((this.pc & 0xFF00) >> 8); //push high byte
@@ -5169,7 +5169,7 @@ export default function cpu(nes) {
 				this.pc = vector2 | vector1;
 				this.elapsedCycles += 7;
 				break;
-			case 'BRK':
+				case 'BRK':
 				var vector1 = this.nes.MMU.getCpuMemVal(0xFFFE);
 				var vector2 = this.nes.MMU.getCpuMemVal(0xFFFE + 1);
 				vector2 = vector2 << 8;
@@ -5190,7 +5190,7 @@ export default function cpu(nes) {
 				this.P = this.P | 0b00000100;
 				this.pc = vector2 | vector1;
 				break;
-			case 'IRQ':
+				case 'IRQ':
 				var vector1 = this.nes.MMU.getCpuMemVal(0xFFFE);
 				var vector2 = this.nes.MMU.getCpuMemVal(0xFFFE + 1);
 				vector2 = vector2 << 8;
@@ -5210,33 +5210,33 @@ export default function cpu(nes) {
 				this.P = this.P | 0b00000100;
 				this.pc = vector2 | vector1;
 				break;
-			default:
-		}
-	};
+				default:
+			}
+		};
 
 
-	this.clockCPU = function() {
-		if (this.cpuClockRemaining <= 0) {
-			this.fetchOpcode();
-			this.elapsedCycles = 0;
-			this.decodeInstruction();
-			this.cpuClockRemaining = this.elapsedCycles;
-		}
-		this.cpuClockRemaining--;
-	};
+		this.clockCPU = function() {
+			if (this.cpuClockRemaining <= 0) {
+				this.fetchOpcode();
+				this.elapsedCycles = 0;
+				this.decodeInstruction();
+				this.cpuClockRemaining = this.elapsedCycles;
+			}
+			this.cpuClockRemaining--;
+		};
 
-	this.clockAPU = function() {
-		this.nes.APU.run();
-	};
+		this.clockAPU = function() {
+			this.nes.APU.run();
+		};
 
-	this.run = function() {
-		this.totalCPUCyclesThisFrame = 0;
-		this.frameCompleted = false;
-		this.renderedScanline = -1;
-		if (this.nes.MMU.chrRamWritten) {
-			this.nes.Mapper.reRenderCHR();
-		}
-		while (!this.frameCompleted) {
+		this.run = function() {
+			this.totalCPUCyclesThisFrame = 0;
+			this.frameCompleted = false;
+			this.renderedScanline = -1;
+			if (this.nes.MMU.chrRamWritten) {
+				this.nes.Mapper.reRenderCHR();
+			}
+			while (!this.frameCompleted) {
 			if ((this.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
 				if (this.nes.APU.doIrq) {
 					this.elapsedCycles = 0;
@@ -5267,100 +5267,50 @@ export default function cpu(nes) {
 		this.oddFrame = !this.oddFrame;
 		return this.totalCPUCyclesThisFrame;
 	};
-
-	// this.runFrame = function() {
-	// 	this.frameCompleted = false;
-	// 	this.renderedScanline = -1;
-	// 	//Need to re render CHR for games using CHR RAM
-	// 	if (this.nes.MMU.chrRamWritten) {
-	// 		this.nes.Mapper.reRenderCHR();
-	// 	}
-	// 	this.totalCPUCyclesThisFrame = 0;
-	// 	while (!this.frameCompleted) {
-	// 		if ((this.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
-	// 			if (this.nes.APU.doIrq) {
-	// 				this.serveISR('IRQ');
-	// 				this.nes.APU.doIrq = false;
-	// 			}
-	// 		}
-	// 		this.cpuCyclesConsumed = this.elapsedCycles;
-	// 		this.fetchOpcode();
-	// 		this.decodeInstruction();
-	// 		this.cpuCyclesGenerated = this.elapsedCycles - this.cpuCyclesConsumed;
-	// 		this.elapsedCycles += this.excessCpuCycles;
-	// 		this.excessCpuCycles = 0;
-	// 		if (this.oddFrame) {
-	// 			this.ppuCyclesCurrentScanLine = 340;
-	// 			if (this.nes.MMU.OAMDMAwritten) {
-	// 				this.elapsedCycles += 514;
-	// 				this.nes.MMU.OAMDMAwritten = false;
-	// 			}
-	// 		}
-	// 		else {
-	// 			this.ppuCyclesCurrentScanLine = 341;
-	// 			if (this.nes.MMU.OAMDMAwritten) {
-	// 				this.elapsedCycles += 513;
-	// 				this.nes.MMU.OAMDMAwritten = false;
-	// 			}
-	// 		}
-	// 		this.cpuCyclesConsumed = this.elapsedCycles - this.cpuCyclesConsumed;
-	// 		this.runPPU();
-	// 		this.totalCPUCyclesThisFrame += this.cpuCyclesGenerated;
-	// 	}
-	// 	this.oddFrame = !this.oddFrame;
-	// };
 	
 	this.clockPPU = function() {
-		this.ppuCyclesConsumed++;
-		if (this.oddFrame && (this.renderedScanline == -1)) {
-			this.ppuCyclesCurrentScanLine = 340;
+		// this.ppuCyclesConsumed++;
+		// if (this.oddFrame && (this.renderedScanline == -1)) {
+		// 	this.ppuCyclesCurrentScanLine = 340;
+		// }
+		// else {
+		// 	this.ppuCyclesCurrentScanLine = 341;
+		// }
+		// if (this.ppuCyclesConsumed >= this.ppuCyclesCurrentScanLine) {
+		// 	this.renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
+		// 	//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring
+		// 	if (this.renderedScanline >= 0 && this.renderedScanline < 240) {
+		// 		this.nes.MMU.setOAMADDR(0);
+		// 	}
+		// 	else if (this.renderedScanline == 241) {
+		// 		if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) {
+		// 			this.elapsedCycles = 0;
+		// 			this.serveISR('NMI');
+		// 			this.cpuClockRemaining += this.elapsedCycles;
+		// 		}
+		// 	}
+		// 	else if (this.renderedScanline == 261) {
+		// 		this.frameCompleted = true;
+		// 		this.nes.MMU.setOAMADDR(0);
+		// 	}
+		// 	this.ppuCyclesConsumed = 0;
+		// }
+
+		var scanline_complete = this.PPU.clock();
+		if (this.renderedScanline >= 0 && this.renderedScanline < 240) {
+			this.nes.MMU.setOAMADDR(0);
 		}
-		else {
-			this.ppuCyclesCurrentScanLine = 341;
+		else if (this.renderedScanline == 241) {
+			if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) {
+				this.elapsedCycles = 0;
+				this.serveISR('NMI');
+				this.cpuClockRemaining += this.elapsedCycles;
+			}
 		}
-		if (this.ppuCyclesConsumed >= this.ppuCyclesCurrentScanLine) {
-			this.renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
-			//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring
-			if (this.renderedScanline >= 0 && this.renderedScanline < 240) {
-				this.nes.MMU.setOAMADDR(0);
-			}
-			else if (this.renderedScanline == 241) {
-				if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) {
-					this.elapsedCycles = 0;
-					this.serveISR('NMI');
-					this.cpuClockRemaining += this.elapsedCycles;
-				}
-			}
-			else if (this.renderedScanline == 261) {
-				this.frameCompleted = true;
-				this.nes.MMU.setOAMADDR(0);
-			}
-			this.ppuCyclesConsumed = 0;
+		else if (this.renderedScanline == 261) {
+			this.frameCompleted = true;
+			this.nes.MMU.setOAMADDR(0);
 		}
 	};
-	
-	// this.runPPU = function() {
-	// 	if ((this.elapsedCycles * 3) >= this.ppuCyclesCurrentScanLine) {
-	// 		this.renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
-	// 		//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring
-	// 		if (this.renderedScanline == 261 || (this.renderedScanline >= 0 && this.renderedScanline < 240)) {
-	// 			this.nes.MMU.setOAMADDR(0);
-	// 		}
-	// 		//Check we are on the verge of vBlank
-	// 		if (this.renderedScanline == 241) {
-	// 			this.nmiLoopCounter++;
-	// 			if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) { //Generet NMI Interrupt
-	// 				this.serveISR('NMI');
-	// 			}
-	// 		}
-	// 		else if (this.renderedScanline == 261) {
-	// 			this.frameCompleted = true;
-	// 		}
-	// 		//Calculating extra cpu cycles run for this scanline
-	// 		this.excessCpuCycles = Math.floor(this.elapsedCycles - this.ppuCyclesCurrentScanLine / 3);
-	// 		this.totalCPUCyclesThisFrame += this.elapsedCycles;
-	// 		this.elapsedCycles = 0;
-	// 	}
-	// };
 
 }
