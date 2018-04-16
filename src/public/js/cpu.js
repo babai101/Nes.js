@@ -5269,48 +5269,48 @@ export default function cpu(nes) {
 	};
 	
 	this.clockPPU = function() {
-		// this.ppuCyclesConsumed++;
-		// if (this.oddFrame && (this.renderedScanline == -1)) {
-		// 	this.ppuCyclesCurrentScanLine = 340;
-		// }
-		// else {
-		// 	this.ppuCyclesCurrentScanLine = 341;
-		// }
-		// if (this.ppuCyclesConsumed >= this.ppuCyclesCurrentScanLine) {
-		// 	this.renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
-		// 	//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring
-		// 	if (this.renderedScanline >= 0 && this.renderedScanline < 240) {
-		// 		this.nes.MMU.setOAMADDR(0);
-		// 	}
-		// 	else if (this.renderedScanline == 241) {
-		// 		if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) {
-		// 			this.elapsedCycles = 0;
-		// 			this.serveISR('NMI');
-		// 			this.cpuClockRemaining += this.elapsedCycles;
-		// 		}
-		// 	}
-		// 	else if (this.renderedScanline == 261) {
-		// 		this.frameCompleted = true;
-		// 		this.nes.MMU.setOAMADDR(0);
-		// 	}
-		// 	this.ppuCyclesConsumed = 0;
-		// }
-
-		var scanline_complete = this.PPU.clock();
-		if (this.renderedScanline >= 0 && this.renderedScanline < 240) {
-			this.nes.MMU.setOAMADDR(0);
+		this.ppuCyclesConsumed++;
+		if (this.oddFrame && (this.renderedScanline == -1)) {
+			this.ppuCyclesCurrentScanLine = 340;
 		}
-		else if (this.renderedScanline == 241) {
-			if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) {
-				this.elapsedCycles = 0;
-				this.serveISR('NMI');
-				this.cpuClockRemaining += this.elapsedCycles;
+		else {
+			this.ppuCyclesCurrentScanLine = 341;
+		}
+		if (this.ppuCyclesConsumed >= this.ppuCyclesCurrentScanLine) {
+			this.renderedScanline = this.nes.PPU.RenderNextScanline(this.nes.MMU.getOAM(), this.nes.MMU.getNameTable(), this.nes.MMU.getAttrTable());
+			//Reset OAMADDR, TODO: move this to this.nes.MMU after refactoring
+			if (this.renderedScanline >= 0 && this.renderedScanline < 240) {
+				this.nes.MMU.setOAMADDR(0);
 			}
+			else if (this.renderedScanline == 241) {
+				if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) {
+					this.elapsedCycles = 0;
+					this.serveISR('NMI');
+					this.cpuClockRemaining += this.elapsedCycles;
+				}
+			}
+			else if (this.renderedScanline == 261) {
+				this.frameCompleted = true;
+				this.nes.MMU.setOAMADDR(0);
+			}
+			this.ppuCyclesConsumed = 0;
 		}
-		else if (this.renderedScanline == 261) {
-			this.frameCompleted = true;
-			this.nes.MMU.setOAMADDR(0);
-		}
+
+		// var scanline_complete = this.PPU.clock();
+		// if (this.renderedScanline >= 0 && this.renderedScanline < 240) {
+		// 	this.nes.MMU.setOAMADDR(0);
+		// }
+		// else if (this.renderedScanline == 241) {
+		// 	if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) {
+		// 		this.elapsedCycles = 0;
+		// 		this.serveISR('NMI');
+		// 		this.cpuClockRemaining += this.elapsedCycles;
+		// 	}
+		// }
+		// else if (this.renderedScanline == 261) {
+		// 	this.frameCompleted = true;
+		// 	this.nes.MMU.setOAMADDR(0);
+		// }
 	};
 
 }
