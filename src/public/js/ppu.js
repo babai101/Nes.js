@@ -1,7 +1,8 @@
+'use strict';
 export default function ppu(nes) {
     this.nes = nes;
     //Render VARS
-    this.currentScanline = 0;
+    this.currentScanline = 261; //start from pre-render line
     this.currentCycle = 0;
     this.nameTableMirroring = '';
     this.NMIOccured = false;
@@ -78,16 +79,13 @@ export default function ppu(nes) {
         0x000000
     ];
 
-
-    // this.cyclesToEmulate = 0;
-    // this.curretRenderCycle = 0;
     //PPUCTRL vars
     this.baseNameTblAddr = 0x2000;
-    this.vRamAddrInc = 'across';
+    this.vRamAddrInc = 1;
     // this.spritePatTblAddr = this.CHRGrid;
     // this.backgroundPatTblAddr = this.BGRCHRGrid;
-    this.spritePatTblAddr = 'left';
-    this.backgroundPatTblAddr = 'right';
+    this.spritePatTblAddr = 0;
+    this.backgroundPatTblAddr = 0;
     this.spriteSize = 8;
     this.ppuMasterSlave = 'readBackdrop';
     this.enableNMIGen = false;
@@ -127,13 +125,6 @@ export default function ppu(nes) {
     //OAMDMA
     this.OAMDMA = 0x00;
 
-    this.PPUSCROLL;
-
-    //PPUADDR
-    this.PPUADDR;
-
-    //PPUDATA 
-    this.PPUDATA;
     this.spriteGrid = [];
     this.backGroundGrid = [];
 
@@ -145,19 +136,19 @@ export default function ppu(nes) {
         this.baseNameTblAddr = temp;
         temp = (PPUCTRL >> 2) & 0x01;
         if (temp == 0)
-            this.vRamAddrInc = 'across';
+            this.vRamAddrInc = 1;
         else
-            this.vRamAddrInc = 'down';
+            this.vRamAddrInc = 32;
         temp = (PPUCTRL >> 3) & 0x01;
         if (temp == 0)
-            this.spritePatTblAddr = 'left';
+            this.spritePatTblAddr = 0;
         else
-            this.spritePatTblAddr = 'right';
+            this.spritePatTblAddr = 0;
         temp = (PPUCTRL >> 4) & 0x01;
         if (temp == 0)
-            this.backgroundPatTblAddr = 'left';
+            this.backgroundPatTblAddr = 0;
         else
-            this.backgroundPatTblAddr = 'right';
+            this.backgroundPatTblAddr = 1;
         temp = (PPUCTRL >> 5) & 0x01;
         if (temp == 0)
             this.spriteSize = 8;
@@ -173,6 +164,11 @@ export default function ppu(nes) {
             this.enableNMIGen = false;
         else
             this.enableNMIGen = true;
+
+        /*New cycle accurate logic*/
+        //Nametable select
+        this.t &= ~(0x0C00);
+        this.t |= (PPUCTRL & 0x03) << 10;
     };
 
     //Update PPUMASK status
@@ -226,31 +222,10 @@ export default function ppu(nes) {
         this.OAMADDR = OAMADDR;
     };
 
-    //Update OAMDATA
-    // this.setOAMDATA = function(OAMDATA) {
-    //     this.OAMDATA = OAMDATA;
-    // };
-
     //Update PPUADDR
     this.setPPUADDR = function(PPUADDR) {
         this.PPUADDR = PPUADDR;
     };
-
-    //Update PPU status resigster values into MMU object
-    this.getPPUSTATUS = function() {
-        var prevStatus = this.ppuStatusBits;
-        if (this.NMIOccured) {
-            prevStatus = prevStatus & 0x7F;
-            prevStatus = prevStatus | 0x80;
-        }
-        //clear PPUSTATUS vblank indicators
-        this.ppuStatusBits = this.ppuStatusBits & 0x7F;
-        return prevStatus;
-    };
-
-    // this.getOAMDATA = function() {
-    //     return this.OAMDATA;
-    // };
 
     //Load PPU Palette values
     //TODO: mirror palette values
@@ -287,7 +262,8 @@ export default function ppu(nes) {
         else if (((X % 4 != 0) && (X % 4 != 1)) && ((Y % 4 != 0) && (Y % 4 != 1))) {
             // paletteNum = attrByte & 0x03;
             paletteNum = attrByte >> 6;
-        } else {
+        }
+        else {
             alert("palette not found!!");
         }
         return paletteNum;
@@ -312,7 +288,8 @@ export default function ppu(nes) {
                 this.spriteOverflow = true;
                 this.ppuStatusBits = this.ppuStatusBits & 0xDF;
                 this.ppuStatusBits = this.ppuStatusBits | 0x20;
-            } else this.spriteOverflow = false;
+            }
+            else this.spriteOverflow = false;
 
             //Render the portion of the sprite that falls on the current scanline to offscreen buffer 
             for (i = spritesToDraw.length - 1; i >= 0; i--) { //Reversed looping to maintain sprite priority
@@ -340,13 +317,15 @@ export default function ppu(nes) {
                         tempRow2.push(tempRow[x]);
                     }
                     tileRow = tempRow2;
-                } else if ((spriteAttr & 0b01000000) == 0b01000000) { //horizontally flip sprite
+                }
+                else if ((spriteAttr & 0b01000000) == 0b01000000) { //horizontally flip sprite
                     var tempRow = [];
                     for (var x = 7; x >= 0; x--) {
                         tempRow.push(tileRow[x]);
                     }
                     tileRow = tempRow;
-                } else if ((spriteAttr & 0b10000000) == 0b10000000) { //vertically flip sprite
+                }
+                else if ((spriteAttr & 0b10000000) == 0b10000000) { //vertically flip sprite
                     var tempRow = [];
                     for (var x = 0; x < 8; x++) {
                         tempRow.push(tile[Math.abs((this.currentScanline - spriteY) - 7)][x]);
@@ -376,7 +355,8 @@ export default function ppu(nes) {
                             // this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColor;
                             this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
                             this.nes.mainDisplay.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
-                        } else if (currentBackgroundPixelColor != 0) {
+                        }
+                        else if (currentBackgroundPixelColor != 0) {
                             //non-transparent sprite having foreground priority over non-transparent background
                             // if (currentBackgroundPixelColor != this.paletteColors[this.palette[0]] && ((spriteAttr & 0b00100000) == 0)) {
                             if ((currentBackgroundPixelColor != 0) && ((spriteAttr & 0b00100000) == 0)) {
@@ -389,7 +369,8 @@ export default function ppu(nes) {
                     }
                 }
             }
-        } else if (this.spriteSize == 16) {
+        }
+        else if (this.spriteSize == 16) {
             var drawingTopTile = true,
                 tileUp, tileDown, tileRowIndex = 0;
             //Check which sprites in OAM lie in current scanline
@@ -404,7 +385,8 @@ export default function ppu(nes) {
                 this.spriteOverflow = true;
                 this.ppuStatusBits = this.ppuStatusBits & 0xDF;
                 this.ppuStatusBits = this.ppuStatusBits | 0x20;
-            } else this.spriteOverflow = false;
+            }
+            else this.spriteOverflow = false;
             //Render the portion of the sprite that falls on the current scanline to offscreen buffer 
             for (i = spritesToDraw.length - 1; i >= 0; i--) { //Reversed looping to maintain sprite priority
                 spriteX = oam[spritesToDraw[i] + 3];
@@ -413,7 +395,8 @@ export default function ppu(nes) {
                 if (tileRowIndex > 7) { //we are now at bottom portion of 8x16 tile
                     drawingTopTile = false;
                     tileRowIndex = tileRowIndex - 8;
-                } else {
+                }
+                else {
                     drawingTopTile = true;
                 }
                 tileNum = oam[spritesToDraw[i] + 1];
@@ -425,7 +408,8 @@ export default function ppu(nes) {
                     // tileUp = this.CHRGrid[tileNum];
                     tileUp = this.nes.Mapper.getCHRGrid('left', tileNum);
                     tileDown = this.nes.Mapper.getCHRGrid('left', tileNum + 1);
-                } else if ((tileNum & 0x01) == 1) {
+                }
+                else if ((tileNum & 0x01) == 1) {
                     tileNum = (tileNum & 0xFE);
                     tileUp = this.nes.Mapper.getCHRGrid('right', tileNum);
                     tileDown = this.nes.Mapper.getCHRGrid('right', tileNum + 1);
@@ -433,7 +417,8 @@ export default function ppu(nes) {
                 // tileRowIndex = tileRowIndex % 8; //we got the specifig tile in tile var already so normalizing
                 if (drawingTopTile) {
                     tileRow = tileUp[tileRowIndex];
-                } else {
+                }
+                else {
                     tileRow = tileDown[tileRowIndex];
                 }
 
@@ -446,7 +431,8 @@ export default function ppu(nes) {
                     var tempRow2 = [];
                     if (drawingTopTile) {
                         tile = tileDown;
-                    } else {
+                    }
+                    else {
                         tile = tileUp;
                     }
                     for (var x = 0; x < 8; x++) {
@@ -457,17 +443,20 @@ export default function ppu(nes) {
                         tempRow2.push(tempRow[x]);
                     }
                     tileRow = tempRow2;
-                } else if ((spriteAttr & 0b01000000) == 0b01000000) { //horizontally flip sprite
+                }
+                else if ((spriteAttr & 0b01000000) == 0b01000000) { //horizontally flip sprite
                     var tempRow = [];
                     for (var x = 7; x >= 0; x--) {
                         tempRow.push(tileRow[x]);
                     }
                     tileRow = tempRow;
-                } else if ((spriteAttr & 0b10000000) == 0b10000000) { //vertically flip sprite
+                }
+                else if ((spriteAttr & 0b10000000) == 0b10000000) { //vertically flip sprite
                     var tempRow = [];
                     if (drawingTopTile) {
                         tile = tileDown;
-                    } else {
+                    }
+                    else {
                         tile = tileUp;
                     }
                     for (var x = 0; x < 8; x++) {
@@ -495,7 +484,8 @@ export default function ppu(nes) {
                             pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
                             this.screenBuffer[spriteX + x + (this.currentScanline * 256)] = pixelColorIndex;
                             this.nes.mainDisplay.updateBuffer(spriteX + x + (this.currentScanline * 256), pixelColor);
-                        } else if (currentBackgroundPixelColor != 0) {
+                        }
+                        else if (currentBackgroundPixelColor != 0) {
                             //non-transparent sprite having foreground priority over non-transparent background
                             if ((currentBackgroundPixelColor != 0) && ((spriteAttr & 0b00100000) == 0)) {
                                 pixelColor = this.paletteColors[this.palette[16 + paletteNum * 4 + pixelColorIndex]];
@@ -559,11 +549,13 @@ export default function ppu(nes) {
             if (curTileYOffsetted >= 30) {
                 if (this.baseNameTblAddr == 2) {
                     nametableOffset = 0;
-                } else {
+                }
+                else {
                     nametableOffset = this.baseNameTblAddr + 2;
                 }
                 Y = curTileYOffsetted - 30;
-            } else {
+            }
+            else {
                 nametableOffset = this.baseNameTblAddr;
                 Y = curTileYOffsetted;
             }
@@ -571,11 +563,13 @@ export default function ppu(nes) {
             if (curTileX >= 32) { //check if current tile lies on next nametable
                 if (nametableOffset == 3) {
                     nametableOffset = 0;
-                } else {
+                }
+                else {
                     nametableOffset = nametableOffset + 1;
                 }
                 X = curTileX - 32;
-            } else {
+            }
+            else {
                 X = curTileX;
             }
             vReg = (nametableOffset << 10) | (Y << 5) | X;
@@ -618,7 +612,8 @@ export default function ppu(nes) {
                     pixelColor = this.paletteColors[this.palette[0]];
                     pixelColorIndexArray.push(tileToDraw[curY][curX]);
                     pixelColorArray.push(pixelColor);
-                } else {
+                }
+                else {
                     pixelColor = this.paletteColors[this.palette[paletteNum * 4 + tileToDraw[curY][curX]]];
                     pixelColorIndexArray.push(tileToDraw[curY][curX]);
                     pixelColorArray.push(pixelColor);
@@ -714,7 +709,8 @@ export default function ppu(nes) {
                     if ((spriteX + x) != 255) {
                         if ((this.renderBGLeftMost || this.renderSpritesLeftMost) && ((spriteX + x) >= 0 && (spriteX + x) < 8)) {
 
-                        } else {
+                        }
+                        else {
                             var currentBackgroundPixelColor = this.screenBuffer[spriteX + x + (this.currentScanline * 256)];
                             //Sprite hit logic: non-transparent Sprite over non-transparent BG REGARDLESS of priority
                             if (currentBackgroundPixelColor != 0) {
@@ -731,80 +727,428 @@ export default function ppu(nes) {
             }
         }
     };
-
+    /*
+    t & v 
+    yyy NN YYYYY XXXXX
+    ||| || ||||| +++++-- coarse X scroll
+    ||| || +++++-------- coarse Y scroll
+    ||| ++-------------- nametable select
+    +++----------------- fine Y scroll
+    */
+    //OAM registers
+    this.n = 0;
+    this.m = 0;
+    this.allSpritesFound = false; //if all 8 sprites have been found
+    this.oamEvalComplete = false;
+    this.spriteInRange = false;
+    this.oamReadBuffer = 0;
+    //Scroll registers
     this.v = 0;
     this.t = 0;
     this.x = 0;
     this.w = 0;
-    var memoryFetchCount = 0;
+    var y = 0;
+    this.nt_byte = 0;
+    this.at_byte = 0;
+    this.bgL = 0x0000;
+    this.bgH = 0x0000;
+    this.bgShiftL = 0;
+    this.bgShiftH = 0;
+    this.atShiftL = 0;
+    this.atShiftH = 0;
+    this.atH = 0x0000;
+    this.atL = 0x0000;
+    this.at_bits = 0;
+    this.at_latch = 0;
+    this.PPUDATAReadBuffer = 0;
+    var bgPixel = 0;
+
+    this.getPPUSTATUS = function() {
+        var prevStatus = this.ppuStatusBits;
+        //clear PPUSTATUS vblank indicators
+        this.ppuStatusBits = this.ppuStatusBits & 0x7F;
+        this.w = 0;
+        return prevStatus;
+    };
+
+    this.getPPUDATA = function(location) {
+        var returnValue = 0;
+        //Outside of rendering
+        if (this.currentScanline >= 240 && this.currentScanline <= 261) {
+            returnValue = this.getReadBuffer(location);
+            this.v += this.vRamAddrInc;
+        }
+        //During rendering
+        else if (this.currentScanline >= 0 && this.currentScanline < 240) {
+            returnValue = this.getReadBuffer(location);
+            // if (this.renderBackground || this.renderSprite) {
+            //     this.updateXscroll();
+            //     this.updateYScroll();
+            // }
+            this.v += this.vRamAddrInc;
+        }
+        return returnValue;
+    };
+
+    this.getReadBuffer = function(location) {
+        var returnValue = this.PPUDATAReadBuffer;
+        if (location >= 0x0000 && location < 0x3EFF) {
+            this.PPUDATAReadBuffer = this.nes.MMU.getPpuMemVal(location);
+        }
+        else {
+            returnValue = this.nes.MMU.getPpuMemVal(location);
+        }
+        return returnValue;
+    };
+
+    this.setPPUSCROLL = function(PPUSCROLL) {
+        if (this.w == 0) {
+            this.t &= ~(0x1F);
+            this.t |= PPUSCROLL >> 3;
+            this.x = PPUSCROLL & 0x07;
+            this.w = 1;
+        }
+        else if (this.w == 1) {
+            this.t &= ~(0x73E0);
+            this.t |= (PPUSCROLL & 0x07) << 12;
+            this.t |= (PPUSCROLL & 0xF8) << 2;
+            this.w = 0;
+        }
+    };
+
+    this.setPPUADDR = function(PPUADDR) {
+        if (this.w == 0) {
+            this.t &= ~(0x7F00);
+            this.t |= (PPUADDR & 0x3F) << 8;
+            this.w = 1;
+        }
+        else if (this.w == 1) {
+            this.t &= ~(0xFF);
+            this.t |= PPUADDR;
+            this.v = this.t;
+            this.w = 0;
+        }
+    };
+
+    this.setPPUDATA = function(value) {
+        //Outside of rendering
+        if (this.currentScanline >= 240 && this.currentScanline <= 260) {
+            this.nes.MMU.setPpuMemVal(this.v, value);
+            this.v += this.vRamAddrInc;
+        }
+        //During rendering
+        else if ((this.currentScanline >= 0 && this.currentScanline < 240) || this.currentScanline == 261) {
+            this.nes.MMU.setPpuMemVal(this.v, value);
+            // if (this.rendering()) {
+            //     this.updateXScroll();
+            //     this.updateYScroll();
+            // }
+            // else
+            this.v += this.vRamAddrInc;
+        }
+    };
 
     this.clock = function() {
-        if (this.currentScanline == 0) { //pre-render scanline
-        } else if (this.currentScanline > 0 && this.currentScanline < 240) { //visible scanline
+        if (this.currentScanline == 261) { //pre-render scanline
+            //reload vertical scroll bits
+            if (this.currentCycle >= 1 && this.currentCycle <= 256) {
+                if (this.currentCycle == 1) {
+                    //clear PPUSTATUS vblank indicator
+                    this.ppuStatusBits = this.ppuStatusBits & 0x7F;
+                    //clear sprite hit
+                    this.ppuStatusBits = this.ppuStatusBits & 0xBF;
+                    this.sprite0Hit = false;
+                    //clear sprite overflow
+                    this.ppuStatusBits = this.ppuStatusBits & 0xDF;
+                }
+                this.memoryFetch();
+                if (this.currentCycle == 256)
+                    this.updateYScroll();
+            }
+            else if (this.currentCycle == 257)
+                this.copyHScroll();
+            else if (this.currentCycle >= 280 && this.currentCycle <= 304) {
+                this.copyVScroll();
+            }
+            //2 tile data for next scanline
+            else if (this.currentCycle >= 321 && this.currentCycle <= 336) {
+                this.memoryFetch();
+            }
+            else if (this.currentCycle == 338 || this.currentCycle == 340)
+                this.getNameTableByte();
+        }
+        //visible scanline
+        else if (this.currentScanline >= 0 && this.currentScanline < 240) {
+            if (this.currentCycle >= 0 && this.currentCycle < 256) {
+                this.renderPixel();
+            }
             if (this.currentCycle >= 1 && this.currentCycle <= 256) {
                 this.memoryFetch();
+                //Sprite evaluation
+                if (this.currentCycle >= 1 && this.currentCycle <= 256) {
+                    if (this.currentCycle >= 1 && this.currentCycle <= 64) {
+                        this.clearSecondaryOAM();
+                    }
+                    else if (this.currentCycle >= 64 && this.currentCycle <= 256) {
+                        this.evalSprites();
+                    }
+                }
+                if (this.currentCycle == 256)
+                    this.updateYScroll();
             }
+            //fetch sprite tile data for next scanline
             else if (this.currentCycle >= 257 && this.currentCycle <= 320) {
+                if (this.currentCycle == 257) {
+                    this.reloadShiftRegisters();
+                    this.copyHScroll();
+                }
+            }
+            //2 tile data for next scanline
+            else if (this.currentCycle >= 321 && this.currentCycle <= 336) {
                 this.memoryFetch();
             }
-            else if (this.currentCycle >= 321 && this.currentCycle <= 336) {
-                
+            //2 usused nametable byte fetch
+            else if (this.currentCycle == 338 || this.currentCycle == 340) {
+                this.getNameTableByte();
             }
-
-        } else if (this.currentScanline == 240) { //post-render scanline
-
+        }
+        //post-render scanline
+        else if (this.currentScanline == 240) {
+            //PPU idles
+        }
+        //VBlank Scanlines
+        else if (this.currentScanline >= 241 && this.currentScanline < 261) {
+            if (this.currentScanline == 241 && this.currentCycle == 1) {
+                //Set V-Blank
+                this.ppuStatusBits = this.ppuStatusBits & 0x7F;
+                this.ppuStatusBits = this.ppuStatusBits | 0x80;
+            }
         }
         this.currentCycle++;
-        if (this.currentCycle == 340) {
-            if (this.nes.CPU.oddFrame && this.currentScanline == 0) { //pre-render scanline
-                this.currentCycle = 0;
-                this.currentScanline++;
-                return true;
-            }
-        }
+        // if (this.currentCycle == 340) {
+        //     if (this.nes.CPU.oddFrame && this.currentScanline == 261) { //pre-render scanline
+        //         this.currentCycle = 0;
+        //         this.nes.CPU.renderedScanline = this.currentScanline;
+        //         this.currentScanline = 0;
+        //         return true;
+        //     }
+        // }
         if (this.currentCycle == 341) {
             this.currentCycle = 0;
+            this.nes.CPU.renderedScanline = this.currentScanline;
             this.currentScanline++;
             if (this.currentScanline == 262) {
                 this.currentScanline = 0;
             }
             return true;
-        } else return false;
+        }
+        else return false;
     };
 
+    this.clearSecondaryOAM = function() {
+        if (this.currentCycle == 1) {
+            this.nes.MMU.secOAMInit();
+        }
+    };
+
+    //TODO: Sprite overflow logic
+    this.evalSprites = function() {
+        //Even cycles
+        if (this.currentCycle % 2 == 0) {
+            if (!this.allSpritesFound) {
+                this.MMU.secOAM[4 * this.n + this.m] = this.oamReadBuffer;
+                if (this.spriteInRange) {
+                    this.m++;
+                    if (this.m == 4) {
+                        this.m = 0;
+                        this.n++;
+                    }
+                    this.spriteInRange = false;
+                }
+            }
+        }
+        //Odd cycles
+        else {
+            if (this.m == 0)
+                this.oamReadBuffer = this.MMU.OAM[4 * this.n];
+            else {
+                this.spriteInRange = this.checkSpriteInRange();
+                if (this.spriteInRange) {
+                    this.oamReadBuffer = this.MMU.OAM[4 * this.n + this.m];
+                }
+                else {
+                    this.n++;
+                }
+            }
+        }
+    };
+
+    this.checkSpriteInRange = function() {
+        //check only for Y co-ordinate byte
+        if (this.m == 0) {
+            
+        }
+        return false;
+    };
+
+
     this.memoryFetch = function() {
-        switch(memoryFetch) {
+        switch (this.currentCycle % 8) {
+            case 0:
+                this.reloadShiftRegisters();
+                this.updateXScroll();
+                break;
             case 1:
                 this.getNameTableByte();
                 break;
             case 3:
+                this.atH <<= 8;
+                this.atL <<= 8;
                 this.getAttrTableByte();
                 break;
             case 5:
+                this.bgL <<= 8;
                 this.getTileBitmapLow();
                 break;
             case 7:
-                this.getTileBimapHigh();
+                this.bgH <<= 8;
+                this.getTileBitmapHigh();
                 break;
         }
-        memoryFetchCount++;
-        if (memoryFetchCount == 8)
-            memoryFetchCount = 0;
     };
 
     this.getNameTableByte = function() {
-
+        var nametable = this.nes.MMU.getNameTable();
+        this.nt_byte = nametable[0x2000 | (this.v & 0x0FFF)];
     };
 
     this.getAttrTableByte = function() {
-
+        var nametable = this.nes.MMU.getNameTable();
+        this.at_byte = nametable[0x23C0 | (this.v & 0x0C00) | ((this.v >> 4) & 0x38) | ((this.v >> 2) & 0x07)];
+        // this.at_bits = this.calcPalette(this.v & 0x1F, (this.v & 0x3E0) >> 5, this.at_byte);
+        this.at_bits = this.calcPaletteFromAttr(this.v & 0x1F, (this.v & 0x3E0) >> 5, this.at_byte);
+        this.atH = (this.atH & 0xFF00) | this.fillAtRegs((this.at_bits & 0x02) >> 1);
+        this.atL = (this.atL & 0xFF00) | this.fillAtRegs(this.at_bits & 0x01);
     };
+
+    /* PPU addresses within Pattern tables
+    DCBA98 76543210
+    ---------------
+    0HRRRR CCCCPTTT
+    |||||| |||||+++- T: Fine Y offset, the row number within a tile
+    |||||| ||||+---- P: Bit plane (0: "lower"; 1: "upper")
+    |||||| ++++----- C: Tile column
+    ||++++---------- R: Tile row
+    |+-------------- H: Half of sprite table (0: "left"; 1: "right")
+    +--------------- 0: Pattern table is at $0000-$1FFF
+    */
 
     this.getTileBitmapLow = function() {
-
+        var T = (this.v & 0x7000) >> 12;
+        var addr = (this.nt_byte * 16) + 0x1000 * (this.backgroundPatTblAddr) + T;
+        this.bgL = (this.bgL & 0xFF00) | (this.nes.Mapper.getCHRRom(addr));
     };
 
-    this.getTileBimapHigh = function() {
+    this.getTileBitmapHigh = function() {
+        var T = (this.v & 0x7000) >> 12;
+        var addr = (this.nt_byte * 16) + 8 + 0x1000 * (this.backgroundPatTblAddr) + T;
+        this.bgH = (this.bgH & 0xFF00) | (this.nes.Mapper.getCHRRom(addr));
+    };
 
+    //Update Coarse X bits. Ref NesDev Wiki
+    this.updateXScroll = function() {
+        if (!this.rendering())
+            return;
+        if ((this.v & 0x001F) == 31) { // if coarse X == 31
+            this.v &= ~(0x001F); // coarse X = 0
+            this.v ^= 0x0400; // switch horizontal nametable
+        }
+        else
+            this.v += 1; // increment coarse X    
+    };
+
+    //Update Coarse Y bits. Ref NesDev Wiki
+    this.updateYScroll = function() {
+        if (!this.rendering())
+            return;
+        if ((this.v & 0x7000) != 0x7000) { // if fine Y < 7
+            this.v += 0x1000; // increment fine Y
+        }
+        else {
+            this.v &= ~(0x7000); // fine Y = 0
+            y = (this.v & 0x03E0) >> 5; // let y = coarse Y
+            if (y == 29) {
+                y = 0; // coarse Y = 0
+                this.v ^= 0x0800; // switch vertical nametable
+            }
+            else if (y == 31) {
+                y = 0; // coarse Y = 0, nametable not switched
+            }
+            else {
+                y += 1; // increment coarse Y
+            }
+            this.v = (this.v & ~(0x03E0)) | (y << 5); // put coarse Y back into v
+        }
+    };
+
+    this.copyVScroll = function() {
+        if (!this.rendering())
+            return;
+        this.v &= ~(0x7BE0);
+        this.v |= this.t & 0x7BE0;
+    };
+
+    this.copyHScroll = function() {
+        if (!this.rendering())
+            return;
+        this.v &= ~(0x041F);
+        this.v |= this.t & 0x041F;
+    };
+
+    this.renderPixel = function() {
+        if (this.renderBackground) {
+            bgPixel = (this.getPixelBit(this.bgShiftH, this.x) << 1) | this.getPixelBit(this.bgShiftL, this.x);
+            bgPixel = this.palette[((this.getPixelBit(this.atShiftH, this.x) << 1) | this.getPixelBit(this.atShiftL, this.x)) * 4 + bgPixel];
+            this.nes.mainDisplay.updateBuffer(this.currentScanline * 256 + (this.currentCycle - 2), this.paletteColors[bgPixel]);
+            this.bgShiftH <<= 1;
+            this.bgShiftL <<= 1;
+            this.atShiftH <<= 1;
+            this.atShiftL <<= 1;
+        }
+    };
+
+    this.getPixelBit = function(word, shiftBit) {
+        word <<= shiftBit;
+        return (word & 0x8000) >> 15;
+    };
+
+    this.getAtBit = function(byte, shiftBit) {
+        byte <<= shiftBit;
+        return (byte & 0x80) >> 7;
+    };
+
+    this.reloadShiftRegisters = function() {
+        this.bgShiftL = this.bgL;
+        this.bgShiftH = this.bgH;
+        this.atShiftH = this.atH;
+        this.atShiftL = this.atL;
+    };
+
+    this.calcPalette = function(x, y, at_byte) {
+        var pal = at_byte >> ((x & 0x01) * 2);
+        pal = pal >> ((y & 0x01) * 4);
+        return pal & 0x03;
+    };
+
+    this.fillAtRegs = function(at_bit) {
+        if (at_bit == 1)
+            return 0xFF;
+        else return 0;
+    };
+
+    this.rendering = function() {
+        if (this.renderBackground || this.renderSprite)
+            return true;
+        else return false;
     };
 }

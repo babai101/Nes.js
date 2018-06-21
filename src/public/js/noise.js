@@ -1,3 +1,4 @@
+'use strict';
 export default function noise() {
     this.dividerPeriod = 0;
     this.volume = 0;

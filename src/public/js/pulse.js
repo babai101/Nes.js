@@ -1,4 +1,5 @@
-/*global Tone*/
+/*global*/
+'use strict';
 export default function pulse() {
     this.Enabled = false;
     this.doIrq = false;

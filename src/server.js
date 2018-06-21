@@ -48,7 +48,7 @@ app.route('/api/getRomByFileName/:romFileName')
     });
 app.route('/')
     .get(function(req, res) {
-        res.sendfile(process.cwd() + '/public/home.html');
+        res.sendFile(process.cwd() + '/public/home.html');
     })
 app.route('*')
     .get(function(req, res) {

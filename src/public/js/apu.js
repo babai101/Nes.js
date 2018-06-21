@@ -1,5 +1,6 @@
 /*global performance*/
 //cycles per second = 1786830
+'use strict';
 import pulse from './pulse';
 import triangle from './triangle';
 import noise from './noise';

@@ -1,21 +1,10 @@
-import iNES from './iNES';
-import mapper from './mapper';
-import ppu from './ppu';
-import cpu from './cpu';
-import mmu from './mmu';
-import apu from './apu';
-import display from './display';
+'use strict';
+import nes from './nes';
 
 function NES() {
-    
+    this.nes = new nes();
 }
-NES.iNES = iNES;
-NES.mapper = mapper;
-NES.ppu = ppu;
-NES.cpu = cpu;
-NES.mmu = mmu;
-NES.apu = apu;
-NES.display = display;
+// NES.nes = nes;
 
-if(window !== undefined)
-window.NES = NES;
+if (window !== undefined)
+    window.NES = NES;

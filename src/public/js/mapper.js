@@ -1,3 +1,4 @@
+'use strict';
 export default function mapper(nes) {
     this.nes = nes;
     this.chrGrids = [];

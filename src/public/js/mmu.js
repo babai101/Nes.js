@@ -1,5 +1,5 @@
 //Memory Management Unit to synchronize memory access between CPU and PPU
-
+'use strict';
 export default function mmu(nes) {
     this.nes = nes;
     this.cpuMem = new Uint8Array(65536);
@@ -19,7 +19,6 @@ export default function mmu(nes) {
         PPUDATA: 0x00,
         OAMDMA: 0x00
     };
-    this.PPUDATAReadBuffer = 0;
     this.PPUCTRLwritten = false;
     this.PPUMASKwritten = false;
     this.OAMADDRwritten = false;
@@ -42,6 +41,7 @@ export default function mmu(nes) {
     this.spriteGrid = [];
     this.spriteTiles = [];
     this.OAM = [];
+    this.secOAM = [];
     this.chrRamWritten = false;
     //button states
     this.startBtnState = 0;
@@ -59,6 +59,12 @@ export default function mmu(nes) {
             this.OAM.push(0x00);
             this.OAM.push(0x00);
             this.OAM.push(0xFF);
+        }
+    };
+    
+    this.secOAMInit = function() {
+        for (var i = 0; i < 32; i++) {
+            this.secOAM.push(0xFF);
         }
     };
 
@@ -297,6 +303,10 @@ export default function mmu(nes) {
                 if (this.nes.PPU.currentScanline == 261 || (this.nes.PPU.currentScanline >= 0 && this.nes.PPU.currentScanline < 240)) {
                     return;
                 }
+                //return 0xFF during secondary OAM init
+                else if (this.nes.PPU.currentCycle >= 1 && this.nes.PPU.currentCycle <= 64) {
+                    return 0xFF;
+                }
                 else {
                     return this.OAM[this.ppuRegObj.OAMADDR];
                 }
@@ -306,14 +316,7 @@ export default function mmu(nes) {
                 break;
                 //PPUDATA
             case 0x2007:
-                var temp = this.getPPUDATA(this.ppuRegObj.PPUADDR);
-                if (this.nes.PPU.vRamAddrInc == 'across') {
-                    this.ppuRegObj.PPUADDR += 1;
-                }
-                else if (this.nes.PPU.vRamAddrInc == 'down') {
-                    this.ppuRegObj.PPUADDR += 32;
-                }
-                return temp;
+                return this.nes.PPU.getPPUDATA();
         }
     };
 
@@ -351,24 +354,15 @@ export default function mmu(nes) {
                 return 0x2004;
                 //PPUSCROLL
             case 0x2005:
-                this.setPPUSCROLL(value);
-                this.PPUSCROLLwritten = true;
+                this.nes.PPU.setPPUSCROLL(value);
                 return 0x2005;
                 //PPUADDR
             case 0x2006:
-                this.setPPUADDR(value);
-                this.PPUADDRwritten = true;
+                this.nes.PPU.setPPUADDR(value);
                 return 0x2006;
                 //PPUDATA
             case 0x2007:
-                this.setPPUDATA(value);
-                if (this.nes.PPU.vRamAddrInc == 'across') {
-                    this.ppuRegObj.PPUADDR += 1;
-                }
-                else if (this.nes.PPU.vRamAddrInc == 'down') {
-                    this.ppuRegObj.PPUADDR += 32;
-                }
-                this.PPUDATAwritten = true;
+                this.nes.PPU.setPPUDATA(value);
                 return 0x2007;
             case 0x4014:
                 this.ppuRegObj.OAMDMA = value;
@@ -483,9 +477,6 @@ export default function mmu(nes) {
     this.startOAMDMACopy = function() {
         if ( /*this.nes.PPU.vBlankStarted*/ true) {
             for (var i = 0; i < 256; i++) {
-                // this.OAM[i] = this.getCpuMemVal((this.OAMDMA << 8) + i);
-                // this.OAM[i] = this.getCpuMemVal((this.OAMDMA * 0x100) + i);
-                // this.setOAMDATA(this.getCpuMemVal((this.OAMDMA * 0x100) + i));
                 this.setOAMDATA(this.cpuMem[(this.OAMDMA * 0x100) + i]);
             }
         }
@@ -494,54 +485,5 @@ export default function mmu(nes) {
     this.setOAMDMA = function(OAMDMA) {
         this.OAMDMA = OAMDMA;
         this.startOAMDMACopy();
-    };
-
-    this.setPPUADDR = function(value) {
-        if (this.PPUADDRFirstWrite) {
-            this.ppuRegObj.PPUADDR = value;
-            this.ppuRegObj.PPUADDR = this.ppuRegObj.PPUADDR << 8;
-            this.nes.PPU.fineYScroll = 0; //this.nes.PPU.fineYScroll & 0x04;
-            this.nes.PPU.fineYScroll = this.nes.PPU.fineYScroll | ((value & 0x30) >> 4);
-            this.nes.PPU.baseNameTblAddr = (value & 0x0C) >> 2;
-            this.PPUADDRFirstWrite = false;
-        }
-        else {
-            this.ppuRegObj.PPUADDR = this.ppuRegObj.PPUADDR | value;
-            if (this.ppuRegObj.PPUADDR > 0x3FFF)
-                this.ppuRegObj.PPUADDR = this.ppuRegObj.PPUADDR - 0x3FFF;
-            this.nes.PPU.coarseXScroll = value & 0x1F;
-            this.nes.PPU.coarseYScroll = (this.coarseYScroll & 0x18) | ((value & 0xE0) >> 5);
-            this.PPUADDRFirstWrite = true;
-        }
-    };
-
-    this.setPPUSCROLL = function(value) {
-        this.ppuRegObj.PPUSCROLL = value;
-        if (this.PPUADDRFirstWrite) {
-            this.nes.PPU.xScroll = value;
-            this.nes.PPU.coarseXScroll = (value & 0xF8) >> 3;
-            this.nes.PPU.fineXScroll = value & 0x07;
-            this.PPUADDRFirstWrite = false;
-        }
-        else {
-            this.nes.PPU.yScroll = value;
-            this.nes.PPU.coarseYScroll = (value & 0xF8) >> 3;
-            this.nes.PPU.fineYScroll = value & 0x07;
-            this.PPUADDRFirstWrite = true;
-        }
-    };
-
-    this.getPPUDATA = function(location) {
-        var returnValue = this.PPUDATAReadBuffer;
-        if (location >= 0x0000 && location < 0x3EFF) {
-            this.PPUDATAReadBuffer = this.getPpuMemVal(location);
-        }
-        else {
-            returnValue = this.getPpuMemVal(location);
-        }
-        return returnValue;
-    };
-    this.setPPUDATA = function(value) {
-        this.setPpuMemVal(this.ppuRegObj.PPUADDR, value);
     };
 }

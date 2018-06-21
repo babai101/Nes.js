@@ -1,3 +1,4 @@
+'use strict';
 export default function iNES(nes) {
     this.nes = nes;
     this.headers = []; //hold 16 byte iNES headers

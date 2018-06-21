@@ -1,4 +1,5 @@
 /*global Tone*/
+'use strict';
 export default function triangle() {
     this.Enabled = false;
     this.doIrq = false;
