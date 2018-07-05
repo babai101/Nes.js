@@ -346,8 +346,8 @@ export default function cpu(nes) {
 		else this.unsetFlag('overflow');
 		this.accumulator = this.writeCarry(this.accumulator + arg + (this.P & 0x01));
 		this.calcFlags(null, false, null);
-		if (this.loggingEnabled)
-			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + arg.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
 	};
@@ -1911,9 +1911,9 @@ export default function cpu(nes) {
 		var param = this.fetchParams();
 		// var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		var memLogBeforeVar = this.nes.MMU.setCpuMemVal(param, (this.accumulator));
-		if (this.loggingEnabled) {
-			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
-		}
+		// if (this.loggingEnabled) {
+		// 	this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// }
 		//instLen = 2;
 		this.elapsedCycles += 3;
 	};
@@ -2404,8 +2404,8 @@ export default function cpu(nes) {
 		param2 = param2 << 8;
 		var param = param2 | param1;
 		this.pc = param;
-		if (this.loggingEnabled)
-			this.memLog = '$' + param.toString(16).toUpperCase();
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + param.toString(16).toUpperCase();
 		//instLen = 3;
 		this.elapsedCycles += 3;
 	};
@@ -2663,8 +2663,8 @@ export default function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if (this.loggingEnabled)
-			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if (((this.P >> 1) & 0x01) == 1) {
 			// this.pc--;
 			// var offset = this.calcOffset(param);

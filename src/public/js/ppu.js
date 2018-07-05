@@ -13,70 +13,136 @@ export default function ppu(nes) {
     ];
     this.palette = [];
 
-    this.paletteColors = [0x7C7C7C,
-        0x0000FC,
-        0x0000BC,
-        0x4428BC,
-        0x940084,
-        0xA80020,
-        0xA81000,
-        0x881400,
-        0x503000,
-        0x007800,
-        0x006800,
-        0x005800,
-        0x004058,
-        0x000000,
-        0x000000,
-        0x000000,
-        0xBCBCBC,
-        0x0078F8,
-        0x0058F8,
-        0x6844FC,
-        0xD800CC,
-        0xE40058,
-        0xF83800,
-        0xE45C10,
-        0xAC7C00,
-        0x00B800,
-        0x00A800,
-        0x00A844,
-        0x008888,
-        0x000000,
-        0x000000,
-        0x000000,
-        0xF8F8F8,
-        0x3CBCFC,
-        0x6888FC,
-        0x9878F8,
-        0xF878F8,
-        0xF85898,
-        0xF87858,
-        0xFCA044,
-        0xF8B800,
-        0xB8F818,
-        0x58D854,
-        0x58F898,
-        0x00E8D8,
-        0x787878,
-        0x000000,
-        0x000000,
-        0xFCFCFC,
-        0xA4E4FC,
-        0xB8B8F8,
-        0xD8B8F8,
-        0xF8B8F8,
-        0xF8A4C0,
-        0xF0D0B0,
-        0xFCE0A8,
-        0xF8D878,
-        0xD8F878,
-        0xB8F8B8,
-        0xB8F8D8,
-        0x00FCFC,
-        0xF8D8F8,
-        0x000000,
-        0x000000
+    // this.paletteColors = [0x7C7C7C,
+    //     0x0000FC,
+    //     0x0000BC,
+    //     0x4428BC,
+    //     0x940084,
+    //     0xA80020,
+    //     0xA81000,
+    //     0x881400,
+    //     0x503000,
+    //     0x007800,
+    //     0x006800,
+    //     0x005800,
+    //     0x004058,
+    //     0x000000,
+    //     0x000000,
+    //     0x000000,
+    //     0xBCBCBC,
+    //     0x0078F8,
+    //     0x0058F8,
+    //     0x6844FC,
+    //     0xD800CC,
+    //     0xE40058,
+    //     0xF83800,
+    //     0xE45C10,
+    //     0xAC7C00,
+    //     0x00B800,
+    //     0x00A800,
+    //     0x00A844,
+    //     0x008888,
+    //     0x000000,
+    //     0x000000,
+    //     0x000000,
+    //     0xF8F8F8,
+    //     0x3CBCFC,
+    //     0x6888FC,
+    //     0x9878F8,
+    //     0xF878F8,
+    //     0xF85898,
+    //     0xF87858,
+    //     0xFCA044,
+    //     0xF8B800,
+    //     0xB8F818,
+    //     0x58D854,
+    //     0x58F898,
+    //     0x00E8D8,
+    //     0x787878,
+    //     0x000000,
+    //     0x000000,
+    //     0xFCFCFC,
+    //     0xA4E4FC,
+    //     0xB8B8F8,
+    //     0xD8B8F8,
+    //     0xF8B8F8,
+    //     0xF8A4C0,
+    //     0xF0D0B0,
+    //     0xFCE0A8,
+    //     0xF8D878,
+    //     0xD8F878,
+    //     0xB8F8B8,
+    //     0xB8F8D8,
+    //     0x00FCFC,
+    //     0xF8D8F8,
+    //     0x000000,
+    //     0x000000
+    // ];
+    this.paletteColors = [
+        [0x7C, 0x7C, 0x7C],
+        [0x00, 0x00, 0xFC],
+        [0x00, 0x00, 0xBC],
+        [0x44, 0x28, 0xBC],
+        [0x94, 0x00, 0x84],
+        [0xA8, 0x00, 0x20],
+        [0xA8, 0x10, 0x00],
+        [0x88, 0x14, 0x00],
+        [0x50, 0x30, 0x00],
+        [0x00, 0x78, 0x00],
+        [0x00, 0x68, 0x00],
+        [0x00, 0x58, 0x00],
+        [0x00, 0x40, 0x58],
+        [0x00, 0x00, 0x00],
+        [0x00, 0x00, 0x00],
+        [0x00, 0x00, 0x00],
+        [0xBC, 0xBC, 0xBC],
+        [0x00, 0x78, 0xF8],
+        [0x00, 0x58, 0xF8],
+        [0x68, 0x44, 0xFC],
+        [0xD8, 0x00, 0xCC],
+        [0xE4, 0x00, 0x58],
+        [0xF8, 0x38, 0x00],
+        [0xE4, 0x5C, 0x10],
+        [0xAC, 0x7C, 0x00],
+        [0x00, 0xB8, 0x00],
+        [0x00, 0xA8, 0x00],
+        [0x00, 0xA8, 0x44],
+        [0x00, 0x88, 0x88],
+        [0x00, 0x00, 0x00],
+        [0x00, 0x00, 0x00],
+        [0x00, 0x00, 0x00],
+        [0xF8, 0xF8, 0xF8],
+        [0x3C, 0xBC, 0xFC],
+        [0x68, 0x88, 0xFC],
+        [0x98, 0x78, 0xF8],
+        [0xF8, 0x78, 0xF8],
+        [0xF8, 0x58, 0x98],
+        [0xF8, 0x78, 0x58],
+        [0xFC, 0xA0, 0x44],
+        [0xF8, 0xB8, 0x00],
+        [0xB8, 0xF8, 0x18],
+        [0x58, 0xD8, 0x54],
+        [0x58, 0xF8, 0x98],
+        [0x00, 0xE8, 0xD8],
+        [0x78, 0x78, 0x78],
+        [0x00, 0x00, 0x00],
+        [0x00, 0x00, 0x00],
+        [0xFC, 0xFC, 0xFC],
+        [0xA4, 0xE4, 0xFC],
+        [0xB8, 0xB8, 0xF8],
+        [0xD8, 0xB8, 0xF8],
+        [0xF8, 0xB8, 0xF8],
+        [0xF8, 0xA4, 0xC0],
+        [0xF0, 0xD0, 0xB0],
+        [0xFC, 0xE0, 0xA8],
+        [0xF8, 0xD8, 0x78],
+        [0xD8, 0xF8, 0x78],
+        [0xB8, 0xF8, 0xB8],
+        [0xB8, 0xF8, 0xD8],
+        [0x00, 0xFC, 0xFC],
+        [0xF8, 0xD8, 0xF8],
+        [0x00, 0x00, 0x00],
+        [0x00, 0x00, 0x00]
     ];
 
     //PPUCTRL vars
@@ -890,7 +956,8 @@ export default function ppu(nes) {
                         this.clearSecondaryOAM();
                     }
                     else if (this.currentCycle >= 64 && this.currentCycle <= 256) {
-                        this.evalSprites();
+                        // if (this.rendering())
+                        //     this.evalSprites();
                     }
                 }
                 if (this.currentCycle == 256)
@@ -898,6 +965,7 @@ export default function ppu(nes) {
             }
             //fetch sprite tile data for next scanline
             else if (this.currentCycle >= 257 && this.currentCycle <= 320) {
+                this.fetchSprites();
                 if (this.currentCycle == 257) {
                     this.reloadShiftRegisters();
                     this.copyHScroll();
@@ -925,14 +993,6 @@ export default function ppu(nes) {
             }
         }
         this.currentCycle++;
-        // if (this.currentCycle == 340) {
-        //     if (this.nes.CPU.oddFrame && this.currentScanline == 261) { //pre-render scanline
-        //         this.currentCycle = 0;
-        //         this.nes.CPU.renderedScanline = this.currentScanline;
-        //         this.currentScanline = 0;
-        //         return true;
-        //     }
-        // }
         if (this.currentCycle == 341) {
             this.currentCycle = 0;
             this.nes.CPU.renderedScanline = this.currentScanline;
@@ -949,6 +1009,7 @@ export default function ppu(nes) {
         if (this.currentCycle == 1) {
             this.nes.MMU.secOAMInit();
         }
+        this.allSpritesFound = false;
     };
 
     //TODO: Sprite overflow logic
@@ -956,12 +1017,14 @@ export default function ppu(nes) {
         //Even cycles
         if (this.currentCycle % 2 == 0) {
             if (!this.allSpritesFound) {
-                this.MMU.secOAM[4 * this.n + this.m] = this.oamReadBuffer;
+                this.nes.MMU.secOAM[4 * this.n + this.m] = this.oamReadBuffer;
                 if (this.spriteInRange) {
                     this.m++;
                     if (this.m == 4) {
                         this.m = 0;
                         this.n++;
+                        if (this.n >= 64)
+                            this.allSpritesFound = true;
                     }
                     this.spriteInRange = false;
                 }
@@ -969,24 +1032,46 @@ export default function ppu(nes) {
         }
         //Odd cycles
         else {
-            if (this.m == 0)
-                this.oamReadBuffer = this.MMU.OAM[4 * this.n];
-            else {
-                this.spriteInRange = this.checkSpriteInRange();
-                if (this.spriteInRange) {
-                    this.oamReadBuffer = this.MMU.OAM[4 * this.n + this.m];
-                }
+            if (!this.allSpritesFound) {
+                if (this.m == 0)
+                    this.oamReadBuffer = this.nes.MMU.OAM[4 * this.n];
                 else {
-                    this.n++;
+                    this.spriteInRange = this.checkSpriteInRange();
+                    if (this.spriteInRange) {
+                        this.oamReadBuffer = this.nes.MMU.OAM[4 * this.n + this.m];
+                    }
+                    else {
+                        this.n++;
+                        if (this.n >= 64)
+                            this.allSpritesFound = true;
+                    }
                 }
             }
+        }
+    };
+
+    this.fetchSprites = function() {
+        switch (this.currentCycle % 8) {
+            case 1:
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+            case 4:
+                break;
+            case 5:
+            case 6:
+            case 7:
+            case 0:
+                break;
         }
     };
 
     this.checkSpriteInRange = function() {
         //check only for Y co-ordinate byte
         if (this.m == 0) {
-            
+            return (this.nes.MMU.OAM[4 * this.n] == this.currentScanline + 1);
         }
         return false;
     };
@@ -1018,13 +1103,13 @@ export default function ppu(nes) {
     };
 
     this.getNameTableByte = function() {
-        var nametable = this.nes.MMU.getNameTable();
-        this.nt_byte = nametable[0x2000 | (this.v & 0x0FFF)];
+        // var nametable = this.nes.MMU.getNameTable();
+        this.nt_byte = this.nes.MMU.ppuMem[0x2000 | (this.v & 0x0FFF)];
     };
 
     this.getAttrTableByte = function() {
-        var nametable = this.nes.MMU.getNameTable();
-        this.at_byte = nametable[0x23C0 | (this.v & 0x0C00) | ((this.v >> 4) & 0x38) | ((this.v >> 2) & 0x07)];
+        // var nametable = this.nes.MMU.getNameTable();
+        this.at_byte = this.nes.MMU.ppuMem[0x23C0 | (this.v & 0x0C00) | ((this.v >> 4) & 0x38) | ((this.v >> 2) & 0x07)];
         // this.at_bits = this.calcPalette(this.v & 0x1F, (this.v & 0x3E0) >> 5, this.at_byte);
         this.at_bits = this.calcPaletteFromAttr(this.v & 0x1F, (this.v & 0x3E0) >> 5, this.at_byte);
         this.atH = (this.atH & 0xFF00) | this.fillAtRegs((this.at_bits & 0x02) >> 1);
@@ -1105,10 +1190,44 @@ export default function ppu(nes) {
         this.v |= this.t & 0x041F;
     };
 
+    var tempBgHBit = 0, tempBgLBit = 0, tempAtHBit = 0, tempAtLBit = 0;
+
     this.renderPixel = function() {
         if (this.renderBackground) {
-            bgPixel = (this.getPixelBit(this.bgShiftH, this.x) << 1) | this.getPixelBit(this.bgShiftL, this.x);
-            bgPixel = this.palette[((this.getPixelBit(this.atShiftH, this.x) << 1) | this.getPixelBit(this.atShiftL, this.x)) * 4 + bgPixel];
+            // tempShift = this.bgShiftH;
+            // tempShift <<= this.x;
+            // if (tempShift & 0x8000 == 0x8000)
+            if (this.bgShiftH & (0b1000000000000000 >> this.x))
+                tempBgHBit = 0b10;
+            else tempBgHBit = 0;
+            
+            
+            // tempShift = this.bgShiftL;
+            // tempShift <<= this.x;
+            // if (tempShift & 0x8000 == 0x8000)
+            if (this.bgShiftL & (0b1000000000000000 >> this.x))
+                tempBgLBit = 1;
+            else tempBgLBit = 0;
+            
+            // tempShift = this.atShiftH;
+            // tempShift <<= this.x;
+            // if (tempShift & 0x8000 == 0x8000)
+            if (this.atShiftH & (0b1000000000000000 >> this.x))
+                tempAtHBit = 0b10;
+            else tempAtHBit = 0;
+            
+            // tempShift = this.atShiftL;
+            // tempShift <<= this.x;
+            // if (tempShift & 0x8000 == 0x8000)
+            if (this.atShiftL & (0b1000000000000000 >> this.x))
+                tempAtLBit = 1;
+            else tempAtLBit = 0;
+            
+            
+            bgPixel = tempBgHBit | tempBgLBit;
+            bgPixel = this.palette[(tempAtHBit | tempAtLBit) * 4 + bgPixel];
+            // bgPixel = (this.getPixelBit(this.bgShiftH, this.x) << 1) | this.getPixelBit(this.bgShiftL, this.x);
+            // bgPixel = this.palette[((this.getPixelBit(this.atShiftH, this.x) << 1) | this.getPixelBit(this.atShiftL, this.x)) * 4 + bgPixel];
             this.nes.mainDisplay.updateBuffer(this.currentScanline * 256 + (this.currentCycle - 2), this.paletteColors[bgPixel]);
             this.bgShiftH <<= 1;
             this.bgShiftL <<= 1;
@@ -1118,8 +1237,17 @@ export default function ppu(nes) {
     };
 
     this.getPixelBit = function(word, shiftBit) {
-        word <<= shiftBit;
-        return (word & 0x8000) >> 15;
+        // word <<= shiftBit;
+        // if (word & 0x8000 == 0x8000)
+        //     return 1;
+        // else return 0;
+        if (word & (0b1000000000000000 >> shiftBit)) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+        // return (word & 0x8000) >> 15;
     };
 
     this.getAtBit = function(byte, shiftBit) {
