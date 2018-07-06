@@ -299,7 +299,7 @@ export default function apu(nes) {
         var size = channelData.length;
         if (this.outputBuffer.size() < size) {
             console.log(
-                "Buffer underrun, running another frame to try and catch up"
+                // "Buffer underrun, running another frame to try and catch up"
             );
             this.nes.CPU.run();
 

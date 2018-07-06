@@ -940,8 +940,8 @@ export default function cpu(nes) {
 		var param = this.fetchParams();
 		this.accumulator = this.accumulator & param;
 		this.calcFlags(null, false, null);
-		if (this.loggingEnabled)
-			this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
+		// if (this.loggingEnabled)
+		// 	this.memLog = '#$' + ('00' + param.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 2;
 	};
@@ -953,8 +953,8 @@ export default function cpu(nes) {
 		this.accumulator = this.accumulator & this.nes.MMU.getCpuMemVal(param);
 		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
-		if (this.loggingEnabled)
-			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
 	};
@@ -1069,8 +1069,8 @@ export default function cpu(nes) {
 		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param);
 		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
-		if (this.loggingEnabled)
-			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
 	};
@@ -1095,8 +1095,8 @@ export default function cpu(nes) {
 		this.accumulator = this.accumulator ^ this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
 		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
-		if (this.loggingEnabled)
-			this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -1384,8 +1384,8 @@ export default function cpu(nes) {
 		var param = this.fetchParams();
 		this.accumulator = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
-		if (this.loggingEnabled)
-			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + this.accumulator.toString(16).toUpperCase()).slice(-2);
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + this.accumulator.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 3;
 	};
@@ -1409,8 +1409,8 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		this.accumulator = this.nes.MMU.getCpuMemVal(param);
 		this.calcFlags(null, false, null);
-		if (this.loggingEnabled)
-			this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.accumulator.toString(16).toUpperCase()).slice(-2);
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + ('0000' + param.toString(16).toUpperCase()).slice(-4) + ' = ' + ('00' + this.accumulator.toString(16).toUpperCase()).slice(-2);
 		//instLen = 3;
 		this.elapsedCycles += 4;
 	};
@@ -1827,10 +1827,10 @@ export default function cpu(nes) {
 			this.setFlag('carry');
 		else
 			this.unsetFlag('carry');
-		if (this.loggingEnabled) {
-			var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
-			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
-		}
+		// if (this.loggingEnabled) {
+		// 	var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
+		// 	this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// }
 
 		this.nes.MMU.setCpuMemVal(param, (this.nes.MMU.getCpuMemVal(param) >> 1));
 		if (currCarry == 1) {
@@ -2237,8 +2237,8 @@ export default function cpu(nes) {
 		var memLogBeforeVar = this.nes.MMU.getCpuMemVal(param);
 		this.nes.MMU.setCpuMemVal(param, (this.wrap8bit('increment', this.nes.MMU.getCpuMemVal(param), null)));
 		this.calcFlags(this.nes.MMU.getCpuMemVal(param), false, null);
-		if (this.loggingEnabled)
-			this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + ('00' + param.toString(16).toUpperCase()).slice(-2) + ' = ' + ('00' + memLogBeforeVar.toString(16).toUpperCase()).slice(-2);
 		//instLen = 2;
 		this.elapsedCycles += 5;
 	};
@@ -2448,8 +2448,8 @@ export default function cpu(nes) {
 		this.pushToStack((this.pc - 1) >> 8);
 		this.pushToStack((this.pc - 1) & 0x00FF);
 		this.pc = param;
-		if (this.loggingEnabled)
-			this.memLog = '$' + param.toString(16).toUpperCase();
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + param.toString(16).toUpperCase();
 		//instLen = 3;
 		this.elapsedCycles += 6;
 	};
@@ -2531,8 +2531,8 @@ export default function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if (this.loggingEnabled)
-			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if ((this.P >> 7) == 0) {
 			// this.pc--;
 			// var offset = this.calcOffset(param);
@@ -2550,8 +2550,8 @@ export default function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if (this.loggingEnabled)
-			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if ((this.P >> 7) == 1) {
 			// this.pc--;
 			// var offset = this.calcOffset(param);
@@ -2569,8 +2569,8 @@ export default function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if (this.loggingEnabled)
-			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if (((this.P >> 6) & 0x01) == 0) {
 			// this.pc--;
 			// var offset = this.calcOffset(param);
@@ -2588,8 +2588,8 @@ export default function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if (this.loggingEnabled)
-			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if (((this.P >> 6) & 0x01) == 1) {
 			// this.pc--;
 			// var offset = this.calcOffset(param);
@@ -2607,8 +2607,8 @@ export default function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if (this.loggingEnabled)
-			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if ((this.P & 0x01) == 0) {
 			// this.pc--;
 			// var offset = this.calcOffset(param);
@@ -2626,8 +2626,8 @@ export default function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if (this.loggingEnabled)
-			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if ((this.P & 0x01) == 1) {
 			// this.pc--;
 			if ((this.pc >> 8) != ((this.pc + offset) >> 8))
@@ -2644,8 +2644,8 @@ export default function cpu(nes) {
 		this.pc++;
 		var param = this.fetchParams();
 		var offset = this.calcOffset(param);
-		if (this.loggingEnabled)
-			this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
+		// if (this.loggingEnabled)
+		// 	this.memLog = '$' + (this.pc + offset).toString(16).toUpperCase();
 		if (((this.P >> 1) & 0x01) == 0) {
 			// this.pc--;
 

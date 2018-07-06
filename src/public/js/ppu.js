@@ -1015,7 +1015,7 @@ export default function ppu(nes) {
     //TODO: Sprite overflow logic
     this.evalSprites = function() {
         //Even cycles
-        if (this.currentCycle % 2 == 0) {
+        if (this.currentCycle & 1 == 0) {
             if (!this.allSpritesFound) {
                 this.nes.MMU.secOAM[4 * this.n + this.m] = this.oamReadBuffer;
                 if (this.spriteInRange) {
