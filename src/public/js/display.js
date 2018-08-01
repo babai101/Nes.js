@@ -1,7 +1,7 @@
 'use strict';
 export default function display(canvas) {
     this.offscreenBuffer = [];
-    var renderTarget = 1; //'1 for WebGL or 0 for Canvas'
+    var renderTarget = 0; //'1 for WebGL or 0 for Canvas'
     if (renderTarget == 0) {
         this.ctx = canvas.getContext('2d');
         this.canvasImageData = this.ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -97,7 +97,7 @@ export default function display(canvas) {
     //Reset the cavases
     this.screenReset = function() {
         if (renderTarget == 0) {
-            this.ctx.fillStyle = 'Black';
+            this.ctx.fillStyle = 'black';
             this.ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
     };

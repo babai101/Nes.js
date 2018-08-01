@@ -27,6 +27,7 @@ export default function nes() {
         this.MMU.OAMInit();
         this.MMU.secOAMInit();
         this.PPU.initScreenBuffer();
+        this.PPU.initSpriteOpUnits();
         this.ines.parseRom(this.opcodes);
         this.MMU.nameTableMirroring = this.ines.mirroring;
         this.PPU.nameTableMirroring = this.ines.mirroring;

@@ -63,9 +63,7 @@ export default function mmu(nes) {
     };
     
     this.secOAMInit = function() {
-        for (var i = 0; i < 32; i++) {
-            this.secOAM.push(0xFF);
-        }
+        (this.secOAM = []).length = 32; this.secOAM.fill(0x100);
     };
 
     this.getCpuMemVal = function(location) {
