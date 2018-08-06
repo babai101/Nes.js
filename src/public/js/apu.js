@@ -19,8 +19,8 @@ export default function apu(nes) {
     this.doIrq = false;
     this.lengthCounterTbl = [10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14, 12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30];
     this.noisePeriodTbl = [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068];
-    this.pulse1Buffer = [];
-    this.pulse2Buffer = [];
+    var pulse1Buffer = [];
+    var pulse2Buffer = [];
     this.triangleBuffer = [];
     this.noiseBuffer = [];
     this.bufferLength = 4096;
@@ -34,13 +34,13 @@ export default function apu(nes) {
     var sampleCount = 0;
     var t1 = 0;
     var t3 = 0;
-    this.pulseOverSamplingCycles = 0;
-    this.triangleOverSamplingCycles = 0;
+    var pulseOverSamplingCycles = 0;
+    var triangleOverSamplingCycles = 0;
     var overSamplingCycleRate = 20;
     var sampleCycleRate = 41;
-    this.samplingCycles = 0;
-    this.clockCycles = 0;
-    this.frameCycles = 0;
+    var samplingCycles = 0;
+    var clockCycles = 0;
+    var frameCycles = 0;
     this.samplingClock = performance.now();
     this.sampleTimerMax = 1000.0 / 44100.0;
     this.cyclesPerFrame = 1786830;
@@ -295,55 +295,55 @@ export default function apu(nes) {
 
     this.onaudioprocess = (e) => {
         //Thansk Ben Firshman!!!
-        var channelData = e.outputBuffer.getChannelData(0);
-        var size = channelData.length;
-        if (this.outputBuffer.size() < size) {
-            console.log(
-                // "Buffer underrun, running another frame to try and catch up"
-            );
-            this.nes.CPU.run();
+        // var channelData = e.outputBuffer.getChannelData(0);
+        // var size = channelData.length;
+        // if (this.outputBuffer.size() < size) {
+        //     // console.log(
+        //         // "Buffer underrun, running another frame to try and catch up"
+        //     // );
+        //     this.nes.CPU.run();
 
-            if (this.outputBuffer.size() < size) {
-                console.log("Still buffer underrun, running a second frame");
-                this.nes.CPU.run();
-            }
-        }
-        try {
-            var samples = this.outputBuffer.deqN(size);
-        }
-        catch (e) {
-            // onBufferUnderrun failed to fill the buffer, so handle a real buffer
-            // underrun
-            // ignore empty buffers... assume audio has just stopped
-            var bufferSize = this.outputBuffer.size();
-            if (bufferSize > 0) {
-                // console.log(`Buffer underrun (needed ${size}, got ${bufferSize})`);
-            }
-            for (var j = 0; j < bufferSize; j++) {
-                channelData[j] = 0;
-            }
-            return;
-        }
-        for (var i = 0; i < size; i++) {
-            channelData[i] = samples[i];
-        }
+        //     if (this.outputBuffer.size() < size) {
+        //         // console.log("Still buffer underrun, running a second frame");
+        //         this.nes.CPU.run();
+        //     }
+        // }
+        // try {
+        //     var samples = this.outputBuffer.deqN(size);
+        // }
+        // catch (e) {
+        //     // onBufferUnderrun failed to fill the buffer, so handle a real buffer
+        //     // underrun
+        //     // ignore empty buffers... assume audio has just stopped
+        //     var bufferSize = this.outputBuffer.size();
+        //     if (bufferSize > 0) {
+        //         // console.log(`Buffer underrun (needed ${size}, got ${bufferSize})`);
+        //     }
+        //     for (var j = 0; j < bufferSize; j++) {
+        //         channelData[j] = 0;
+        //     }
+        //     return;
+        // }
+        // for (var i = 0; i < size; i++) {
+        //     channelData[i] = samples[i];
+        // }
     };
 
     this.sample = function() {
-        var pulse1Output = Math.floor(this.pulse1Buffer.reduce((a, b) => a + b, 0));
+        var pulse1Output = Math.floor(pulse1Buffer.reduce((a, b) => a + b, 0));
         if (pulse1Output != 0)
-            pulse1Output = pulse1Output / this.pulse1Buffer.length;
-        var pulse2Output = Math.floor(this.pulse2Buffer.reduce((a, b) => a + b, 0));
+            pulse1Output = pulse1Output / pulse1Buffer.length;
+        var pulse2Output = Math.floor(pulse2Buffer.reduce((a, b) => a + b, 0));
         if (pulse2Output != 0)
-            pulse2Output = pulse2Output / this.pulse2Buffer.length;
+            pulse2Output = pulse2Output / pulse2Buffer.length;
         var triangleOutput = Math.floor(this.triangleBuffer.reduce((a, b) => a + b, 0));
         if (triangleOutput != 0)
             triangleOutput = triangleOutput / this.triangleBuffer.length;
         var noiseOutput = Math.floor(this.noiseBuffer.reduce((a, b) => a + b, 0));
         if (noiseOutput != 0)
             noiseOutput = noiseOutput / this.noiseBuffer.length;
-        this.pulse1Buffer = [];
-        this.pulse2Buffer = [];
+        pulse1Buffer = [];
+        pulse2Buffer = [];
         this.triangleBuffer = [];
         this.noiseBuffer = [];
         var pulseOutput = 0;
@@ -363,38 +363,39 @@ export default function apu(nes) {
     };
 
     this.run = function() {
-        this.clockCycles++;
-        if (this.clockCycles % 2 == 0) {
+        clockCycles++;
+        // if (clockCycles % 2 == 0) {
+        if ((clockCycles & 1) == 0) {
             pulse1.clock();
             pulse2.clock();
-            this.clockCycles = 0;
+            clockCycles = 0;
         }
         triangle1.clock();
         noise1.clock();
-        this.pulseOverSamplingCycles++;
-        if (this.pulseOverSamplingCycles >= overSamplingCycleRate) {
-            this.pulseOverSamplingCycles -= overSamplingCycleRate;
-            this.pulse1Buffer.push(pulse1.output());
-            this.pulse2Buffer.push(pulse2.output());
+        pulseOverSamplingCycles++;
+        if (pulseOverSamplingCycles >= overSamplingCycleRate) {
+            pulseOverSamplingCycles -= overSamplingCycleRate;
+            pulse1Buffer.push(pulse1.output());
+            pulse2Buffer.push(pulse2.output());
         }
-        this.triangleOverSamplingCycles++;
-        if (this.triangleOverSamplingCycles >= overSamplingCycleRate) {
-            this.triangleOverSamplingCycles -= overSamplingCycleRate;
+        triangleOverSamplingCycles++;
+        if (triangleOverSamplingCycles >= overSamplingCycleRate) {
+            triangleOverSamplingCycles -= overSamplingCycleRate;
             this.triangleBuffer.push(triangle1.output());
             this.noiseBuffer.push(noise1.output());
         }
-        this.samplingCycles++;
-        if (this.samplingCycles >= sampleCycleRate) {
-            this.samplingCycles -= sampleCycleRate;
+        samplingCycles++;
+        if (samplingCycles >= sampleCycleRate) {
+            samplingCycles -= sampleCycleRate;
             this.sample();
             if (sampleCycleRate == 40)
                 sampleCycleRate = 41;
             else if (sampleCycleRate == 41)
                 sampleCycleRate = 40;
         }
-        this.frameCycles++;
-        if (this.frameCycles >= 7457) {
-            this.frameCycles -= 7457;
+        frameCycles++;
+        if (frameCycles >= 7457) {
+            frameCycles -= 7457;
             if (this.seqMode == 0) {
                 this.do4StepSeq();
             }

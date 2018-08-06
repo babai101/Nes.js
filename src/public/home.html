@@ -79,7 +79,8 @@
             var requestId = 0;
 
             function renderFrame() {
-                requestId = nes.renderFrame();
+                // requestId = nes.renderFrame();
+                nes.renderFrame();
                 requestAnimationFrame(renderFrame);
             }
             //KeyPress events

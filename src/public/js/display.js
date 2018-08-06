@@ -71,8 +71,11 @@ export default function display(canvas) {
     //Update the cavases themselves
     this.updateCanvas = function() {
         if (renderTarget == 0) {
+            // for (var i = 0; i < this.bufData.length; i++) {
+            //     this.bufData[i] = 0xFF000000 | (this.offscreenBuffer[i][2] << 16) | (this.offscreenBuffer[i][1] << 8) | this.offscreenBuffer[i][0];
+            // }
             for (var i = 0; i < this.bufData.length; i++) {
-                this.bufData[i] = 0xFF000000 | (this.offscreenBuffer[i][2] << 16) | (this.offscreenBuffer[i][1] << 8) | this.offscreenBuffer[i][0];
+                this.bufData[i] = this.offscreenBuffer[i];
             }
             this.canvasImageData.data.set(this.buf8);
             this.ctx.putImageData(this.canvasImageData, 0, 0);
@@ -105,7 +108,8 @@ export default function display(canvas) {
     //Initilize the screen buffers for various canvases
     this.initScreenBuffer = function() {
         for (var i = 0; i < canvas.width * canvas.height; i++) {
-            this.offscreenBuffer.push([0, 0, 0, 0xFF]);
+            // this.offscreenBuffer.push([0, 0, 0, 0xFF]);
+            this.offscreenBuffer.push([0xFF000000]);
         }
         if (renderTarget == 0) {
             for (var i = 0; i < canvas.width * canvas.height; i++) {

@@ -25,7 +25,7 @@ export default function nes() {
         this.opcodes = new Uint8Array(romContent);
         this.APU.init();
         this.MMU.OAMInit();
-        this.MMU.secOAMInit();
+        this.PPU.secOAMInit();
         this.PPU.initScreenBuffer();
         this.PPU.initSpriteOpUnits();
         this.ines.parseRom(this.opcodes);
@@ -44,7 +44,9 @@ export default function nes() {
 
     this.renderFrame = function() {
         this.CPU.run();
-        this.renderScreen();
+        this.mainDisplay.updateCanvas();
+        // this.renderScreen();
+        // requestAnimationFrame(this.renderFrame);
     };
 
     this.readOpcodeFile = function(e) {

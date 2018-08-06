@@ -31,7 +31,7 @@ export default function mmu(nes) {
     this.PPUADDRFirstWrite = true;
     this.PPUSCROLLFirstWrite == true;
     this.enableNMIGen = false;
-    this.controllerStrobed = false;
+    var controllerStrobed = false;
     this.controllerLatched = false;
     this.latchCounter = 0;
     this.lsbLastWritePPU = 0;
@@ -61,9 +61,10 @@ export default function mmu(nes) {
             this.OAM.push(0xFF);
         }
     };
-    
+
     this.secOAMInit = function() {
-        (this.secOAM = []).length = 32; this.secOAM.fill(0x100);
+        (this.secOAM = []).length = 32;
+        this.secOAM.fill(0x100);
     };
 
     this.getCpuMemVal = function(location) {
@@ -91,11 +92,11 @@ export default function mmu(nes) {
         }
         else if (location == 0x4016) {
             var btnStates = 0;
-            if (this.controllerStrobed) {
+            if (controllerStrobed) {
                 //While strobed Return button A status here 
                 return 0;
             }
-            else if (this.controllerLatched) {
+            if (this.controllerLatched) {
                 switch (this.latchCounter) {
                     //button A
                     case 0:
@@ -183,11 +184,11 @@ export default function mmu(nes) {
         }
         else if (location == 0x4016) {
             if (value == 1) {
-                this.controllerStrobed = true;
+                controllerStrobed = true;
                 this.controllerLatched = false;
             }
-            else if ((value == 0) && this.controllerStrobed) {
-                this.controllerStrobed = false;
+            else if ((value == 0) && controllerStrobed) {
+                controllerStrobed = false;
                 this.controllerLatched = true;
             }
             return 0;
@@ -298,11 +299,13 @@ export default function mmu(nes) {
                 break;
                 //OAMDATA
             case 0x2004:
-                if (this.nes.PPU.currentScanline == 261 || (this.nes.PPU.currentScanline >= 0 && this.nes.PPU.currentScanline < 240)) {
+                var currentCycle = this.nes.PPU.getCurrentCycle();
+                var currentScanline = this.nes.PPU.getCurrentScanline();
+                if (currentScanline == 261 || (currentScanline >= 0 && currentScanline < 240)) {
                     return;
                 }
                 //return 0xFF during secondary OAM init
-                else if (this.nes.PPU.currentCycle >= 1 && this.nes.PPU.currentCycle <= 64) {
+                else if (currentCycle >= 1 && currentCycle <= 64) {
                     return 0xFF;
                 }
                 else {
@@ -314,7 +317,7 @@ export default function mmu(nes) {
                 break;
                 //PPUDATA
             case 0x2007:
-                return this.nes.PPU.getPPUDATA();
+                return this.nes.PPU.getPPUDATA(location);
         }
     };
 
@@ -456,7 +459,11 @@ export default function mmu(nes) {
     };
 
     this.setOAMDATA = function(value) {
-        if (this.nes.PPU.currentScanline == 261 || (this.nes.PPU.currentScanline >= 0 && this.nes.PPU.currentScanline < 240)) {
+        var currentScanline = this.nes.PPU.getCurrentScanline();
+        // if (this.nes.PPU.currentScanline == 261 || (this.nes.PPU.currentScanline >= 0 && this.nes.PPU.currentScanline < 240)) {
+
+        // }
+        if (currentScanline == 261 || (currentScanline >= 0 && currentScanline < 240)) {
 
         }
         else {

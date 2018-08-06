@@ -27,8 +27,8 @@ export default function pulse() {
     this.sweepCount = 0;
     this.sweepReloadFlag = false;
     this.currentSequence = 0;
-    this.outputValue = false;
-    this.sweepTargetPeriod = 0;
+    var outputValue = false;
+    var sweepTargetPeriod = 0;
     var dutyCycles = [
         [0, 1, 0, 0, 0, 0, 0, 0],
         [0, 1, 1, 0, 0, 0, 0, 0],
@@ -44,9 +44,9 @@ export default function pulse() {
     //Clocks the sequencer
     this.clockSequencer = function() {
         if (this.calcSequence(this.dutyCycle, this.currentSequence) == 1) {
-            this.outputValue = true;
+            outputValue = true;
         }
-        else this.outputValue = false;
+        else outputValue = false;
         this.currentSequence++;
         if (this.currentSequence == 8)
             this.currentSequence = 0;
@@ -96,25 +96,25 @@ export default function pulse() {
             this.lenCounter--;
         }
         //Update Sweep
-        this.sweepTargetPeriod = 0;
+        sweepTargetPeriod = 0;
         //Divider has reached 0 do sweep now
         if (this.sweepCount == 0) {
             this.sweepCount = this.sweepDividerPeriod; //Relaod sweep divider count
             this.sweepReloadFlag = false; //clear reload flag
             var sweepChangeAmt = this.period >> this.sweepShiftCount;
             if (this.sweepNegate == 0) { //Add sweep
-                this.sweepTargetPeriod = this.period + sweepChangeAmt;
+                sweepTargetPeriod = this.period + sweepChangeAmt;
             }
             else if (this.sweepNegate == 1) { //Negate sweep
                 if (this.channel == 1) {
-                    this.sweepTargetPeriod = this.period + (~sweepChangeAmt); //1's complement for pulse1 channel
+                    sweepTargetPeriod = this.period + (~sweepChangeAmt); //1's complement for pulse1 channel
                 }
                 else if (this.channel == 2) {
-                    this.sweepTargetPeriod = this.period - sweepChangeAmt; //2's complement for pulse2 channel
+                    sweepTargetPeriod = this.period - sweepChangeAmt; //2's complement for pulse2 channel
                 }
             }
             if (this.sweepEnabled) { //Adjust the sweep
-                this.period = this.sweepTargetPeriod;
+                this.period = sweepTargetPeriod;
             }
         }
         else if (!this.sweepReloadFlag) {
@@ -138,7 +138,7 @@ export default function pulse() {
     };
 
     this.output = function() {
-        if ((this.outputValue) && (this.sweepTargetPeriod <= 0x7FF) && (this.period >= 0x08)) {
+        if ((outputValue) && (sweepTargetPeriod <= 0x7FF) && (this.period >= 0x08)) {
             if (!this.lenCounterDisable && this.lenCounter <= 0)
                 return 0;
             if (!this.sawEnvDisable) {
