@@ -25,12 +25,12 @@ export default function apu(nes) {
     this.noiseBuffer = [];
     this.bufferLength = 4096;
     this.outputBuffer = new RingBuffer(this.bufferLength * 10);
-    var pulse1 = new pulse();
-    var pulse2 = new pulse();
-    var triangle1 = new triangle();
-    var noise1 = new noise();
-    pulse1.channel = 1;
-    pulse2.channel = 2;
+    this.pulse1 = new pulse();
+    this.pulse2 = new pulse();
+    this.triangle1 = new triangle();
+    this.noise1 = new noise();
+    this.pulse1.channel = 1;
+    this.pulse2.channel = 2;
     var sampleCount = 0;
     var t1 = 0;
     var t3 = 0;
@@ -75,28 +75,28 @@ export default function apu(nes) {
     // 0x4015
     this.setAPUFlags = function(value) {
         if (value & 0x01 == 1) {
-            pulse1.enabled = true;
+            this.pulse1.enabled = true;
         }
         else {
-            pulse1.enabled = false;
+            this.pulse1.enabled = false;
         }
         if (value & 0x02 == 0x02) {
-            pulse2.enabled = true;
+            this.pulse2.enabled = true;
         }
         else {
-            pulse2.enabled = false;
+            this.pulse2.enabled = false;
         }
         if (value & 0x04 == 0x04) {
-            triangle1.enabled = true;
+            this.triangle1.enabled = true;
         }
         else {
-            triangle1.enabled = false;
+            this.triangle1.enabled = false;
         }
         if (value & 0x08 == 0x08) {
-            noise1.enabled = true;
+            this.noise1.enabled = true;
         }
         else {
-            noise1.enabled = false;
+            this.noise1.enabled = false;
         }
         if (value & 0x10 == 0x10) {
             this.dmcEnabled = true;
@@ -112,27 +112,27 @@ export default function apu(nes) {
         // pulse1.dividerPeriod = (value & 0x0F) + 1; //Env period
         // pulse1.dividerOriginalPeriod = pulse1.dividerPeriod;
         if ((value & 0x10) == 0x10) {
-            pulse1.sawEnvDisable = true; //use Volume for volume
+            this.pulse1.sawEnvDisable = true; //use Volume for volume
         }
         else {
-            pulse1.sawEnvDisable = false; //use internal counter for volume
+            this.pulse1.sawEnvDisable = false; //use internal counter for volume
         }
-        pulse1.volume = value & 0x0F; //Set volume 
+        this.pulse1.volume = value & 0x0F; //Set volume 
         if ((value & 0x20) == 0x20) {
-            pulse1.lenCounterDisable = true; //disable Length Counter
+            this.pulse1.lenCounterDisable = true; //disable Length Counter
         }
         else {
-            pulse1.lenCounterDisable = false; //use Length Counter
+            this.pulse1.lenCounterDisable = false; //use Length Counter
         }
-        pulse1.dutyCycle = value >> 6; //set duty cycle
+        this.pulse1.dutyCycle = value >> 6; //set duty cycle
     };
 
     //Set the low 8 bits of the period
     //0x4002
     this.setSQ1_LO = function(value) {
-        pulse1.periodLowBits = value;
-        pulse1.period = pulse1.period & 0x700;
-        pulse1.period = pulse1.period | pulse1.periodLowBits;
+        this.pulse1.periodLowBits = value;
+        this.pulse1.period = this.pulse1.period & 0x700;
+        this.pulse1.period = this.pulse1.period | this.pulse1.periodLowBits;
     };
 
     //Set the high 3 bits of the period if lengh counter is enabled, get the
@@ -140,147 +140,147 @@ export default function apu(nes) {
     //convert the period in to frequency
     //0x4003
     this.setSQ1_HI = function(value) {
-        pulse1.periodHighBits = value & 0x07;
-        pulse1.period = pulse1.period & 0xFF;
-        pulse1.period = pulse1.period | (pulse1.periodHighBits << 8);
-        if (pulse1.enabled) {
-            pulse1.lenCounter = this.lengthCounterTbl[value >> 3];
+        this.pulse1.periodHighBits = value & 0x07;
+        this.pulse1.period = this.pulse1.period & 0xFF;
+        this.pulse1.period = this.pulse1.period | (this.pulse1.periodHighBits << 8);
+        if (this.pulse1.enabled) {
+            this.pulse1.lenCounter = this.lengthCounterTbl[value >> 3];
         }
-        pulse1.dividerPeriod = pulse1.volume + 1; //Restart envelop
-        pulse1.decayLvlCount = 15;
-        // pulse1.setVol(pulse1.dividerOriginalPeriod - 1);
-        pulse1.currentSequence = 0; //restart Phase
-        pulse1.envStartFlag = true;
+        this.pulse1.dividerPeriod = this.pulse1.volume + 1; //Restart envelop
+        this.pulse1.decayLvlCount = 15;
+        // this.pulse1.setVol(this.pulse1.dividerOriginalPeriod - 1);
+        this.pulse1.currentSequence = 0; //restart Phase
+        this.pulse1.envStartFlag = true;
     };
 
     //0x4001
     this.setSQ1_SWEEP = function(value) {
         if ((value >> 7) == 1) {
-            pulse1.sweepEnabled = true;
+            this.pulse1.sweepEnabled = true;
         }
         else {
-            pulse1.sweepEnabled = false;
+            this.pulse1.sweepEnabled = false;
         }
-        pulse1.sweepDividerPeriod = ((value & 0x70) >> 4) + 1;
-        pulse1.sweepCount = pulse1.sweepDividerPeriod;
-        pulse1.sweepNegate = (value & 0x08) >> 3;
-        pulse1.sweepShiftCount = value & 0x07;
-        pulse1.sweepReloadFlag = true;
+        this.pulse1.sweepDividerPeriod = ((value & 0x70) >> 4) + 1;
+        this.pulse1.sweepCount = this.pulse1.sweepDividerPeriod;
+        this.pulse1.sweepNegate = (value & 0x08) >> 3;
+        this.pulse1.sweepShiftCount = value & 0x07;
+        this.pulse1.sweepReloadFlag = true;
     };
 
     //Square Channel 2 methods
     this.setSQ2_ENV = function(value) {
         // pulse2.dividerPeriod = (value & 0x0F) + 1; //Env period
         // pulse2.dividerOriginalPeriod = pulse2.dividerPeriod;
-        pulse2.volume = value & 0x0F; //Set volume 
+        this.pulse2.volume = value & 0x0F; //Set volume 
         if ((value & 0x10) == 0x10) {
-            pulse2.sawEnvDisable = true; //use Volume for volume
+            this.pulse2.sawEnvDisable = true; //use Volume for volume
         }
         else {
-            pulse2.sawEnvDisable = false; //use internal counter for volume
+            this.pulse2.sawEnvDisable = false; //use internal counter for volume
         }
         if ((value & 0x20) == 0x20) {
-            pulse2.lenCounterDisable = true; //disable Length Counter
+            this.pulse2.lenCounterDisable = true; //disable Length Counter
         }
         else {
-            pulse2.lenCounterDisable = false; //use Length Counter
+            this.pulse2.lenCounterDisable = false; //use Length Counter
         }
-        pulse2.dutyCycle = value >> 6; //set duty cycle
+        this.pulse2.dutyCycle = value >> 6; //set duty cycle
     };
 
     this.setSQ2_LO = function(value) {
-        pulse2.periodLowBits = value;
-        pulse2.period = pulse2.period & 0x700;
-        pulse2.period = pulse2.period | pulse2.periodLowBits;
+        this.pulse2.periodLowBits = value;
+        this.pulse2.period = this.pulse2.period & 0x700;
+        this.pulse2.period = this.pulse2.period | this.pulse2.periodLowBits;
     };
 
     this.setSQ2_HI = function(value) {
-        pulse2.periodHighBits = value & 0x07;
-        pulse2.period = pulse2.period & 0xFF;
-        pulse2.period = pulse2.period | (pulse2.periodHighBits << 8);
-        if (pulse2.enabled) {
-            pulse2.lenCounter = this.lengthCounterTbl[value >> 3];
+        this.pulse2.periodHighBits = value & 0x07;
+        this.pulse2.period = this.pulse2.period & 0xFF;
+        this.pulse2.period = this.pulse2.period | (this.pulse2.periodHighBits << 8);
+        if (this.pulse2.enabled) {
+            this.pulse2.lenCounter = this.lengthCounterTbl[value >> 3];
         }
-        pulse2.dividerPeriod = pulse2.volume + 1; //Restart envelop
-        pulse2.decayLvlCount = 15;
-        pulse1.currentSequence = 0;
-        pulse2.envStartFlag = true;
+        this.pulse2.dividerPeriod = this.pulse2.volume + 1; //Restart envelop
+        this.pulse2.decayLvlCount = 15;
+        this.pulse1.currentSequence = 0;
+        this.pulse2.envStartFlag = true;
     };
 
     this.setSQ2_SWEEP = function(value) {
         if ((value >> 7) == 1) {
-            pulse2.sweepEnabled = true;
+            this.pulse2.sweepEnabled = true;
         }
         else {
-            pulse2.sweepEnabled = false;
+            this.pulse2.sweepEnabled = false;
         }
-        pulse2.sweepDividerPeriod = ((value & 0x70) >> 4) + 1;
-        pulse2.sweepCount = pulse2.sweepDividerPeriod;
-        pulse2.sweepNegate = (value & 0x08) >> 3;
-        pulse2.sweepShiftCount = value & 0x07;
-        pulse2.sweepReloadFlag = true;
+        this.pulse2.sweepDividerPeriod = ((value & 0x70) >> 4) + 1;
+        this.pulse2.sweepCount = this.pulse2.sweepDividerPeriod;
+        this.pulse2.sweepNegate = (value & 0x08) >> 3;
+        this.pulse2.sweepShiftCount = value & 0x07;
+        this.pulse2.sweepReloadFlag = true;
     };
 
     this.setTRIControl = function(value) {
         if ((value >> 7) == 1) {
-            triangle1.controlFlag = true;
+            this.triangle1.controlFlag = true;
         }
         else {
-            triangle1.controlFlag = false;
+            this.triangle1.controlFlag = false;
         }
-        triangle1.counterReload = value & 0x7F;
+        this.triangle1.counterReload = value & 0x7F;
     };
 
     this.setTRI_LO = function(value) {
-        triangle1.periodLowBits = value & 0xFF;
-        triangle1.period = triangle1.period & 0x700;
-        triangle1.period = triangle1.period | triangle1.periodLowBits;
+        this.triangle1.periodLowBits = value & 0xFF;
+        this.triangle1.period = this.triangle1.period & 0x700;
+        this.triangle1.period = this.triangle1.period | this.triangle1.periodLowBits;
     };
 
     this.setTRI_HI = function(value) {
-        triangle1.periodHighBits = value & 0x07;
-        triangle1.period = triangle1.period & 0xFF;
-        triangle1.period = triangle1.period | (triangle1.periodHighBits << 8);
-        if (triangle1.enabled)
-            triangle1.lenCounter = this.lengthCounterTbl[value >> 3];
-        triangle1.linearCounterReloadFlag = true;
+        this.triangle1.periodHighBits = value & 0x07;
+        this.triangle1.period = this.triangle1.period & 0xFF;
+        this.triangle1.period = this.triangle1.period | (this.triangle1.periodHighBits << 8);
+        if (this.triangle1.enabled)
+            this.triangle1.lenCounter = this.lengthCounterTbl[value >> 3];
+        this.triangle1.linearCounterReloadFlag = true;
     };
 
     //0x400C
     this.setNoise_ENV = function(value) {
-        noise1.volume = value & 0x0F; //Set volume 
+        this.noise1.volume = value & 0x0F; //Set volume 
         if ((value & 0x10) == 0x10) {
-            noise1.sawEnvDisable = true; //use Volume for volume
+            this.noise1.sawEnvDisable = true; //use Volume for volume
         }
         else {
-            noise1.sawEnvDisable = false; //use internal counter for volume
+            this.noise1.sawEnvDisable = false; //use internal counter for volume
         }
         if ((value & 0x20) == 0x20) {
-            noise1.lenCounterDisable = true; //disable Length Counter
+            this.noise1.lenCounterDisable = true; //disable Length Counter
         }
         else {
-            noise1.lenCounterDisable = false; //use Length Counter
+            this.noise1.lenCounterDisable = false; //use Length Counter
         }
     };
 
     //0x400E 
     this.setNoise_Period = function(value) {
         if (value & 0x80 == 0x80) {
-            noise1.modeFlag = true;
+            this.noise1.modeFlag = true;
         }
         else {
-            noise1.modeFlag = false;
+            this.noise1.modeFlag = false;
         }
-        noise1.originalPeriod = this.noisePeriodTbl[value & 0x0F];
-        noise1.period = noise1.originalPeriod;
+        this.noise1.originalPeriod = this.noisePeriodTbl[value & 0x0F];
+        this.noise1.period = this.noise1.originalPeriod;
     };
 
     //0x400F
     this.setNoise_LenEnv = function(value) {
-        if (noise1.enabled)
-            noise1.lenCounter = this.lengthCounterTbl[value >> 3];
-        noise1.dividerPeriod = noise1.volume + 1; //Restart envelop
-        noise1.decayLvlCount = 15;
+        if (this.noise1.enabled)
+            this.noise1.lenCounter = this.lengthCounterTbl[value >> 3];
+        this.noise1.dividerPeriod = this.noise1.volume + 1; //Restart envelop
+        this.noise1.decayLvlCount = 15;
     };
 
     this.setFrameCounter = function(value) {
@@ -366,23 +366,23 @@ export default function apu(nes) {
         clockCycles++;
         // if (clockCycles % 2 == 0) {
         if ((clockCycles & 1) == 0) {
-            pulse1.clock();
-            pulse2.clock();
+            this.pulse1.clock();
+            this.pulse2.clock();
             clockCycles = 0;
         }
-        triangle1.clock();
-        noise1.clock();
+        this.triangle1.clock();
+        this.noise1.clock();
         pulseOverSamplingCycles++;
         if (pulseOverSamplingCycles >= overSamplingCycleRate) {
             pulseOverSamplingCycles -= overSamplingCycleRate;
-            pulse1Buffer.push(pulse1.output());
-            pulse2Buffer.push(pulse2.output());
+            pulse1Buffer.push(this.pulse1.output());
+            pulse2Buffer.push(this.pulse2.output());
         }
         triangleOverSamplingCycles++;
         if (triangleOverSamplingCycles >= overSamplingCycleRate) {
             triangleOverSamplingCycles -= overSamplingCycleRate;
-            this.triangleBuffer.push(triangle1.output());
-            this.noiseBuffer.push(noise1.output());
+            this.triangleBuffer.push(this.triangle1.output());
+            this.noiseBuffer.push(this.noise1.output());
         }
         samplingCycles++;
         if (samplingCycles >= sampleCycleRate) {
@@ -406,15 +406,15 @@ export default function apu(nes) {
     };
 
     this.do4StepSeq = function() {
-        pulse1.updateEnvelope();
-        pulse2.updateEnvelope();
-        triangle1.updateLinearCounter();
-        noise1.updateEnvelope();
+        this.pulse1.updateEnvelope();
+        this.pulse2.updateEnvelope();
+        this.triangle1.updateLinearCounter();
+        this.noise1.updateEnvelope();
         if (this.step % 2 === 1) {
-            pulse1.updSweepAndLengthCounter();
-            pulse2.updSweepAndLengthCounter();
-            triangle1.updateLenCounter();
-            noise1.updateLenCounter();
+            this.pulse1.updSweepAndLengthCounter();
+            this.pulse2.updSweepAndLengthCounter();
+            this.triangle1.updateLenCounter();
+            this.noise1.updateLenCounter();
         }
         this.step++;
         if (this.step === 4) {
@@ -427,20 +427,20 @@ export default function apu(nes) {
 
     this.do5StepSeq = function() {
         if (this.step % 2 === 0) {
-            pulse1.updSweepAndLengthCounter();
-            pulse2.updSweepAndLengthCounter();
-            triangle1.updateLenCounter();
-            noise1.updateLenCounter();
+            this.pulse1.updSweepAndLengthCounter();
+            this.pulse2.updSweepAndLengthCounter();
+            this.triangle1.updateLenCounter();
+            this.noise1.updateLenCounter();
         }
         this.step++;
         if (this.step === 5) {
             this.step = 0;
         }
         else {
-            pulse1.updateEnvelope();
-            pulse2.updateEnvelope();
-            noise1.updateEnvelope();
-            triangle1.updateLinearCounter();
+            this.pulse1.updateEnvelope();
+            this.pulse2.updateEnvelope();
+            this.noise1.updateEnvelope();
+            this.triangle1.updateLinearCounter();
         }
     };
 }

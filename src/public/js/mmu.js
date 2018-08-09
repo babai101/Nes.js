@@ -21,7 +21,6 @@ export default function mmu(nes) {
     };
     this.PPUCTRLwritten = false;
     this.PPUMASKwritten = false;
-    this.OAMADDRwritten = false;
     this.OAMDATAwritten = false;
     this.OAMDMAwritten = false;
     this.PPUSCROLLwritten = false;
@@ -43,6 +42,7 @@ export default function mmu(nes) {
     this.OAM = [];
     this.secOAM = [];
     this.chrRamWritten = false;
+    var ppuOpenBus = 0;
     //button states
     this.startBtnState = 0;
     this.selectBtnState = 0;
@@ -88,6 +88,9 @@ export default function mmu(nes) {
             return this.getPPUReg(0x2000 + temp);
         }
         else if (location >= 0x4000 && location <= 0x4013) {
+            return this.getAPUReg(location);
+        }
+        else if (location == 0x4015) {
             return this.getAPUReg(location);
         }
         else if (location == 0x4016) {
@@ -209,6 +212,16 @@ export default function mmu(nes) {
         if (location >= 0 && location < 0x2000) {
             return this.nes.Mapper.getCHRRom(location);
         }
+        else if (location >= 0x3F00 && location <= 0x3F1F) {
+            this.nes.PPU.PPUDATAReadBuffer = this.ppuMem[location - 0x3F00];
+            location = location - 0x3F00;
+            return this.getPPUPalette(location);
+        }
+        else if (location >= 0x3F20 && location <= 0x3FFF) {
+            this.nes.PPU.PPUDATAReadBuffer = this.ppuMem[location - 0x3F20];
+            location = location % 0x20;
+            return this.getPPUPalette(location);
+        }
         return this.ppuMem[location];
     };
 
@@ -228,7 +241,7 @@ export default function mmu(nes) {
             return;
         }
         else if (location >= 0x3F20 && location <= 0x3FFF) {
-            location = location - 0x3F1F;
+            location = location % 0x20;
             this.setPPUPalette(location, value);
             return;
         }
@@ -278,13 +291,17 @@ export default function mmu(nes) {
         this.nes.PPU.setPalette(location, value);
     };
 
+    this.getPPUPalette = function(location) {
+        return this.nes.PPU.getPalette(location);
+    };
+
     this.getPPUReg = function(location) {
         this.ppuRegReadFlag = true;
         switch (location) {
             case 0x2000:
-                return 0;
+                return ppuOpenBus;
             case 0x2001:
-                return 0;
+                return ppuOpenBus;
                 //PPUSTATUS
             case 0x2002:
                 this.PPUSTATUSread = false;
@@ -294,36 +311,51 @@ export default function mmu(nes) {
                 this.PPUSCROLLFirstWrite = true;
                 var temp = this.nes.PPU.getPPUSTATUS() & 0xF0;
                 temp = temp | (this.lsbLastWritePPU & 0x0F);
+                ppuOpenBus = ppuOpenBus & 0x1F;
+                ppuOpenBus = temp & 0xE0;
                 return temp;
             case 0x2003:
-                break;
+                return ppuOpenBus;
                 //OAMDATA
             case 0x2004:
                 var currentCycle = this.nes.PPU.getCurrentCycle();
                 var currentScanline = this.nes.PPU.getCurrentScanline();
-                if (currentScanline == 261 || (currentScanline >= 0 && currentScanline < 240)) {
-                    return;
-                }
-                //return 0xFF during secondary OAM init
-                else if (currentCycle >= 1 && currentCycle <= 64) {
-                    return 0xFF;
+                // if (currentScanline >= 240 && currentScanline < 261) {
+                //     ppuOpenBus =  this.OAM[this.nes.PPU.OAMADDR];
+                // }
+                // else if (currentCycle <= 256) {
+                //     // return this.nes.PPU.getOAMReadBuffer();
+                //     ppuOpenBus = 0x00;
+                // }
+                if (this.nes.PPU.rendering()) {
+                    if (currentScanline >= 0 && currentScanline <= 239) {
+                        if (currentCycle >= 257 && currentCycle <= 320) {
+                            ppuOpenBus = this.nes.PPU.getOAMReadBuffer();
+                        }
+                        else if (currentCycle >= 1 && currentCycle <= 64) {
+                            ppuOpenBus = 0xFF;
+                        }
+                    }
                 }
                 else {
-                    return this.OAM[this.ppuRegObj.OAMADDR];
+                    ppuOpenBus = this.OAM[this.nes.PPU.OAMADDR];
                 }
+                return ppuOpenBus;
             case 0x2005:
-                break;
+                return ppuOpenBus;
             case 0x2006:
-                break;
+                return ppuOpenBus;
                 //PPUDATA
             case 0x2007:
-                return this.nes.PPU.getPPUDATA(location);
+                ppuOpenBus = this.nes.PPU.getPPUDATA(location);
+                return ppuOpenBus;
         }
     };
 
     this.setPPUReg = function(location, value) {
         this.ppuRegWriteFlag = true;
         this.lsbLastWritePPU = value;
+        ppuOpenBus = value;
         switch (location) {
             //PPUCTRL
             case 0x2000:
@@ -332,8 +364,14 @@ export default function mmu(nes) {
                 var temp = (this.ppuRegObj.PPUCTRL >> 7) & 0x01;
                 if (temp == 0)
                     this.enableNMIGen = false;
-                else
+                else {
                     this.enableNMIGen = true;
+                    if ((this.nes.PPU.ppuStatusBits & 0x80) == 0x80) {
+                        this.nes.CPU.elapsedCycles = 0;
+                        this.nes.CPU.serveISR('NMI');
+                        this.nes.CPU.cpuClockRemaining += this.nes.CPU.elapsedCycles;
+                    }
+                }
                 this.PPUCTRLwritten = true;
                 return 0x2000;
                 //PPUMASK    
@@ -346,12 +384,18 @@ export default function mmu(nes) {
                 break;
                 //OAMADDR
             case 0x2003:
-                this.setOAMADDR(value);
-                this.OAMADDRwritten = true;
+                this.nes.PPU.OAMADDR = value;
                 return 0x2003;
                 //OAMDATA
             case 0x2004:
-                this.setOAMDATA(value);
+                var currentScanline = this.nes.PPU.getCurrentScanline();
+                if ((currentScanline == 261 || (currentScanline >= 0 && currentScanline < 240)) && this.nes.PPU.rendering()) {
+                    this.nes.PPU.OAMADDR++;
+                }
+                else {
+                    this.OAM[this.nes.PPU.OAMADDR] = value;
+                    this.nes.PPU.OAMADDR++;
+                }
                 return 0x2004;
                 //PPUSCROLL
             case 0x2005:
@@ -368,7 +412,6 @@ export default function mmu(nes) {
             case 0x4014:
                 this.ppuRegObj.OAMDMA = value;
                 this.setOAMDMA(this.ppuRegObj.OAMDMA);
-                this.OAMDMAwritten = true;
                 return 0x4014;
         }
     };
@@ -381,8 +424,17 @@ export default function mmu(nes) {
                     this.nes.APU.doIrq = false;
                     temp = temp | 0b01000000;
                 }
-                if (this.nes.APU.sq1LenCounter > 0) {
+                if (this.nes.APU.pulse1.lenCounter > 0) {
                     temp = temp | 0b00000001;
+                }
+                if (this.nes.APU.pulse2.lenCounter > 0) {
+                    temp = temp | 0b00000010;
+                }
+                if (this.nes.APU.triangle1.lenCounter > 0) {
+                    temp = temp | 0b00000100;
+                }
+                if (this.nes.APU.noise1.lenCounter > 0) {
+                    temp = temp | 0b00001000;
                 }
         }
         return temp;
@@ -459,31 +511,16 @@ export default function mmu(nes) {
     };
 
     this.setOAMDATA = function(value) {
-        var currentScanline = this.nes.PPU.getCurrentScanline();
-        // if (this.nes.PPU.currentScanline == 261 || (this.nes.PPU.currentScanline >= 0 && this.nes.PPU.currentScanline < 240)) {
 
-        // }
-        if (currentScanline == 261 || (currentScanline >= 0 && currentScanline < 240)) {
-
-        }
-        else {
-            this.OAM[this.ppuRegObj.OAMADDR] = value;
-            this.setOAMADDR(this.ppuRegObj.OAMADDR + 1);
-        }
-        this.OAMDATAwritten = true;
     };
 
     this.setOAMADDR = function(value) {
-        this.ppuRegObj.OAMADDR = value;
-        this.nes.PPU.setOAMADDR(this.ppuRegObj.OAMADDR);
     };
 
     //OAM DMA copying
     this.startOAMDMACopy = function() {
-        if ( /*this.nes.PPU.vBlankStarted*/ true) {
-            for (var i = 0; i < 256; i++) {
-                this.setOAMDATA(this.cpuMem[(this.OAMDMA * 0x100) + i]);
-            }
+        for (var i = 0; i < 256; i++) {
+            this.OAM[this.nes.PPU.OAMADDR + i] = this.cpuMem[(this.OAMDMA * 0x100) + i];
         }
     };
 

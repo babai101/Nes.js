@@ -170,7 +170,10 @@ export default function mapper(nes) {
 
     this.setCHRRom = function(location, value) {
         switch (this.currentMapperNum) {
-            //UnROM
+            case 0:
+                this.chrRomBanks[this.currentCHRBank][location] = value;
+                break;
+                //UnROM
             case 2:
                 this.chrRomBanks[this.currentCHRBank][location] = value;
                 break;
