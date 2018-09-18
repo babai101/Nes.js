@@ -43,8 +43,9 @@ export default function nes() {
     };
 
     this.renderFrame = function() {
-        this.CPU.run();
-        this.mainDisplay.updateCanvas();
+        // this.CPU.run();
+        this.CPU.newRun();
+        // this.mainDisplay.updateCanvas();
         // this.renderScreen();
         // requestAnimationFrame(this.renderFrame);
     };

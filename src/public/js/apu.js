@@ -45,6 +45,8 @@ export default function apu(nes) {
     this.sampleTimerMax = 1000.0 / 44100.0;
     this.cyclesPerFrame = 1786830;
     this.squareTable = new Array(31);
+    this.frameIRQ = false;
+    
     this.init = function() {
         if (!window.AudioContext) {
             if (!window.WebkitAudioContext) {
@@ -419,7 +421,13 @@ export default function apu(nes) {
         this.step++;
         if (this.step === 4) {
             if (!this.inhibitInterrupt) {
-                this.doIrq = true;
+                this.frameIRQ = true;
+                // if ((this.nes.CPU.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
+                // if (!(this.nes.CPU.P & 0x04)) { //IRQ is enabled
+                    this.nes.CPU.elapsedCycles = 0;
+                    this.nes.CPU.serveISR('IRQ');
+                    this.nes.CPU.cpuClockRemaining += this.nes.CPU.elapsedCycles;
+                // }
             }
             this.step = 0;
         }
