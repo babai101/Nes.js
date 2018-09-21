@@ -167,13 +167,12 @@ export default function ppu(nes) {
     //PPUCTRL vars
     this.baseNameTblAddr = 0x2000;
     this.vRamAddrInc = 1;
-    // this.spritePatTblAddr = this.CHRGrid;
-    // this.backgroundPatTblAddr = this.BGRCHRGrid;
     this.spritePatTblAddr = 0;
     this.backgroundPatTblAddr = 0;
     var spriteSize = 8;
     this.ppuMasterSlave = 'readBackdrop';
     this.nmi_output = false;
+    var nmi_output_prev = false;
 
     //PPUMASK vars
     this.renderGreyscale = false;
@@ -247,13 +246,15 @@ export default function ppu(nes) {
         temp = (PPUCTRL >> 7) & 0x01;
         if (temp == 0) {
             this.nmi_output = false;
+            nmi_output_prev = false;
         }
         else {
             this.nmi_output = true;
-            // if ((this.ppuStatusBits & 0x80) == 0x80) {
-            //     this.nes.CPU.doNMI = true;
-            //     this.nes.CPU.IRQToRun = 1;
-            // }
+            if ((this.ppuStatusBits & 0x80) == 0x80 && !nmi_output_prev) {
+                this.nes.CPU.doNMI = true;
+                this.nes.CPU.IRQToRun = 2;
+            }
+            nmi_output_prev = true;
         }
 
 
@@ -448,34 +449,28 @@ export default function ppu(nes) {
             ppuStatusReadCycle = currentCycle;
             //simultaneous read to vbl as its set, so suppress NMI
             switch (currentCycle) {
-                case 0: 
+                case 1: //0 
                     prevStatus &= 0x7F;
                     this.nes.CPU.IRQToRun = 0;
                     suppressNMI = true;
                     break;
-                case 1:
+                case 2: //2
                     this.nes.CPU.IRQToRun = 0;
                     suppressNMI = true;
                     break;
-                case 2:
+                case 3: //2:
                     this.nes.CPU.IRQToRun = 0;
                     suppressNMI = true;
                     break;
-                default: 
+                default:
                     suppressNMI = false;
             }
-            // if (currentCycle == 1) {
-            //     //simultaneous read to vbl as its set, so return status as false
-            //     if ((prevStatus & 0x80) == 0x80 && this.nes.CPU.IRQToRun == 1) {
-            //         prevStatus = prevStatus & 0x7F;
-            //         this.nes.CPU.IRQToRun = 0;
-            //     }
-            // }
         }
         else {
             ppuStatusReadCycle = -1;
-            this.w = 0;
+            // this.w = 0;
         }
+        this.w = 0;
         return prevStatus;
     };
 
@@ -562,8 +557,8 @@ export default function ppu(nes) {
     var oddFrameCycleSkipped = false;
     var sprite0Evaluated = false;
     var checkSprite0Hit = false;
-    var testClock = 0;
-    var clockTest = false;
+    // var testClock = 0;
+    // var clockTest = false;
     this.clock = function() {
         // if (clockTest)
         //     testClock++;
@@ -572,7 +567,7 @@ export default function ppu(nes) {
         //visible scanline
         if (currentScanline >= 0 && currentScanline < 240) {
             if (currentCycle == 0) {
-                testClock = 0;
+                // testClock = 0;
                 if (oddFrameCycleSkipped) {
                     this.getNameTableByte();
                     oddFrameCycleSkipped = false;
@@ -623,6 +618,11 @@ export default function ppu(nes) {
                                 if (m == 0) {
                                     oamReadBuffer = this.nes.MMU.OAM[this.OAMADDR + 4 * n];
                                     spriteInRange = (oamReadBuffer > (currentScanline - spriteSize)) && (oamReadBuffer <= currentScanline);
+                                    if (spriteInRange) {
+                                        if (n == 0) {
+                                            sprite0Evaluated = true;
+                                        }
+                                    }
                                 }
                                 else {
                                     if (spriteInRange) {
@@ -693,6 +693,11 @@ export default function ppu(nes) {
                     this.reloadShiftRegisters();
                     this.copyHScroll();
                     checkSprite0Hit = sprite0Evaluated;
+                    //sprite 0 hit for pixel 255
+                    // if (sprite0Drawn && currentCycle == sprite0HitTargetCycle) {
+                    //     this.ppuStatusBits = this.ppuStatusBits & 0b10111111;
+                    //     this.ppuStatusBits = this.ppuStatusBits | 0b01000000;
+                    // }
                 }
                 this.fetchSprites();
                 if (this.rendering())
@@ -715,6 +720,7 @@ export default function ppu(nes) {
         //post-render scanline
         // else if (currentScanline == 240) {
         //     //PPU idles
+        //     
         // }
         //VBlank Scanlines
         else if (currentScanline >= 241 && currentScanline < 261) {
@@ -722,16 +728,24 @@ export default function ppu(nes) {
                 // if (renderBackground)
                 //     clockTest = true;
                 //Set V-Blank
-                // this.ppuStatusBits = this.ppuStatusBits & 0x7F;
-                if (ppuStatusReadCycle !== 0)
+                this.ppuStatusBits = this.ppuStatusBits & 0x7F;
+                // if (ppuStatusReadCycle !== 0)
+                if (ppuStatusReadCycle !== 1)
                     this.ppuStatusBits = this.ppuStatusBits | 0x80;
                 this.nmi_occurred = true;
+                // if (this.nmi_output && !suppressNMI) {
+                //     this.nes.CPU.doNMI = true;
+                //     this.nes.CPU.IRQToRun = 1;
+                // }
+                // suppressNMI = false;
+                ppuStatusReadCycle = -1;
+            }
+            else if (currentScanline == 241 && currentCycle == 3) {
                 if (this.nmi_output && !suppressNMI) {
                     this.nes.CPU.doNMI = true;
                     this.nes.CPU.IRQToRun = 1;
                 }
                 suppressNMI = false;
-                ppuStatusReadCycle = -1;
             }
         }
         //pre-render scanline
@@ -824,7 +838,7 @@ export default function ppu(nes) {
                 oamReadBuffer = secOAM[currentSpriteOpUnit * 4 + 3];
                 spriteOpUnits[currentSpriteOpUnit][0] = oamReadBuffer;
                 // if (oamReadBuffer != 256) {
-                if (oamReadBuffer < 240) {
+                if (oamReadBuffer < 256) {
                     for (var i = oamReadBuffer; i < oamReadBuffer + 8; i++) {
                         if (i == 256)
                             break;
@@ -1114,7 +1128,6 @@ export default function ppu(nes) {
             }
             else {
                 if (sprLkpTbl[currentCycle]) {
-                    // var t = currentScanline; //Debug
                     //loop for all sprite pixels on current cycle output
                     //TODO: sprite hit logic for large sprites
                     for (var i = 7; i >= 0; i--) {
