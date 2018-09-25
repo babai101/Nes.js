@@ -41,7 +41,7 @@ export default function apu(nes) {
     var samplingCycles = 0;
     var clockCycles = 0;
     var frameCycles = 0;
-    this.samplingClock = performance.now();
+    // this.samplingClock = performance.now();
     this.sampleTimerMax = 1000.0 / 44100.0;
     this.cyclesPerFrame = 1786830;
     this.squareTable = new Array(31);
@@ -60,7 +60,7 @@ export default function apu(nes) {
         else {
             this.audioCtx = new window.AudioContext();
         }
-        t1 = performance.now();
+        // t1 = performance.now();
         this.scriptNode = this.audioCtx.createScriptProcessor(this.bufferLength, 0, 1);
         this.scriptNode.onaudioprocess = this.onaudioprocess;
         this.scriptNode.connect(this.audioCtx.destination);
@@ -424,10 +424,11 @@ export default function apu(nes) {
                 this.frameIRQ = true;
                 // if ((this.nes.CPU.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
                 // if (!(this.nes.CPU.P & 0x04)) { //IRQ is enabled
-                    this.nes.CPU.elapsedCycles = 0;
-                    this.nes.CPU.serveISR('IRQ');
-                    this.nes.CPU.cpuClockRemaining += this.nes.CPU.elapsedCycles;
+                    // this.nes.CPU.elapsedCycles = 0;
+                    // this.nes.CPU.serveISR('IRQ');
+                    // this.nes.CPU.cpuClockRemaining += this.nes.CPU.elapsedCycles;
                 // }
+                this.nes.CPU.IRQToRun = 3;
             }
             this.step = 0;
         }

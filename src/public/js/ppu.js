@@ -4,7 +4,6 @@ export default function ppu(nes) {
     //Render VARS
     var currentScanline = 261; //start from pre-render line
     var currentCycle = 0;
-    this.nameTableMirroring = '';
     this.nmi_occurred = false;
     this.CHRGrid = [];
     this.BGRCHRGrid = [];
@@ -723,8 +722,9 @@ export default function ppu(nes) {
         //     
         // }
         //VBlank Scanlines
-        else if (currentScanline >= 241 && currentScanline < 261) {
-            if (currentScanline == 241 && currentCycle == 1) {
+        // else if (currentScanline >= 241 && currentScanline < 261) {
+        else if (currentScanline == 241) {
+            if (currentCycle == 1) {
                 // if (renderBackground)
                 //     clockTest = true;
                 //Set V-Blank
@@ -740,7 +740,7 @@ export default function ppu(nes) {
                 // suppressNMI = false;
                 ppuStatusReadCycle = -1;
             }
-            else if (currentScanline == 241 && currentCycle == 3) {
+            else if (currentCycle == 3) {
                 if (this.nmi_output && !suppressNMI) {
                     this.nes.CPU.doNMI = true;
                     this.nes.CPU.IRQToRun = 1;

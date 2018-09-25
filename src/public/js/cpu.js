@@ -490,6 +490,7 @@ export default function cpu(nes) {
 		vector2 = this.memoryRead(4, 0xFFFE + 1);
 		vector2 <<= 8;
 		this.pc = vector2 | vector1;
+		this.IRQToRun = 0;
 	};
 
 	this.RTI = function() {
@@ -3240,7 +3241,6 @@ export default function cpu(nes) {
 		this.accumulator = temp & 255;
 		this.calcFlags(null, false, null);
 	};
-
 	this.RRA_Z_X = function() {
 		var currCarry = this.P & 0x01;
 		var param = this.memoryRead(0, 0);
@@ -4251,7 +4251,7 @@ export default function cpu(nes) {
 		if (this.nes.PPU.clock()) {
 			if (this.renderedScanline == 261) {
 				this.frameCompleted = true;
-				this.nes.MMU.setOAMADDR(0);
+				// this.nes.MMU.setOAMADDR(0);
 				return true;
 			}
 		}

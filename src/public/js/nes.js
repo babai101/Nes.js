@@ -30,7 +30,6 @@ export default function nes() {
         this.PPU.initSpriteOpUnits();
         this.ines.parseRom(this.opcodes);
         this.MMU.nameTableMirroring = this.ines.mirroring;
-        this.PPU.nameTableMirroring = this.ines.mirroring;
         this.CPU.reset();
         this.mainDisplay.screenReset();
         this.frameCount = 0;
