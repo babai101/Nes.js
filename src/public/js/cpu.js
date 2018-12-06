@@ -20,11 +20,10 @@ export default function cpu(nes) {
 	this.remainingCPUCycles = 0;
 	this.oddFrame = false;
 	this.oddCycle = false;
-	this.currentOpcode; // Opcode currently processed
-	this.operationType; // Current operation type
 	this.frameCount = 0;
 	this.cpuClockRemaining = 0;
 	this.elapsedCycles = 0;
+	this.skipFrame = false;
 	//Reset CPU and initialize all registers and flags
 	this.reset = function() {
 		this.sp = 0xFD; //Adjusted for comparing with Nintedulator log
@@ -42,73 +41,35 @@ export default function cpu(nes) {
 		// this.pc = 0xC000;//Nestest
 	};
 
-	this.prepareLogging = function() {
-		this.PCLog = ("0000" + this.pc.toString(16).toUpperCase()).slice(-4);
-		this.currentOpcodeLog = ("00" + this.currentOpcode.toString(16).toUpperCase()).slice(-2);
-		this.accumulatorLog = ("00" + this.accumulator.toString(16).toUpperCase()).slice(-2);
-		this.XLog = ("00" + this.X.toString(16).toUpperCase()).slice(-2);
-		this.YLog = ("00" + this.Y.toString(16).toUpperCase()).slice(-2);
-		this.SPLog = ("00" + this.sp.toString(16).toUpperCase()).slice(-2);
-		this.PLog = ("00" + this.P.toString(16).toUpperCase()).slice(-2);
-		this.CYCLog = this.totalthis.elapsedCycles;
-		this.ArgLog = '';
-		this.opcodeType = '';
-		this.memLog = '';
-	};
-	this.logInConsole = function() {
-		// var temp1 = (this.currentOpcodeLog + ' ' + this.ArgLog + '          ').slice(0, 10);
-		var temp1 = (this.currentOpcodeLog + ' ' + this.ArgLog + '          ').slice(0, 9);
-		if (this.opcodeType[0] != '*') {
-			this.opcodeType = ' ' + this.opcodeType;
-		}
-		var temp2 = this.PCLog + '  ' + temp1 + this.opcodeType;
-		var logLine = temp2 + '  ' + 'A:' + this.accumulatorLog + ' X:' + this.XLog + ' Y:' + this.YLog + ' P:' + this.PLog + ' SP:' + this.SPLog + ' CYC:' + this.CYCLog;
-		console.log(logLine);
-	};
-
 	//CPU helper functions
-	this.fetchOpcode = function() {
-		this.currentOpcode = this.nes.MMU.getCpuMemVal(this.pc); // Fetched opcode only
-	};
-	this.fetchParams = function() {
-		var param = this.nes.MMU.getCpuMemVal(this.pc);
-
-		// if (this.ArgLog.length > 0) {
-		// 	this.ArgLog = this.ArgLog.concat(' ', ("00" + param.toString(16).toUpperCase()).slice(-2));
-		// }
-		// else
-		// 	this.ArgLog = ("00" + param.toString(16).toUpperCase()).slice(-2);
-		this.pc++;
-		return param;
-	};
 	this.setFlag = function(flagToSet) {
 		switch (flagToSet) {
-			case 'carry':
+			case 0:
 				this.P = this.P & 0b11111110;
 				this.P = this.P | 0b00000001;
 				break;
 
-			case 'zero':
+			case 1:
 				this.P = this.P & 0b11111101;
 				this.P = this.P | 0b00000010;
 				break;
 
-			case 'irqDisable':
+			case 2:
 				this.P = this.P & 0b11111011;
 				this.P = this.P | 0b00000100;
 				break;
 
-			case 'decimal':
+			case 3:
 				this.P = this.P & 0b11110111;
 				this.P = this.P | 0b00001000;
 				break;
 
-			case 'overflow':
+			case 4:
 				this.P = this.P & 0b10111111;
 				this.P = this.P | 0b01000000;
 				break;
 
-			case 'negative':
+			case 5:
 				this.P = this.P & 0b01111111;
 				this.P = this.P | 0b10000000;
 				break;
@@ -116,27 +77,27 @@ export default function cpu(nes) {
 	};
 	this.unsetFlag = function(flagToUnset) {
 		switch (flagToUnset) {
-			case 'carry':
+			case 0:
 				this.P = this.P & 0b11111110;
 				break;
 
-			case 'zero':
+			case 1:
 				this.P = this.P & 0b11111101;
 				break;
 
-			case 'irqDisable':
+			case 2:
 				this.P = this.P & 0b11111011;
 				break;
 
-			case 'decimal':
+			case 3:
 				this.P = this.P & 0b11110111;
 				break;
 
-			case 'overflow':
+			case 4:
 				this.P = this.P & 0b10111111;
 				break;
 
-			case 'negative':
+			case 5:
 				this.P = this.P & 0b01111111;
 				break;
 		}
@@ -146,33 +107,33 @@ export default function cpu(nes) {
 		//check if overflow flag is to be determined
 		if (checkOverflow) {
 			if (~(this.accumulator ^ arg) & (this.accumulator ^ newValue) & 0x80)
-				this.setFlag('overflow');
+				this.setFlag(4);
 			else
-				this.unsetFlag('overflow');
+				this.unsetFlag(4);
 		}
 		else {
 			//check for zero flag
 			if (arg == null)
 				arg = this.accumulator;
 			if (arg == 0x00)
-				this.setFlag('zero');
+				this.setFlag(1);
 			else
-				this.unsetFlag('zero');
+				this.unsetFlag(1);
 			//check for negative flag	
 			if ((arg >> 7) == 1)
-				this.setFlag('negative');
+				this.setFlag(5);
 			else
-				this.unsetFlag('negative');
+				this.unsetFlag(5);
 		}
 	};
 	this.writeCarry = function(value) {
 		if (value > 0xFF) {
-			this.setFlag('carry');
+			this.setFlag(0);
 			value = value & 0xFF;
 			return value;
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 			return value;
 		}
 	};
@@ -255,22 +216,28 @@ export default function cpu(nes) {
 		//Turns out compare instructions do unsigned comparison :(
 		var temp = val1 - val2;
 		if (((temp >> 7) & 1) == 1)
-			this.setFlag('negative');
+			this.setFlag(5);
 		else
-			this.unsetFlag('negative');
+			this.unsetFlag(5);
 
 		if (val1 > val2) {
 			return 1;
 		}
 		else if (val1 == val2) {
-			this.unsetFlag('negative');
+			this.unsetFlag(5);
 			return 0;
 		}
 		else if (val1 < val2) {
 			return -1;
 		}
 	};
-
+	var printLog = function() {
+		var line = "";
+		for (var i = 0; i < log.length; i++) {
+			line += log[i] + " ";
+		}
+		console.log(line);
+	};
 	//Opcode implementaions
 
 	var vector1 = 0,
@@ -414,26 +381,6 @@ export default function cpu(nes) {
 	this.scanline_complete = false;
 	// var testClock = 0;
 
-	this.ppuClock = 0;
-	this.fakeClockPPU = function() {
-		this.ppuClock++;
-		if (this.ppuClock == 341) {
-			this.ppuClock = 0;
-			this.renderedScanline++;
-			if (this.renderedScanline == 241) {
-				this.nes.PPU.NMIOccured = true;
-				if (this.nes.MMU.enableNMIGen && this.nes.PPU.NMIOccured) {
-					this.elapsedCycles = 0;
-					this.serveISR('NMI');
-					this.cpuClockRemaining += this.elapsedCycles;
-				}
-			}
-			if (this.renderedScanline == 262) {
-				this.frameCompleted = true;
-			}
-		}
-	};
-
 	//----------------------xxxx------------------------------
 
 
@@ -498,28 +445,28 @@ export default function cpu(nes) {
 		this.memoryRead(1, 0);
 		var temp = this.memoryRead(2, 0);
 		if ((temp & 1) === 1)
-			this.setFlag('carry');
-		else this.unsetFlag('carry');
+			this.setFlag(0);
+		else this.unsetFlag(0);
 
 		if ((temp & 0b00000010) === 0b00000010)
-			this.setFlag('zero');
-		else this.unsetFlag('zero');
+			this.setFlag(1);
+		else this.unsetFlag(1);
 
 		if ((temp & 0b00000100) == 0b00000100)
-			this.setFlag('irqDisable');
-		else this.unsetFlag('irqDisable');
+			this.setFlag(2);
+		else this.unsetFlag(2);
 
 		if ((temp & 0b00001000) == 0b00001000)
-			this.setFlag('decimal');
-		else this.unsetFlag('decimal');
+			this.setFlag(3);
+		else this.unsetFlag(3);
 
 		if ((temp & 0b01000000) == 0b01000000)
-			this.setFlag('overflow');
-		else this.unsetFlag('overflow');
+			this.setFlag(4);
+		else this.unsetFlag(4);
 
 		if ((temp & 0b10000000) == 0b10000000)
-			this.setFlag('negative');
-		else this.unsetFlag('negative');
+			this.setFlag(5);
+		else this.unsetFlag(5);
 
 		var lowByte = this.memoryRead(2, 0);
 		var highByte = this.memoryRead(2, 0);
@@ -566,28 +513,28 @@ export default function cpu(nes) {
 		this.memoryWrite(1, 0, 0);
 		var temp = this.memoryRead(2);
 		if ((temp & 0b00000001) === 1)
-			this.setFlag('carry');
-		else this.unsetFlag('carry');
+			this.setFlag(0);
+		else this.unsetFlag(0);
 
 		if ((temp & 0b00000010) == 0b00000010)
-			this.setFlag('zero');
-		else this.unsetFlag('zero');
+			this.setFlag(1);
+		else this.unsetFlag(1);
 
 		if ((temp & 0b00000100) == 0b00000100)
-			this.setFlag('irqDisable');
-		else this.unsetFlag('irqDisable');
+			this.setFlag(2);
+		else this.unsetFlag(2);
 
 		if ((temp & 0b00001000) == 0b00001000)
-			this.setFlag('decimal');
-		else this.unsetFlag('decimal');
+			this.setFlag(3);
+		else this.unsetFlag(3);
 
 		if ((temp & 0b01000000) == 0b01000000)
-			this.setFlag('overflow');
-		else this.unsetFlag('overflow');
+			this.setFlag(4);
+		else this.unsetFlag(4);
 
 		if ((temp & 0b10000000) == 0b10000000)
-			this.setFlag('negative');
-		else this.unsetFlag('negative');
+			this.setFlag(5);
+		else this.unsetFlag(5);
 	};
 
 	this.TAX = function() {
@@ -632,31 +579,31 @@ export default function cpu(nes) {
 	};
 
 	this.CLC = function() {
-		this.unsetFlag('carry');
+		this.unsetFlag(0);
 		this.memoryRead(4, this.pc);
 	};
 	this.SEC = function() {
-		this.setFlag('carry');
+		this.setFlag(0);
 		this.memoryRead(4, this.pc);
 	};
 	this.CLI = function() {
-		this.unsetFlag('irqDisable');
+		this.unsetFlag(2);
 		this.memoryRead(4, this.pc);
 	};
 	this.SEI = function() {
-		this.setFlag('irqDisable');
+		this.setFlag(2);
 		this.memoryRead(4, this.pc);
 	};
 	this.CLV = function() {
-		this.unsetFlag('overflow');
+		this.unsetFlag(4);
 		this.memoryRead(4, this.pc);
 	};
 	this.CLD = function() {
-		this.unsetFlag('decimal');
+		this.unsetFlag(3);
 		this.memoryRead(4, this.pc);
 	};
 	this.SED = function() {
-		this.setFlag('decimal');
+		this.setFlag(3);
 		this.memoryRead(4, this.pc);
 	};
 
@@ -783,14 +730,19 @@ export default function cpu(nes) {
 	};
 	this.LDA_Z = function() {
 		var param = this.memoryRead(0, 0);
-		this.accumulator = this.memoryRead(4, param);
+		// this.accumulator = this.memoryRead(4, param);
+		this.clockUnits();
+		this.accumulator = this.nes.MMU.cpuMem[param];
 		this.calcFlags(null, false, null);
 	};
 	this.LDA_Z_X = function() {
 		var param = this.memoryRead(0, 0);
-		this.accumulator = this.memoryRead(4, param);
+		this.clockUnits();
+		this.accumulator = this.nes.MMU.cpuMem[param];
+		// this.accumulator = this.memoryRead(4, param);
 		this.accumulator += this.X;
-		this.accumulator = this.memoryRead(4, this.wrap8bit('sum', param, this.X));
+		this.clockUnits();
+		this.accumulator = this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.X)]; //this.memoryRead(4, this.wrap8bit('sum', param, this.X));
 		this.calcFlags(null, false, null);
 	};
 	this.LDA_A = function() {
@@ -865,13 +817,16 @@ export default function cpu(nes) {
 	};
 	this.LDX_Z = function() {
 		var param = this.memoryRead(0, 0);
-		this.X = this.memoryRead(4, param);
+		this.clockUnits();
+		this.X = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		this.calcFlags(this.X, false, null);
 	};
 	this.LDX_Z_Y = function() {
 		var param = this.memoryRead(0, 0);
-		this.X = this.memoryRead(4, param) + this.Y;
-		this.X = this.memoryRead(4, this.wrap8bit('sum', param, this.Y));
+		this.clockUnits();
+		this.X = this.nes.MMU.cpuMem[param] + this.Y; //this.memoryRead(4, param) + this.Y;
+		this.clockUnits();
+		this.X = this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.Y)]; // this.memoryRead(4, this.wrap8bit('sum', param, this.Y));
 		this.calcFlags(this.X, false, null);
 	};
 	this.LDX_A = function() {
@@ -901,13 +856,17 @@ export default function cpu(nes) {
 	};
 	this.LDY_Z = function() {
 		var param = this.memoryRead(0, 0);
-		this.Y = this.memoryRead(4, param);
+		this.clockUnits();
+		// this.Y = this.memoryRead(4, param);
+		this.Y = this.nes.MMU.cpuMem[param];
 		this.calcFlags(this.Y, false, null);
 	};
 	this.LDY_Z_X = function() {
 		var param = this.memoryRead(0, 0);
-		this.Y = this.memoryRead(4, param) + this.X;
-		this.Y = this.memoryRead(4, this.wrap8bit('sum', param, this.X));
+		this.clockUnits();
+		this.Y = this.nes.MMU.cpuMem[param] + this.X; //this.memoryRead(4, param) + this.X;
+		this.clockUnits();
+		this.Y = this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.X)]; //this.memoryRead(4, this.wrap8bit('sum', param, this.X));
 		this.calcFlags(this.Y, false, null);
 	};
 	this.LDY_A = function() {
@@ -933,12 +892,17 @@ export default function cpu(nes) {
 
 	this.STA_Z = function() {
 		var param = this.memoryRead(0, 0);
-		this.memoryWrite(3, param, this.accumulator);
+		this.clockUnits();
+		// this.memoryWrite(3, param, this.accumulator);
+		this.nes.MMU.cpuMem[param] = this.accumulator;
 	};
 	this.STA_Z_X = function() {
 		var param = this.memoryRead(0, 0);
-		this.memoryRead(4, param) + this.X;
-		this.memoryWrite(3, this.wrap8bit('sum', param, this.X), this.accumulator);
+		this.clockUnits();
+		// this.memoryRead(4, param) + this.X;
+		this.clockUnits();
+		this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.X)] = this.accumulator;
+		// this.memoryWrite(3, this.wrap8bit('sum', param, this.X), this.accumulator);
 	};
 	this.STA_A = function() {
 		var param1 = this.memoryRead(0, 0);
@@ -997,12 +961,17 @@ export default function cpu(nes) {
 
 	this.STX_Z = function() {
 		var param = this.memoryRead(0, 0);
-		this.memoryWrite(3, param, this.X);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = this.X;
+		// this.memoryWrite(3, param, this.X);
 	};
 	this.STX_Z_Y = function() {
 		var param = this.memoryRead(0, 0);
-		this.memoryRead(4, param) + this.Y;
-		this.memoryWrite(3, this.wrap8bit('sum', param, this.Y), this.X);
+		this.clockUnits();
+		// this.memoryRead(4, param) + this.Y;
+		this.clockUnits();
+		// this.memoryWrite(3, this.wrap8bit('sum', param, this.Y), this.X);
+		this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.Y)] = this.X;
 	};
 	this.STX_A = function() {
 		var param1 = this.memoryRead(0, 0);
@@ -1014,12 +983,17 @@ export default function cpu(nes) {
 
 	this.STY_Z = function() {
 		var param = this.memoryRead(0, 0);
-		this.memoryWrite(3, param, this.Y);
+		this.clockUnits();
+		// this.memoryWrite(3, param, this.Y);
+		this.nes.MMU.cpuMem[param] = this.Y;
 	};
 	this.STY_Z_X = function() {
 		var param = this.memoryRead(0, 0);
-		this.memoryRead(4, param) + this.X;
-		this.memoryWrite(3, this.wrap8bit('sum', param, this.X), this.Y);
+		this.clockUnits();
+		// this.memoryRead(4, param) + this.X;
+		// this.memoryWrite(3, this.wrap8bit('sum', param, this.X), this.Y);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.X)] = this.Y;
 	};
 	this.STY_A = function() {
 		var param1 = this.memoryRead(0, 0);
@@ -1035,15 +1009,18 @@ export default function cpu(nes) {
 	};
 	this.AND_Z = function() {
 		var param = this.memoryRead(0, 0);
-		this.accumulator &= this.memoryRead(4, param);
+		this.clockUnits();
+		this.accumulator &= this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		this.calcFlags(null, false, null);
 	};
 	this.AND_Z_X = function() {
 		var param = this.memoryRead(0, 0);
 		var temp = this.accumulator;
-		this.accumulator = this.memoryRead(4, param);
+		this.clockUnits();
+		this.accumulator = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		this.accumulator += this.X;
-		this.accumulator = temp & this.memoryRead(4, this.wrap8bit('sum', param, this.X));
+		this.clockUnits();
+		this.accumulator = temp & this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.X)]; //this.memoryRead(4, this.wrap8bit('sum', param, this.X));
 		this.calcFlags(null, false, null);
 	};
 	this.AND_A = function() {
@@ -1110,15 +1087,18 @@ export default function cpu(nes) {
 	};
 	this.EOR_Z = function() {
 		var param = this.memoryRead(0, 0);
-		this.accumulator ^= this.memoryRead(4, param);
+		this.clockUnits();
+		this.accumulator ^= this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		this.calcFlags(null, false, null);
 	};
 	this.EOR_Z_X = function() {
 		var param = this.memoryRead(0, 0);
 		var temp = this.accumulator;
-		this.accumulator = this.memoryRead(4, param);
+		this.clockUnits();
+		this.accumulator = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		this.accumulator += this.X;
-		this.accumulator = temp ^ this.memoryRead(4, this.wrap8bit('sum', param, this.X));
+		this.clockUnits();
+		this.accumulator = temp ^ this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.X)]; //this.memoryRead(4, this.wrap8bit('sum', param, this.X));
 		this.calcFlags(null, false, null);
 	};
 	this.EOR_A = function() {
@@ -1185,15 +1165,18 @@ export default function cpu(nes) {
 	};
 	this.ORA_Z = function() {
 		var param = this.memoryRead(0, 0);
-		this.accumulator |= this.memoryRead(4, param);
+		this.clockUnits();
+		this.accumulator |= this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		this.calcFlags(null, false, null);
 	};
 	this.ORA_Z_X = function() {
 		var param = this.memoryRead(0, 0);
 		var temp = this.accumulator;
-		this.accumulator = this.memoryRead(4, param);
+		this.clockUnits();
+		this.accumulator = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		this.accumulator += this.X;
-		this.accumulator = temp | this.memoryRead(4, this.wrap8bit('sum', param, this.X));
+		this.clockUnits();
+		this.accumulator = temp | this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.X)]; //this.memoryRead(4, this.wrap8bit('sum', param, this.X));
 		this.calcFlags(null, false, null);
 	};
 	this.ORA_A = function() {
@@ -1261,38 +1244,39 @@ export default function cpu(nes) {
 		if (((this.accumulator ^ arg) & 0x80) === 0 &&
 			((this.accumulator ^ temp) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp > 255 ? 1 : 0) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 255;
 		this.calcFlags(null, false, null);
 	};
 	this.ADC_Z = function() {
 		var param = this.memoryRead(0, 0);
-		var arg = this.memoryRead(4, param);
+		this.clockUnits();
+		var arg = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		var temp = this.accumulator + arg + (this.P & 0x01);
 		if (
 			((this.accumulator ^ arg) & 0x80) === 0 &&
 			((this.accumulator ^ temp) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp > 255 ? 1 : 0) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 255;
 		this.calcFlags(null, false, null);
@@ -1300,14 +1284,16 @@ export default function cpu(nes) {
 	this.ADC_Z_X = function() {
 		var param = this.memoryRead(0, 0);
 		var tempAcc = this.accumulator;
-		this.accumulator = this.memoryRead(4, param);
+		this.clockUnits();
+		this.accumulator = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		this.accumulator += this.X;
-		var arg = this.memoryRead(4, this.wrap8bit('sum', param, this.X));
+		this.clockUnits();
+		var arg = this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.X)]; //this.memoryRead(4, this.wrap8bit('sum', param, this.X));
 		var temp = this.to2sComplement(tempAcc) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (temp < -128 || temp > 127) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
-		else this.unsetFlag('overflow');
+		else this.unsetFlag(4);
 		this.accumulator = this.writeCarry(tempAcc + arg + (this.P & 0x01));
 		this.calcFlags(null, false, null);
 	};
@@ -1319,9 +1305,9 @@ export default function cpu(nes) {
 		var arg = this.memoryRead(4, param);
 		var temp = this.to2sComplement(this.accumulator) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (temp < -128 || temp > 127) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
-		else this.unsetFlag('overflow');
+		else this.unsetFlag(4);
 		this.accumulator = this.writeCarry(this.accumulator + arg + (this.P & 0x01));
 		this.calcFlags(null, false, null);
 	};
@@ -1337,9 +1323,9 @@ export default function cpu(nes) {
 		}
 		var tempResult = this.to2sComplement(this.accumulator) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (tempResult < -128 || tempResult > 127) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
-		else this.unsetFlag('overflow');
+		else this.unsetFlag(4);
 		this.accumulator = this.writeCarry(this.accumulator + arg + (this.P & 0x01));
 		this.calcFlags(null, false, null);
 	};
@@ -1355,9 +1341,9 @@ export default function cpu(nes) {
 		}
 		var tempResult = this.to2sComplement(this.accumulator) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (tempResult < -128 || tempResult > 127) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
-		else this.unsetFlag('overflow');
+		else this.unsetFlag(4);
 		this.accumulator = this.writeCarry(this.accumulator + arg + (this.P & 0x01));
 		this.calcFlags(null, false, null);
 	};
@@ -1371,9 +1357,9 @@ export default function cpu(nes) {
 		var arg = this.memoryRead(4, index2 | index1);
 		var temp = this.to2sComplement(tempAcc) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (temp < -128 || temp > 127) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
-		else this.unsetFlag('overflow');
+		else this.unsetFlag(4);
 		this.accumulator = this.writeCarry(tempAcc + arg + (this.P & 0x01));
 		this.calcFlags(null, false, null);
 	};
@@ -1389,9 +1375,9 @@ export default function cpu(nes) {
 		}
 		var tempResult = this.to2sComplement(this.accumulator) + this.to2sComplement(arg) + (this.P & 0x01);
 		if (tempResult < -128 || tempResult > 127) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
-		else this.unsetFlag('overflow');
+		else this.unsetFlag(4);
 		this.accumulator = this.writeCarry(this.accumulator + arg + (this.P & 0x01));
 		this.calcFlags(null, false, null);
 	};
@@ -1403,38 +1389,39 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
 	};
 	this.SBC_Z = function() {
 		var param = this.memoryRead(0, 0);
-		var arg = this.memoryRead(4, param);
+		this.clockUnits();
+		var arg = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		var temp = this.accumulator - arg - (1 - (this.P & 0x01));
 		if (
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -1442,24 +1429,26 @@ export default function cpu(nes) {
 	this.SBC_Z_X = function() {
 		var param = this.memoryRead(0, 0);
 		var tempAcc = this.accumulator;
-		this.accumulator = this.memoryRead(4, param);
+		this.clockUnits();
+		this.accumulator = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		this.accumulator += this.X;
-		var arg = this.memoryRead(4, this.wrap8bit('sum', param, this.X));
+		this.clockUnits();
+		var arg = this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.X)]; //this.memoryRead(4, this.wrap8bit('sum', param, this.X));
 		var temp = tempAcc - arg - (1 - (this.P & 0x01));
 		if (
 			((tempAcc ^ temp) & 0x80) !== 0 &&
 			((tempAcc ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -1475,16 +1464,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -1504,16 +1493,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -1533,16 +1522,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -1560,16 +1549,16 @@ export default function cpu(nes) {
 			((tempAcc ^ temp) & 0x80) !== 0 &&
 			((tempAcc ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -1589,16 +1578,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -1608,49 +1597,52 @@ export default function cpu(nes) {
 		var param = this.memoryRead(0, 0);
 		var result = this.compareValsAndSetNegative(this.accumulator, param);
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result === 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.CMP_Z = function() {
 		var param = this.memoryRead(0, 0);
-		var result = this.compareValsAndSetNegative(this.accumulator, this.memoryRead(4, param));
+		this.clockUnits();
+		var result = this.compareValsAndSetNegative(this.accumulator, this.nes.MMU.cpuMem[param]); //this.memoryRead(4, param));
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.CMP_Z_X = function() {
 		var param = this.memoryRead(0, 0);
-		this.memoryRead(4, param);
-		var result = this.compareValsAndSetNegative(this.accumulator, this.memoryRead(4, this.wrap8bit('sum', param, this.X)));
+		this.clockUnits();
+		// this.memoryRead(4, param);
+		this.clockUnits();
+		var result = this.compareValsAndSetNegative(this.accumulator, this.nes.MMU.cpuMem[this.wrap8bit('sum', param, this.X)]); //this.memoryRead(4, this.wrap8bit('sum', param, this.X)));
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.CMP_A = function() {
@@ -1660,16 +1652,16 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		var result = this.compareValsAndSetNegative(this.accumulator, this.memoryRead(4, param));
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.CMP_A_X = function() {
@@ -1683,16 +1675,16 @@ export default function cpu(nes) {
 			result = this.compareValsAndSetNegative(this.accumulator, this.memoryRead(4, param + this.X));
 		}
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.CMP_A_Y = function() {
@@ -1706,16 +1698,16 @@ export default function cpu(nes) {
 			var result = this.compareValsAndSetNegative(this.accumulator, this.memoryRead(4, param + this.Y));
 		}
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.CMP_I_X = function() {
@@ -1727,16 +1719,16 @@ export default function cpu(nes) {
 		index2 = index2 << 8;
 		var result = this.compareValsAndSetNegative(tempAcc, this.memoryRead(4, index2 | index1));
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.CMP_I_Y = function() {
@@ -1750,16 +1742,16 @@ export default function cpu(nes) {
 			result = this.compareValsAndSetNegative(this.accumulator, this.memoryRead(4, (index2 | index1) + this.Y));
 		}
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 
@@ -1767,32 +1759,33 @@ export default function cpu(nes) {
 		var param = this.memoryRead(0, 0);
 		var result = this.compareValsAndSetNegative(this.X, param);
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.CPX_Z = function() {
 		var param = this.memoryRead(0, 0);
-		var result = this.compareValsAndSetNegative(this.X, this.memoryRead(4, param));
+		this.clockUnits();
+		var result = this.compareValsAndSetNegative(this.X, this.nes.MMU.cpuMem[param]); //this.memoryRead(4, param));
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.CPX_A = function() {
@@ -1802,16 +1795,16 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		var result = this.compareValsAndSetNegative(this.X, this.memoryRead(4, param));
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 
@@ -1819,32 +1812,33 @@ export default function cpu(nes) {
 		var param = this.memoryRead(0, 0);
 		var result = this.compareValsAndSetNegative(this.Y, param);
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.CPY_Z = function() {
 		var param = this.memoryRead(0, 0);
-		var result = this.compareValsAndSetNegative(this.Y, this.memoryRead(4, param));
+		this.clockUnits();
+		var result = this.compareValsAndSetNegative(this.Y, this.nes.MMU.cpuMem[param]); //this.memoryRead(4, param));
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.CPY_A = function() {
@@ -1854,40 +1848,41 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		var result = this.compareValsAndSetNegative(this.Y, this.memoryRead(4, param));
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 
 	this.BIT_Z = function() {
 		var param = this.memoryRead(0, 0);
-		var temp = this.memoryRead(4, param);
+		this.clockUnits();
+		var temp = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
 		var result = this.accumulator & temp;
 		if (result == 0) {
-			this.setFlag('zero');
+			this.setFlag(1);
 		}
 		else
-			this.unsetFlag('zero');
+			this.unsetFlag(1);
 
 		if ((0b10000000 & temp) == 128) {
-			this.setFlag('negative');
+			this.setFlag(5);
 		}
 		else {
-			this.unsetFlag('negative');
+			this.unsetFlag(5);
 		}
 		if ((0b01000000 & temp) == 64) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 	};
 	this.BIT_A = function() {
@@ -1898,22 +1893,22 @@ export default function cpu(nes) {
 		var temp = this.memoryRead(4, param);
 		var result = this.accumulator & temp;
 		if (result == 0) {
-			this.setFlag('zero');
+			this.setFlag(1);
 		}
 		else
-			this.unsetFlag('zero');
+			this.unsetFlag(1);
 
 		if ((0b10000000 & temp) == 128) {
-			this.setFlag('negative');
+			this.setFlag(5);
 		}
 		else {
-			this.unsetFlag('negative');
+			this.unsetFlag(5);
 		}
 		if ((0b01000000 & temp) == 64) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 	};
 
@@ -1923,9 +1918,9 @@ export default function cpu(nes) {
 
 	this.ASL_AC = function() {
 		if ((this.accumulator >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.accumulator <<= 1;
 		this.accumulator &= 0xFF;
 		this.calcFlags(null, false, null);
@@ -1933,30 +1928,39 @@ export default function cpu(nes) {
 	};
 	this.ASL_Z = function() {
 		var param = this.memoryRead(0, 0);
-		var val = this.memoryRead(4, param);
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val; //this.memoryWrite(3, param, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val; //this.memoryWrite(3, param, val);
 		this.calcFlags(val, false, null);
 	};
 	this.ASL_Z_X = function() {
 		var param = this.memoryRead(0, 0);
-		this.memoryRead(4, param);
+		this.clockUnits();
+		// this.memoryRead(4, param);
 		var tempAddr = this.wrap8bit('sum', param, this.X);
-		var val = this.memoryRead(4, tempAddr);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[tempAddr]; //this.memoryRead(4, tempAddr);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
-		this.memoryWrite(3, tempAddr, val);
+			this.unsetFlag(0);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val;
+		// this.memoryWrite(3, tempAddr, val);
 		val <<= 1;
 		val &= 0xFF;
-		this.memoryWrite(3, tempAddr, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val;
+		// this.memoryWrite(3, tempAddr, val);
 		this.calcFlags(val, false, null);
 	};
 	this.ASL_A = function() {
@@ -1966,9 +1970,9 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		var val = this.memoryRead(4, param);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.memoryWrite(3, param, val);
 		val <<= 1;
 		val &= 0xFF;
@@ -1984,9 +1988,9 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		var val = this.memoryRead(4, param + this.X);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.memoryWrite(3, param + this.X, val);
 		val <<= 1;
 		val &= 0xFF;
@@ -1996,39 +2000,48 @@ export default function cpu(nes) {
 
 	this.LSR_AC = function() {
 		if ((this.accumulator & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.accumulator >>= 1;
 		this.calcFlags(null, false, null);
 		this.memoryRead(4, this.pc);
 	};
 	this.LSR_Z = function() {
 		var param = this.memoryRead(0, 0);
-		var val = this.memoryRead(4, param);
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val; //this.memoryWrite(3, param, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		val &= 0xFF;
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val;
+		//this.memoryWrite(3, param, val);
 		this.calcFlags(val, false, null);
 	};
 	this.LSR_Z_X = function() {
 		var param = this.memoryRead(0, 0);
-		this.memoryRead(4, param);
+		this.clockUnits();
+		// this.memoryRead(4, param);
 		var tempAddr = this.wrap8bit('sum', param, this.X);
-		var val = this.memoryRead(4, tempAddr);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[tempAddr]; //this.memoryRead(4, tempAddr);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
-		this.memoryWrite(3, tempAddr, val);
+			this.unsetFlag(0);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val; //this.memoryWrite(3, tempAddr, val);
 		val >>= 1;
 		val &= 0xFF;
-		this.memoryWrite(3, tempAddr, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val;
+		// this.memoryWrite(3, tempAddr, val);
 		this.calcFlags(val, false, null);
 	};
 	this.LSR_A = function() {
@@ -2038,9 +2051,9 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		var val = this.memoryRead(4, param);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.memoryWrite(3, param, val);
 		val >>= 1;
 		val &= 0xFF;
@@ -2056,9 +2069,9 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		var val = this.memoryRead(4, param + this.X);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.memoryWrite(3, param + this.X, val);
 		val >>= 1;
 		val &= 0xFF;
@@ -2069,9 +2082,9 @@ export default function cpu(nes) {
 	this.ROL_AC = function() {
 		var currCarry = this.P & 0x01;
 		if ((this.accumulator >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.accumulator <<= 1;
 		this.accumulator &= 0xFF;
 		if (currCarry == 1) {
@@ -2082,38 +2095,45 @@ export default function cpu(nes) {
 	};
 	this.ROL_Z = function() {
 		var param = this.memoryRead(0, 0);
-		var val = this.memoryRead(4, param);
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[param]; // this.memoryRead(4, param);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val; //this.memoryWrite(3, param, val);
 		var currCarry = this.P & 0x01;
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		if (currCarry == 1) {
 			val |= 0b00000001;
 		}
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val; //this.memoryWrite(3, param, val);
 		this.calcFlags(val, false, null);
 	};
 	this.ROL_Z_X = function() {
 		var currCarry = this.P & 0x01;
 		var param = this.memoryRead(0, 0);
-		this.memoryRead(4, param);
+		this.clockUnits();
+		// this.memoryRead(4, param);
 		var tempAddr = this.wrap8bit('sum', param, this.X);
-		var val = this.memoryRead(4, tempAddr);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[tempAddr]; //this.memoryRead(4, tempAddr);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
-		this.memoryWrite(3, tempAddr, val);
+			this.unsetFlag(0);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val; // this.memoryWrite(3, tempAddr, val);
 		val <<= 1;
 		val &= 0xFF;
 		if (currCarry == 1) {
 			val |= 0b00000001;
 		}
-		this.memoryWrite(3, tempAddr, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val; //this.memoryWrite(3, tempAddr, val);
 		this.calcFlags(val, false, null);
 	};
 	this.ROL_A = function() {
@@ -2124,9 +2144,9 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		var val = this.memoryRead(4, param);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.memoryWrite(3, param, val);
 		val <<= 1;
 		val &= 0xFF;
@@ -2146,9 +2166,9 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		var val = this.memoryRead(4, param + this.X);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.memoryWrite(3, param + this.X, val);
 		val <<= 1;
 		val &= 0xFF;
@@ -2162,9 +2182,9 @@ export default function cpu(nes) {
 	this.ROR_AC = function() {
 		var currCarry = this.P & 0x01;
 		if ((this.accumulator & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.accumulator >>= 1;
 		if (currCarry == 1) {
 			this.accumulator |= 0b10000000;
@@ -2175,35 +2195,42 @@ export default function cpu(nes) {
 	this.ROR_Z = function() {
 		var currCarry = this.P & 0x01;
 		var param = this.memoryRead(0, 0);
-		var val = this.memoryRead(4, param);
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val; //this.memoryWrite(3, param, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		if (currCarry == 1) {
 			val |= 0b10000000;
 		}
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val; //this.memoryWrite(3, param, val);
 		this.calcFlags(val, false, null);
 	};
 	this.ROR_Z_X = function() {
 		var currCarry = this.P & 0x01;
 		var param = this.memoryRead(0, 0);
-		this.memoryRead(4, param);
+		this.clockUnits();
+		// this.memoryRead(4, param);
 		var tempAddr = this.wrap8bit('sum', param, this.X);
-		var val = this.memoryRead(4, tempAddr);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[tempAddr]; //this.memoryRead(4, tempAddr);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
-		this.memoryWrite(3, tempAddr, val);
+			this.unsetFlag(0);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val; //this.memoryWrite(3, tempAddr, val);
 		val >>= 1;
 		if (currCarry == 1) {
 			val |= 0b10000000;
 		}
-		this.memoryWrite(3, tempAddr, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val; //this.memoryWrite(3, tempAddr, val);
 		this.calcFlags(val, false, null);
 	};
 	this.ROR_A = function() {
@@ -2214,9 +2241,9 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		var val = this.memoryRead(4, param);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.memoryWrite(3, param, val);
 		val >>= 1;
 		if (currCarry == 1) {
@@ -2235,9 +2262,9 @@ export default function cpu(nes) {
 		var param = param2 | param1;
 		var val = this.memoryRead(4, param + this.X);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		this.memoryWrite(3, param + this.X, val);
 		val >>= 1;
 		if (currCarry == 1) {
@@ -2249,20 +2276,27 @@ export default function cpu(nes) {
 
 	this.INC_Z = function() {
 		var param = this.memoryRead(0, 0);
-		var val = this.memoryRead(4, param);
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val; //this.memoryWrite(3, param, val);
 		val = this.wrap8bit('increment', val, null);
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val; //this.memoryWrite(3, param, val);
 		this.calcFlags(val, false, null);
 	};
 	this.INC_Z_X = function() {
 		var param = this.memoryRead(0, 0);
-		this.memoryRead(4, param);
+		this.clockUnits();
+		// this.memoryRead(4, param);
 		var tempAddr = this.wrap8bit('sum', param, this.X);
-		var val = this.memoryRead(4, tempAddr);
-		this.memoryWrite(3, tempAddr, val);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[tempAddr]; //this.memoryRead(4, tempAddr);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val; //this.memoryWrite(3, tempAddr, val);
 		val = this.wrap8bit('increment', val, null);
-		this.memoryWrite(3, tempAddr, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val; //this.memoryWrite(3, tempAddr, val);
 		this.calcFlags(val, false, null);
 	};
 	this.INC_A = function() {
@@ -2292,20 +2326,27 @@ export default function cpu(nes) {
 
 	this.DEC_Z = function() {
 		var param = this.memoryRead(0, 0);
-		var val = this.memoryRead(4, param);
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[param]; //this.memoryRead(4, param);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val; //this.memoryWrite(3, param, val);
 		val = this.wrap8bit('decrement', val, null);
-		this.memoryWrite(3, param, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[param] = val; //this.memoryWrite(3, param, val);
 		this.calcFlags(val, false, null);
 	};
 	this.DEC_Z_X = function() {
 		var param = this.memoryRead(0, 0);
-		this.memoryRead(4, param);
+		this.clockUnits();
+		// this.memoryRead(4, param);
 		var tempAddr = this.wrap8bit('sum', param, this.X);
-		var val = this.memoryRead(4, tempAddr);
-		this.memoryWrite(3, tempAddr, val);
+		this.clockUnits();
+		var val = this.nes.MMU.cpuMem[tempAddr]; //this.memoryRead(4, tempAddr);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val; //this.memoryWrite(3, tempAddr, val);
 		val = this.wrap8bit('decrement', val, null);
-		this.memoryWrite(3, tempAddr, val);
+		this.clockUnits();
+		this.nes.MMU.cpuMem[tempAddr] = val; //this.memoryWrite(3, tempAddr, val);
 		this.calcFlags(val, false, null);
 	};
 	this.DEC_A = function() {
@@ -2448,16 +2489,16 @@ export default function cpu(nes) {
 		this.memoryWrite(3, param, val);
 		var result = this.compareValsAndSetNegative(this.accumulator, val);
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.DCP_Z_X = function() {
@@ -2470,16 +2511,16 @@ export default function cpu(nes) {
 		this.memoryWrite(3, tempAddr, val);
 		var result = this.compareValsAndSetNegative(this.accumulator, val);
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.DCP_A = function() {
@@ -2493,16 +2534,16 @@ export default function cpu(nes) {
 		this.memoryWrite(3, param, val);
 		var result = this.compareValsAndSetNegative(this.accumulator, val);
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.DCP_A_X = function() {
@@ -2518,16 +2559,16 @@ export default function cpu(nes) {
 		this.memoryWrite(3, param + this.X, val);
 		var result = this.compareValsAndSetNegative(this.accumulator, val);
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.DCP_A_Y = function() {
@@ -2543,16 +2584,16 @@ export default function cpu(nes) {
 		this.memoryWrite(3, param + this.Y, val);
 		var result = this.compareValsAndSetNegative(this.accumulator, val);
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.DCP_I_X = function() {
@@ -2568,16 +2609,16 @@ export default function cpu(nes) {
 		this.memoryWrite(3, param, val);
 		var result = this.compareValsAndSetNegative(this.accumulator, val);
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 	this.DCP_I_Y = function() {
@@ -2593,16 +2634,16 @@ export default function cpu(nes) {
 		this.memoryWrite(3, param + this.Y, val);
 		var result = this.compareValsAndSetNegative(this.accumulator, val);
 		if (result > 0) {
-			this.setFlag('carry');
-			this.unsetFlag('zero');
+			this.setFlag(0);
+			this.unsetFlag(1);
 		}
 		if (result == 0) {
-			this.setFlag('carry');
-			this.setFlag('zero');
+			this.setFlag(0);
+			this.setFlag(1);
 		}
 		if (result < 0) {
-			this.unsetFlag('carry');
-			this.unsetFlag('zero');
+			this.unsetFlag(0);
+			this.unsetFlag(1);
 		}
 	};
 
@@ -2618,16 +2659,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -2646,16 +2687,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -2675,16 +2716,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -2706,16 +2747,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -2737,16 +2778,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -2768,16 +2809,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -2799,16 +2840,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ temp) & 0x80) !== 0 &&
 			((this.accumulator ^ arg) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp < 0 ? 0 : 1) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 0xff;
 		this.calcFlags(null, false, null);
@@ -2819,9 +2860,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		this.memoryWrite(3, param, val);
@@ -2835,9 +2876,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, tempAddr);
 		this.memoryWrite(3, tempAddr, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		this.memoryWrite(3, tempAddr, val);
@@ -2852,9 +2893,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		this.memoryWrite(3, param, val);
@@ -2871,9 +2912,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param + this.X);
 		this.memoryWrite(3, param + this.X, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		this.memoryWrite(3, param + this.X, val);
@@ -2890,9 +2931,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param + this.Y);
 		this.memoryWrite(3, param + this.Y, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		this.memoryWrite(3, param + this.Y, val);
@@ -2909,9 +2950,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		this.memoryWrite(3, param, val);
@@ -2928,9 +2969,9 @@ export default function cpu(nes) {
 		val = this.memoryRead(4, param + this.Y);
 		this.memoryWrite(3, param + this.Y, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		this.memoryWrite(3, param + this.Y, val);
@@ -2943,9 +2984,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		this.memoryWrite(3, param, val);
 		this.accumulator ^= val;
@@ -2958,9 +2999,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, tempAddr);
 		this.memoryWrite(3, tempAddr, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		this.memoryWrite(3, tempAddr, val);
 		this.accumulator ^= val;
@@ -2974,9 +3015,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		this.memoryWrite(3, param, val);
 		this.accumulator ^= val;
@@ -2992,9 +3033,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param + this.X);
 		this.memoryWrite(3, param + this.X, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		this.memoryWrite(3, param + this.X, val);
 		this.accumulator ^= val;
@@ -3010,9 +3051,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param + this.Y);
 		this.memoryWrite(3, param + this.Y, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		this.memoryWrite(3, param + this.Y, val);
 		this.accumulator ^= val;
@@ -3028,9 +3069,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		this.memoryWrite(3, param, val);
 		this.accumulator ^= val;
@@ -3046,9 +3087,9 @@ export default function cpu(nes) {
 		val = this.memoryRead(4, param + this.Y);
 		this.memoryWrite(3, param + this.Y, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		this.memoryWrite(3, param + this.Y, val);
 		this.accumulator ^= val;
@@ -3061,9 +3102,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		if (currCarry == 1) {
@@ -3081,9 +3122,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, tempAddr);
 		this.memoryWrite(3, tempAddr, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		if (currCarry == 1) {
@@ -3102,9 +3143,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		if (currCarry == 1) {
@@ -3125,9 +3166,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param + this.X);
 		this.memoryWrite(3, param + this.X, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		if (currCarry == 1) {
@@ -3148,9 +3189,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param + this.Y);
 		this.memoryWrite(3, param + this.Y, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		if (currCarry == 1) {
@@ -3171,9 +3212,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		if (currCarry == 1) {
@@ -3194,9 +3235,9 @@ export default function cpu(nes) {
 		val = this.memoryRead(4, param + this.Y);
 		this.memoryWrite(3, param + this.Y, val);
 		if ((val >> 7) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val <<= 1;
 		val &= 0xFF;
 		if (currCarry == 1) {
@@ -3213,9 +3254,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		if (currCarry == 1) {
 			val |= 0b10000000;
@@ -3227,16 +3268,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ arg) & 0x80) === 0 &&
 			((this.accumulator ^ temp) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp > 255 ? 1 : 0) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 255;
 		this.calcFlags(null, false, null);
@@ -3249,9 +3290,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, tempAddr);
 		this.memoryWrite(3, tempAddr, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		if (currCarry == 1) {
 			val |= 0b10000000;
@@ -3263,16 +3304,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ arg) & 0x80) === 0 &&
 			((this.accumulator ^ temp) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp > 255 ? 1 : 0) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 255;
 		this.calcFlags(null, false, null);
@@ -3286,9 +3327,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		if (currCarry == 1) {
 			val |= 0b10000000;
@@ -3300,16 +3341,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ arg) & 0x80) === 0 &&
 			((this.accumulator ^ temp) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp > 255 ? 1 : 0) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 255;
 		this.calcFlags(null, false, null);
@@ -3325,9 +3366,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param + this.X);
 		this.memoryWrite(3, param + this.X, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		if (currCarry == 1) {
 			val |= 0b10000000;
@@ -3339,16 +3380,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ arg) & 0x80) === 0 &&
 			((this.accumulator ^ temp) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp > 255 ? 1 : 0) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 255;
 		this.calcFlags(null, false, null);
@@ -3364,9 +3405,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param + this.Y);
 		this.memoryWrite(3, param + this.Y, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		if (currCarry == 1) {
 			val |= 0b10000000;
@@ -3378,16 +3419,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ arg) & 0x80) === 0 &&
 			((this.accumulator ^ temp) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp > 255 ? 1 : 0) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 255;
 		this.calcFlags(null, false, null);
@@ -3403,9 +3444,9 @@ export default function cpu(nes) {
 		var val = this.memoryRead(4, param);
 		this.memoryWrite(3, param, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		if (currCarry == 1) {
 			val |= 0b10000000;
@@ -3417,16 +3458,16 @@ export default function cpu(nes) {
 			((this.accumulator ^ arg) & 0x80) === 0 &&
 			((this.accumulator ^ temp) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp > 255 ? 1 : 0) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 255;
 		this.calcFlags(null, false, null);
@@ -3442,9 +3483,9 @@ export default function cpu(nes) {
 		val = this.memoryRead(4, param + this.Y);
 		this.memoryWrite(3, param + this.Y, val);
 		if ((val & 0x01) == 1)
-			this.setFlag('carry');
+			this.setFlag(0);
 		else
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		val >>= 1;
 		if (currCarry == 1) {
 			val |= 0b10000000;
@@ -3456,24 +3497,24 @@ export default function cpu(nes) {
 			((this.accumulator ^ arg) & 0x80) === 0 &&
 			((this.accumulator ^ temp) & 0x80) !== 0
 		) {
-			this.setFlag('overflow');
+			this.setFlag(4);
 		}
 		else {
-			this.unsetFlag('overflow');
+			this.unsetFlag(4);
 		}
 		if (temp > 255 ? 1 : 0) {
-			this.setFlag('carry');
+			this.setFlag(0);
 		}
 		else {
-			this.unsetFlag('carry');
+			this.unsetFlag(0);
 		}
 		this.accumulator = temp & 255;
 		this.calcFlags(null, false, null);
 	};
 
-	
+
 	var log = [];
-	
+
 	this.executeInstruction = function(opCode) {
 		switch (opCode) {
 			//LDA Instuctions
@@ -4247,9 +4288,8 @@ export default function cpu(nes) {
 	};
 
 	this.clockPPU = function() {
-		// this.scanline_complete = this.nes.PPU.clock();
 		if (this.nes.PPU.clock()) {
-			if (this.renderedScanline == 261) {
+			if (this.renderedScanline == 260) {
 				this.frameCompleted = true;
 				// this.nes.MMU.setOAMADDR(0);
 				return true;
@@ -4258,18 +4298,31 @@ export default function cpu(nes) {
 		return false;
 	};
 
-	var testClock = 0;
-	var testFrameCounter = 0;
+	this.ppuClock = 0;
+	this.fakeClockPPU = function() {
+		this.ppuClock++;
+		if (this.ppuClock == 341) {
+			this.ppuClock = 0;
+			this.renderedScanline++;
+			if (this.renderedScanLine == 262)
+				this.renderedScanLine = 0;
+			if (this.renderedScanline == 241) {
+				if (this.nes.PPU.nmi_output) {
+					this.IRQToRun = 1;
+				}
+			}
+			if (this.renderedScanline == 260) {
+				this.frameCompleted = true;
+			}
+			return true;
+		}
+		return false;
+	};
+
 	this.clockUnits = function() {
-		if (this.frameCompleted)
-			this.cyclesToHalt++;
 		// this.clockAPU();
 		for (var i = 0; i < 3; i++) {
-			// testClock++;
-			if (this.clockPPU()) {
-				this.nes.mainDisplay.updateCanvas();
-			}
-
+			this.clockPPU();
 		}
 		this.oddCycle = !this.oddCycle;
 	};
@@ -4331,21 +4384,7 @@ export default function cpu(nes) {
 				break;
 		}
 	};
-	
-	var printLog = function() {
-		var line = "";
-		for (var i = 0; i < log.length; i++) {
-			// if (log.length < 9) {
-			// 	if (i == 2) {
-			// 		for (var j = 0; j < (9 - log.length); j++) {
-			// 			line += " ";
-			// 		}
-			// 	}
-			// }
-			line += log[i] + " ";
-		}
-		console.log(line);
-	};
+
 	this.pushStatusToLog = function() {
 		log.push("A:" + ("00" + this.accumulator.toString(16).toUpperCase()).slice(-2));
 		log.push("X:" + ("00" + this.X.toString(16).toUpperCase()).slice(-2));
@@ -4364,25 +4403,13 @@ export default function cpu(nes) {
 	};
 
 	this.cyclesToHalt = 0;
-	this.newRun = function() {
+	this.frame = function() {
 		this.frameCompleted = false;
 		this.renderedScanline = 0;
 		while (!this.frameCompleted) {
-			if (!this.cyclesToHalt) {
-				this.execCPU();
-			}
-			else {
-				this.cyclesToHalt--;
-			}
+			this.execCPU();
 		}
-		// testFrameCounter++;
-		// if (testFrameCounter == 60) {
-		// 	alert("avg clocks passed in a frame: " + testClock / 60);
-		// 	testClock = 0;
-		// 	testFrameCounter = 0;
-		// }
-
 		this.oddFrame = !this.oddFrame;
+		this.skipFrame = !this.skipFrame;
 	};
-
 }

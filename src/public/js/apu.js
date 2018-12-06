@@ -31,9 +31,9 @@ export default function apu(nes) {
     this.noise1 = new noise();
     this.pulse1.channel = 1;
     this.pulse2.channel = 2;
-    var sampleCount = 0;
-    var t1 = 0;
-    var t3 = 0;
+    // var sampleCount = 0;
+    // var t1 = 0;
+    // var t3 = 0;
     var pulseOverSamplingCycles = 0;
     var triangleOverSamplingCycles = 0;
     var overSamplingCycleRate = 20;
@@ -41,37 +41,43 @@ export default function apu(nes) {
     var samplingCycles = 0;
     var clockCycles = 0;
     var frameCycles = 0;
-    // this.samplingClock = performance.now();
+    this.sampleCount = 0;
     this.sampleTimerMax = 1000.0 / 44100.0;
     this.cyclesPerFrame = 1786830;
-    this.squareTable = new Array(31);
+    var squareTable = new Array(31);
+    var triangleTable = new Array(203);
     this.frameIRQ = false;
-    
+
+    var initMixesLkpTables = function() {
+        squareTable[0] = 0;
+        for (var i = 1; i < 31; i++) {
+            squareTable[i] = 95.52 / ((8128 / i) + 100);
+        }
+        triangleTable[0] = 0;
+        for (var i = 1; i < 203; i++) {
+            triangleTable[i] = 163.67 / ((24329.0 / i) + 100);
+        }
+    };
+
     this.init = function() {
-        if (!window.AudioContext) {
-            if (!window.WebkitAudioContext) {
-                console.log("Could not initialize audio!");
-                return;
-            }
-            else {
-                this.audioCtx = new window.WebkitAudioContext();
-            }
-        }
-        else {
-            this.audioCtx = new window.AudioContext();
-        }
-        // t1 = performance.now();
+        var AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.audioCtx = new AudioContext();
+        // if (!window.AudioContext) {
+        //     if (!window.WebkitAudioContext) {
+        //         console.log("Could not initialize audio!");
+        //         return;
+        //     }
+        //     else {
+        //         this.audioCtx = new window.WebkitAudioContext();
+        //     }
+        // }
+        // else {
+        //     this.audioCtx = new window.AudioContext();
+        // }
         this.scriptNode = this.audioCtx.createScriptProcessor(this.bufferLength, 0, 1);
         this.scriptNode.onaudioprocess = this.onaudioprocess;
         this.scriptNode.connect(this.audioCtx.destination);
-        this.initSqrTable();
-    };
-
-    this.initSqrTable = function() {
-        this.squareTable[0] = 0;
-        for (var i = 1; i < 31; i++) {
-            this.squareTable[i] = 95.88 / ((8128 / i) + 100);
-        }
+        initMixesLkpTables();
     };
 
     // 0x4015
@@ -296,18 +302,13 @@ export default function apu(nes) {
     };
 
     this.onaudioprocess = (e) => {
-        //Thansk Ben Firshman!!!
+        // //Thansk Ben Firshman!!!
         // var channelData = e.outputBuffer.getChannelData(0);
         // var size = channelData.length;
         // if (this.outputBuffer.size() < size) {
-        //     // console.log(
-        //         // "Buffer underrun, running another frame to try and catch up"
-        //     // );
-        //     this.nes.CPU.run();
-
+        //     this.nes.CPU.frame();
         //     if (this.outputBuffer.size() < size) {
-        //         // console.log("Still buffer underrun, running a second frame");
-        //         this.nes.CPU.run();
+        //         this.nes.CPU.frame();
         //     }
         // }
         // try {
@@ -318,9 +319,9 @@ export default function apu(nes) {
         //     // underrun
         //     // ignore empty buffers... assume audio has just stopped
         //     var bufferSize = this.outputBuffer.size();
-        //     if (bufferSize > 0) {
-        //         // console.log(`Buffer underrun (needed ${size}, got ${bufferSize})`);
-        //     }
+        //     // if (bufferSize > 0) {
+        //     //     // console.log(`Buffer underrun (needed ${size}, got ${bufferSize})`);
+        //     // }
         //     for (var j = 0; j < bufferSize; j++) {
         //         channelData[j] = 0;
         //     }
@@ -349,24 +350,25 @@ export default function apu(nes) {
         this.triangleBuffer = [];
         this.noiseBuffer = [];
         var pulseOutput = 0;
-        if (triangleOutput != 0 || noiseOutput != 0)
-            triangleOutput = 159.79 / (1 / ((triangleOutput / 8227) + (noiseOutput / 12241)) + 100);
-        if (pulse1Output != 0 || pulse2Output != 0)
+        if (triangleOutput != 0 || noiseOutput != 0) {
+            // triangleOutput = 159.79 / (1 / ((triangleOutput / 8227) + (noiseOutput / 12241)) + 100);
+            // triangleOutput = triangleTable[3 * triangleOutput + 2 * noiseOutput + 0];
+            triangleOutput = 0.00851 * triangleOutput + 0.00494 * noiseOutput;
+        }
+        if (pulse1Output != 0 || pulse2Output != 0) {
             pulseOutput = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
+            // pulseOutput = squareTable[pulse1Output + pulse2Output];
+        }
         // output = this.squareTable[pulse1Output + pulse2Output];
         this.pushToBuffer(pulseOutput + triangleOutput);
-        // this.pushToBuffer(triangleOutput);
     };
 
     this.pushToBuffer = function(data) {
-        // if (this.outputBuffer.size() >= this.bufferLength)
-        //     return;
         this.outputBuffer.enq(data);
     };
 
     this.run = function() {
         clockCycles++;
-        // if (clockCycles % 2 == 0) {
         if ((clockCycles & 1) == 0) {
             this.pulse1.clock();
             this.pulse2.clock();
@@ -390,6 +392,7 @@ export default function apu(nes) {
         if (samplingCycles >= sampleCycleRate) {
             samplingCycles -= sampleCycleRate;
             this.sample();
+            this.sampleCount++;
             if (sampleCycleRate == 40)
                 sampleCycleRate = 41;
             else if (sampleCycleRate == 41)
@@ -422,13 +425,11 @@ export default function apu(nes) {
         if (this.step === 4) {
             if (!this.inhibitInterrupt) {
                 this.frameIRQ = true;
-                // if ((this.nes.CPU.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
-                // if (!(this.nes.CPU.P & 0x04)) { //IRQ is enabled
-                    // this.nes.CPU.elapsedCycles = 0;
-                    // this.nes.CPU.serveISR('IRQ');
-                    // this.nes.CPU.cpuClockRemaining += this.nes.CPU.elapsedCycles;
-                // }
-                this.nes.CPU.IRQToRun = 3;
+                if ((this.nes.CPU.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
+                    if (!(this.nes.CPU.P & 0x04)) { //IRQ is enabled
+                        this.nes.CPU.IRQToRun = 3;
+                    }
+                }
             }
             this.step = 0;
         }

@@ -2,13 +2,13 @@
 export default function mapper(nes) {
     this.nes = nes;
     this.chrGrids = [];
-    this.prgRomBanks = [];
-    this.chrRomBanks = [];
-    this.PRGRam = [];
+    var prgRomBanks = [];
+    var chrRomBanks = [];
+    this.PRGRam = new Uint8Array(8192);
     this.currentPRGBank = 0;
     this.currentCHRBank = 0;
     this.chrRam = false;
-    this.chrWindowSize = 8192;
+    // this.chrWindowSize = 8192;
     var MMC1WriteCount = 0,
         MMC1LoadReg = 0x0C,
         MMC1ControlReg = 0,
@@ -17,7 +17,10 @@ export default function mapper(nes) {
         MMC1PRGWindow = 1,
         MMC1PRGFixedBank = 0xC000,
         MMC1CHRWindow = 8,
-        MMC1PRGRAMEnabled = false;
+        MMC1PRGRAMEnabled = false,
+        tempMMC14KBBank0 = 0,
+        tempMMC14KBBank1 = 0;
+        
 
     this.loadRom = function(romBytes) {
         this.currentMapperNum = this.nes.ines.mapperNum;
@@ -52,46 +55,44 @@ export default function mapper(nes) {
     };
 
     this.initCHRRam = function() {
-        var temp = [];
+        var temp = new Uint8Array(8192);
         for (var i = 0; i < 8192; i++) {
-            temp.push(0);
+            temp[i] = 0;
         }
-        this.chrRomBanks.push(temp);
+        chrRomBanks.push(temp);
     };
 
     this.initPRGRam = function() {
         for (var i = 0; i < 8192; i++) {
-            this.PRGRam.push(0);
+            this.PRGRam[i] = 0;
         }
     };
 
     this.loadPRGBanks = function(romBytes) {
         var prgBank;
-        this.prgRomBanks = [];
+        prgRomBanks = [];
         for (var i = 0; i < this.nes.ines.prgRomUnits; i++) {
-            prgBank = [];
+            prgBank = new Uint8Array(16384);
             for (var j = 0; j < 16384; j++) {
                 prgBank[j] = romBytes[i * 16384 + 16 + j];
             }
-            this.prgRomBanks[i] = prgBank;
+            prgRomBanks[i] = prgBank;
         }
         //if prg rom is only 16k, copy to next bank also
         if (this.nes.ines.prgRomUnits == 1) {
-            this.prgRomBanks[1] = prgBank;
+            prgRomBanks[1] = prgBank;
         }
     };
 
     this.loadCHRBanks = function(romBytes) {
         var chrBank;
-        this.chrRomBanks = [];
-        // if (this.currentMapperNum == 1) 
-        //     this.chrWindowSize = 4096;
+        chrRomBanks = [];
         for (var i = 0; i < this.nes.ines.chrRomUnits; i++) {
-            chrBank = [];
-            for (var j = 0; j < this.chrWindowSize; j++) {
-                chrBank[j] = romBytes[i * this.chrWindowSize + 16 + j + this.nes.ines.prgRomUnits * 16384];
+            chrBank = new Uint8Array(8192);
+            for (var j = 0; j < 8192; j++) {
+                chrBank[j] = romBytes[i * 8192 + 16 + j + this.nes.ines.prgRomUnits * 16384];
             }
-            this.chrRomBanks[i] = chrBank;
+            chrRomBanks[i] = chrBank;
         }
         //TODO refactor CHR ram loading
         if (this.nes.ines.chrRomUnits == 0) {
@@ -105,56 +106,56 @@ export default function mapper(nes) {
     this.getPRGRom = function(location) {
         switch (this.currentMapperNum) {
             case 0: //NROM
-                if (location >= 0x8000 && location < 0xC000) {
-                    return this.prgRomBanks[0][location - 0x8000];
+                if (location < 0xC000) {
+                    return prgRomBanks[0][location - 0x8000];
                 }
-                else if (location >= 0xC000 && location <= 0xFFFF) {
-                    return this.prgRomBanks[1][location - 0xC000];
+                else { //if (location >= 0xC000 && location <= 0xFFFF) {
+                    return prgRomBanks[1][location - 0xC000];
                 }
-                break;
+                // break;
             case 1: //MMC1
                 if (MMC1PRGWindow == 2) {
-                    if (location >= 0x8000 && location < 0xC000) {
-                        return this.prgRomBanks[this.currentPRGBank][location - 0x8000];
+                    if (location < 0xC000) {
+                        return prgRomBanks[this.currentPRGBank][location - 0x8000];
                     }
-                    else if (location >= 0xC000 && location <= 0xFFFF) {
-                        return this.prgRomBanks[this.currentPRGBank + 1][location - 0xC000];
+                    else { //if (location >= 0xC000 && location <= 0xFFFF) {
+                        return prgRomBanks[this.currentPRGBank + 1][location - 0xC000];
                     }
                 }
                 else {
-                    if (location >= 0x8000 && location < 0xC000) {
+                    if (location < 0xC000) {
                         if (MMC1PRGFixedBank == 0x8000) {
-                            return this.prgRomBanks[0][location - 0x8000];
+                            return prgRomBanks[0][location - 0x8000];
                         }
                         else {
-                            return this.prgRomBanks[this.currentPRGBank][location - 0x8000];
+                            return prgRomBanks[this.currentPRGBank][location - 0x8000];
                         }
                     }
-                    else if (location >= 0xC000 && location <= 0xFFFF) {
+                    else { //if (location >= 0xC000 && location <= 0xFFFF) {
                         if (MMC1PRGFixedBank == 0xC000) {
-                            return this.prgRomBanks[this.prgRomBanks.length - 1][location - 0xC000];
+                            return prgRomBanks[prgRomBanks.length - 1][location - 0xC000];
                         }
                         else {
-                            return this.prgRomBanks[this.currentPRGBank][location - 0xC000];
+                            return prgRomBanks[this.currentPRGBank][location - 0xC000];
                         }
                     }
                 }
             case 2: //UnROM
-                if (location >= 0x8000 && location < 0xC000) {
-                    return this.prgRomBanks[this.currentPRGBank][location - 0x8000];
+                if (location < 0xC000) {
+                    return prgRomBanks[this.currentPRGBank][location - 0x8000];
                 }
-                else if (location >= 0xC000 && location <= 0xFFFF) {
-                    return this.prgRomBanks[this.prgRomBanks.length - 1][location - 0xC000];
+                else { //if (location >= 0xC000 && location <= 0xFFFF) {
+                    return prgRomBanks[prgRomBanks.length - 1][location - 0xC000];
                 }
-                break;
+                // break;
             case 3: //CNROM
-                if (location >= 0x8000 && location < 0xC000) {
-                    return this.prgRomBanks[0][location - 0x8000];
+                if (location < 0xC000) {
+                    return prgRomBanks[0][location - 0x8000];
                 }
-                else if (location >= 0xC000 && location <= 0xFFFF) {
-                    return this.prgRomBanks[1][location - 0xC000];
+                else { //if (location >= 0xC000 && location <= 0xFFFF) {
+                    return prgRomBanks[1][location - 0xC000];
                 }
-                break;
+                // break;
         }
     };
 
@@ -163,31 +164,26 @@ export default function mapper(nes) {
         switch (this.currentMapperNum) {
             case 1: //MMC1
                 if (this.chrRam) {
-                    return this.chrRomBanks[this.currentCHRBank][location];
+                    return chrRomBanks[this.currentCHRBank][location];
                 }
                 if (MMC1CHRWindow == 8) {
-                    return this.chrRomBanks[this.currentCHRBank][location];
+                    return chrRomBanks[this.currentCHRBank][location];
                 }
                 else if (MMC1CHRWindow == 4) {
-                    var temp = 0;
-                    if (location >= 0 && location < 0x1000) {
-                        temp = MMC14KBBank0 / 2;
-                        if (MMC14KBBank0 % 2 == 0) {
-                            return this.chrRomBanks[temp][location];
+                    if (location < 0x1000) {
+                        if ((MMC14KBBank0 & 1) == 0) {
+                            return chrRomBanks[tempMMC14KBBank0][location];
                         }
                         else {
-                            temp = Math.floor(temp);
-                            return this.chrRomBanks[temp][location + 0x1000];
+                            return chrRomBanks[tempMMC14KBBank0][location + 0x1000];
                         }
                     }
-                    else if (location >= 0x1000 && location < 0x2000) {
-                        temp = MMC14KBBank1 / 2;
-                        if (MMC14KBBank1 % 2 == 0) {
-                            return this.chrRomBanks[temp][location - 0x1000];
+                    else {
+                        if ((MMC14KBBank1 & 1) == 0) {
+                            return chrRomBanks[tempMMC14KBBank1][location - 0x1000];
                         }
                         else {
-                            temp = Math.floor(temp);
-                            return this.chrRomBanks[temp][location];
+                            return chrRomBanks[tempMMC14KBBank1][location];
                         }
                     }
                 }
@@ -195,7 +191,7 @@ export default function mapper(nes) {
             case 0: //NROM
             case 2: //UnROM
             case 3: //CNROM
-                return this.chrRomBanks[this.currentCHRBank][location];
+                return chrRomBanks[this.currentCHRBank][location];
         }
     };
 
@@ -211,7 +207,7 @@ export default function mapper(nes) {
             case 1: //MMC1
             case 2: //UnROM
             case 3: //CNROM
-                this.chrRomBanks[this.currentCHRBank][location] = value;
+                chrRomBanks[this.currentCHRBank][location] = value;
                 break;
         }
     };
@@ -241,11 +237,13 @@ export default function mapper(nes) {
                         }
                         else {
                             MMC14KBBank0 = MMC1LoadReg & 0x1F;
+                            tempMMC14KBBank0 = Math.floor(MMC14KBBank0 / 2);
                         }
                     }
                     else if (location >= 0xC000 && location <= 0xDFFF) {
                         if (MMC1CHRWindow == 4) {
                             MMC14KBBank1 = MMC1LoadReg & 0x1F;
+                            tempMMC14KBBank1 = Math.floor(MMC14KBBank1 / 2);
                         }
                     }
                     else if (location >= 0xE000 && location <= 0xFFFF) {
@@ -282,12 +280,6 @@ export default function mapper(nes) {
 
     //set the bank selected by rom
     this.setCHRBank = function(bank) {
-        // switch (bank) {
-        //     case 0: //MMC1
-        //         break;
-        //     default:
-        //         this.currentCHRBank = bank;
-        // }
         this.currentCHRBank = bank;
     };
 
@@ -301,16 +293,16 @@ export default function mapper(nes) {
         var temp = value & 0x03;
         switch (temp) { //TODO: 1 screen mirrorring
             case 0:
-                this.nes.MMU.nameTableMirroring = '1Screen0';
+                this.nes.MMU.nameTableMirroring = 2;
                 break;
             case 1:
-                this.nes.MMU.nameTableMirroring = '1Screen0';
+                this.nes.MMU.nameTableMirroring = 2;
                 break;
             case 2:
-                this.nes.MMU.nameTableMirroring = 'vertical';
+                this.nes.MMU.nameTableMirroring = 0;
                 break;
             case 3:
-                this.nes.MMU.nameTableMirroring = 'horizontal';
+                this.nes.MMU.nameTableMirroring = 1;
                 break;
         }
         temp = (value & 0x0C) >> 2;

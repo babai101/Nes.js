@@ -42,10 +42,10 @@ export default function iNES(nes) {
         // ||||+---- 1: Ignore mirroring control or above mirroring bit; instead provide four-screen VRAM
         // ++++----- Lower nybble of mapper number
         if ((this.flag6 & 0x01) == 1) {
-            this.mirroring = 'vertical';
+            this.mirroring = 0;
         }
         else
-            this.mirroring = 'horizontal';
+            this.mirroring = 1;
 
         if (((this.flag6 >> 1) & 0x01) == 1) {
             this.batBackedPrg = true;

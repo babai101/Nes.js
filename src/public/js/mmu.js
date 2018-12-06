@@ -4,9 +4,8 @@ export default function mmu(nes) {
     this.nes = nes;
     this.cpuMem = new Uint8Array(65536);
     this.ppuMem = new Uint8Array(16384);
-    this.nameTableMirroring = '';
+    this.nameTableMirroring = 0;
     this.startAddress = 0xFFFC;
-    this.ppuRegReadFlag = false;
     this.ppuRegWriteFlag = false;
     this.ppuRegObj = {
         PPUCTRL: 0x00,
@@ -29,7 +28,7 @@ export default function mmu(nes) {
     this.BGRCHRGrid = [];
     this.spriteGrid = [];
     this.spriteTiles = [];
-    this.OAM = [];
+    this.OAM = new Uint8Array(64 * 4); //[];
     this.secOAM = [];
     this.chrRamWritten = false;
     var ppuOpenBus = 0;
@@ -45,10 +44,10 @@ export default function mmu(nes) {
 
     this.OAMInit = function() {
         for (var i = 0; i < 64; i++) {
-            this.OAM.push(0xFF);
-            this.OAM.push(0x00);
-            this.OAM.push(0x00);
-            this.OAM.push(0xFF);
+            this.OAM[i] = 0xFF;
+            this.OAM[i + 1] = 0x00;
+            this.OAM[i + 2] = 0x00;
+            this.OAM[i + 3] = 0xFF;
         }
     };
 
@@ -64,6 +63,9 @@ export default function mmu(nes) {
         if (location >= 0 && location < 0x800) {
             return this.cpuMem[location];
         }
+        else if (location >= 0x8000 && location <= 0xFFFF) {
+            return this.nes.Mapper.getPRGRom(location);
+        }
         //RAM mirrors
         if (location >= 0x800 && location <= 0x1FFF) {
             temp = location % 0x800;
@@ -76,12 +78,6 @@ export default function mmu(nes) {
             temp = location - 0x2000;
             temp = temp % 8;
             return this.getPPUReg(0x2000 + temp);
-        }
-        else if (location >= 0x4000 && location <= 0x4013) {
-            return this.getAPUReg(location);
-        }
-        else if (location == 0x4015) {
-            return this.getAPUReg(location);
         }
         else if (location == 0x4016) {
             var btnStates = 0;
@@ -138,11 +134,14 @@ export default function mmu(nes) {
         else if (location == 0x4017) {
             return 0;
         }
+        else if (location >= 0x4000 && location <= 0x4013) {
+            return this.getAPUReg(location);
+        }
+        else if (location == 0x4015) {
+            return this.getAPUReg(location);
+        }
         else if (location >= 0x6000 && location <= 0x7FFF) {
             return this.nes.Mapper.getPRGRAM(location);
-        }
-        else if (location >= 0x8000 && location <= 0xFFFF) {
-            return this.nes.Mapper.getPRGRom(location);
         }
         else {
             // alert('incorrect location to get from!');
@@ -166,6 +165,10 @@ export default function mmu(nes) {
             var temp2 = this.cpuMem[temp];
             this.cpuMem[temp] = value;
             return temp2;
+        }
+        else if (location >= 0x8000 && location <= 0xFFFF) {
+            this.nes.Mapper.setBank(value, location);
+            return 0;
         }
         else if ((location >= 0x2000 && location <= 0x2007) || (location == 0x4014)) {
             return this.setPPUReg(location, value);
@@ -197,13 +200,7 @@ export default function mmu(nes) {
             this.nes.Mapper.setPRGRAM(location, value);
         }
         else {
-            if (location >= 0x8000 && location <= 0xFFFF) {
-                this.nes.Mapper.setBank(value, location);
-                return 0;
-            }
-            else {
-                this.cpuMem[location] = value;
-            }
+            this.cpuMem[location] = value;
             // alert("incorrect location to put data in!");
         }
     };
@@ -236,6 +233,56 @@ export default function mmu(nes) {
             this.chrRamWritten = true;
             return;
         }
+        else if (this.nameTableMirroring == 0) { //Vertical mirroring 
+            if (location < 0x2400) {
+                this.ppuMem[location] = value;
+                this.ppuMem[location + 0x800] = value;
+            }
+            else if (location < 0x2800) {
+                this.ppuMem[location] = value;
+                this.ppuMem[location + 0x800] = value;
+            }
+            else if (location < 0x2C00) {
+                this.ppuMem[location] = value;
+                this.ppuMem[location - 0x800] = value;
+            }
+            else if (location < 0x3000) {
+                this.ppuMem[location] = value;
+                this.ppuMem[location - 0x800] = value;
+            }
+        }
+        else if (this.nameTableMirroring == 1) { //horizontal mirroring
+            if (location < 0x2400) {
+                this.ppuMem[location] = value;
+                this.ppuMem[location + 0x400] = value;
+            }
+            else if (location < 0x2C00) {
+                this.ppuMem[location] = value;
+                this.ppuMem[location + 0x400] = value;
+            }
+            else if (location < 0x2800) {
+                this.ppuMem[location] = value;
+                this.ppuMem[location - 0x400] = value;
+            }
+            else if (location < 0x3000) {
+                this.ppuMem[location] = value;
+                this.ppuMem[location - 0x400] = value;
+            }
+        }
+        else if (this.nameTableMirroring == 2) {
+            location = location % 0x2000;
+            this.ppuMem[location + 0x2000] = value;
+            this.ppuMem[location + 0x2400] = value;
+            this.ppuMem[location + 0x2800] = value;
+            this.ppuMem[location + 0x2C00] = value;
+        }
+        else if (this.nameTableMirroring == 3) {
+            location = location % 0x2000;
+            this.ppuMem[location + 0x2000] = value;
+            this.ppuMem[location + 0x2400] = value;
+            this.ppuMem[location + 0x2800] = value;
+            this.ppuMem[location + 0x2C00] = value;
+        }
         if (location >= 0x3000 && location <= 0x3EFF) {
             location = location - 0x1000;
         }
@@ -248,56 +295,6 @@ export default function mmu(nes) {
             location = location % 0x20;
             this.setPPUPalette(location, value);
             return;
-        }
-        else if (this.nameTableMirroring == 'vertical') { //Vertical mirroring 
-            if (location >= 0x2000 && location < 0x2400) {
-                this.ppuMem[location] = value;
-                this.ppuMem[location + 0x800] = value;
-            }
-            else if (location >= 0x2400 && location < 0x2800) {
-                this.ppuMem[location] = value;
-                this.ppuMem[location + 0x800] = value;
-            }
-            else if (location >= 0x2800 && location < 0x2C00) {
-                this.ppuMem[location] = value;
-                this.ppuMem[location - 0x800] = value;
-            }
-            else if (location >= 0x2C00 && location < 0x3000) {
-                this.ppuMem[location] = value;
-                this.ppuMem[location - 0x800] = value;
-            }
-        }
-        else if (this.nameTableMirroring == 'horizontal') { //horizontal mirroring
-            if (location >= 0x2000 && location < 0x2400) {
-                this.ppuMem[location] = value;
-                this.ppuMem[location + 0x400] = value;
-            }
-            else if (location >= 0x2800 && location < 0x2C00) {
-                this.ppuMem[location] = value;
-                this.ppuMem[location + 0x400] = value;
-            }
-            else if (location >= 0x2400 && location < 0x2800) {
-                this.ppuMem[location] = value;
-                this.ppuMem[location - 0x400] = value;
-            }
-            else if (location >= 0x2C00 && location < 0x3000) {
-                this.ppuMem[location] = value;
-                this.ppuMem[location - 0x400] = value;
-            }
-        }
-        else if (this.nameTableMirroring == '1Screen0') {
-            location = location % 0x2000;
-            this.ppuMem[location + 0x2000] = value;
-            this.ppuMem[location + 0x2400] = value;
-            this.ppuMem[location + 0x2800] = value;
-            this.ppuMem[location + 0x2C00] = value;
-        }
-        else if (this.nameTableMirroring == '1Screen1') {
-            location = location % 0x2000;
-            this.ppuMem[location + 0x2000] = value;
-            this.ppuMem[location + 0x2400] = value;
-            this.ppuMem[location + 0x2800] = value;
-            this.ppuMem[location + 0x2C00] = value;
         }
         else
             this.ppuMem[location] = value;
@@ -314,7 +311,6 @@ export default function mmu(nes) {
     };
 
     this.getPPUReg = function(location) {
-        this.ppuRegReadFlag = true;
         switch (location) {
             case 0x2000:
                 return ppuOpenBus;

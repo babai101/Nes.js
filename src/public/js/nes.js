@@ -1,4 +1,4 @@
-/*global $ cancelAnimationFrame NES*/
+/*global $ cancelAnimationFrame NES performance*/
 'use strict';
 import iNES from './iNES';
 import mapper from './mapper';
@@ -12,9 +12,14 @@ export default function nes() {
     this.isRunning = false;
     this.requestId;
     this.cpuFreq = 1789773;
-    this.frameCount;
+    var frameCount = 0;
+    var frameCount2 = 0;
+    var t1 = 0;
+    var t2 = 0;
+    var skipFrame = false;
+    var skippedFrames = 0;
     this.cyclesPerSecond;
-    this.mainDisplay = new display(document.getElementById('nesCanvas'));
+    this.mainDisplay = new display(document.getElementById('nesCanvas'), this);
     this.ines = new iNES(this);
     this.Mapper = new mapper(this);
     this.PPU = new ppu(this);
@@ -32,18 +37,37 @@ export default function nes() {
         this.MMU.nameTableMirroring = this.ines.mirroring;
         this.CPU.reset();
         this.mainDisplay.screenReset();
-        this.frameCount = 0;
+        frameCount = 0;
         this.cyclesPerSecond = 0;
         this.isRunning = true;
     };
 
     this.renderScreen = function() {
-        this.mainDisplay.updateCanvas();
+        // this.mainDisplay.updateCanvas();
     };
 
     this.renderFrame = function() {
-        // this.CPU.run();
-        this.CPU.newRun();
+        this.CPU.frame();
+        // if (skipFrame)
+        // skipFrame = !skipFrame;
+        // frameCount++;
+        // frameCount2++;
+        // if (frameCount == 2) {
+        //     t2 = Date.now();
+        //     frameCount = 0;
+        //     if (t2 - t1 > (16.7 * 2)) {
+        //         skipFrame = true;
+        //         // skippedFrames++;
+        //         // console.log("skipped frmae");
+                
+        //     }
+        //     t1 = Date.now();
+        // }
+        // if (frameCount2 == 60) {
+        //     console.log("skippedFrames = " + skippedFrames);
+        //     skippedFrames = 0;
+        //     frameCount2 = 0;
+        // }
         // this.mainDisplay.updateCanvas();
         // this.renderScreen();
         // requestAnimationFrame(this.renderFrame);

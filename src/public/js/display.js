@@ -1,5 +1,6 @@
 'use strict';
-export default function display(canvas) {
+export default function display(canvas, nes) {
+    this.nes = nes;
     this.offscreenBuffer = [];
     var renderTarget = 0; //'1 for WebGL or 0 for Canvas'
     if (renderTarget == 0) {
@@ -74,8 +75,10 @@ export default function display(canvas) {
             // for (var i = 0; i < this.bufData.length; i++) {
             //     this.bufData[i] = 0xFF000000 | (this.offscreenBuffer[i][2] << 16) | (this.offscreenBuffer[i][1] << 8) | this.offscreenBuffer[i][0];
             // }
+            // var offScreenBuffer = this.nes.PPU.getOffScreenBuffer();
             for (var i = 0; i < this.bufData.length; i++) {
-                this.bufData[i] = this.offscreenBuffer[i];
+                // this.bufData[i] = this.offscreenBuffer[i];
+                this.bufData[i] = this.nes.PPU.getOffScreenBuffer()[i];
             }
             this.canvasImageData.data.set(this.buf8);
             this.ctx.putImageData(this.canvasImageData, 0, 0);

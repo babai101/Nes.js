@@ -1,6 +1,6 @@
 body {
-    font-family: 'Press Start 2P', cursive;
-    font-size: 8px;
+    /*font-family: 'Press Start 2P', cursive;*/
+    /*font-size: 8px;*/
     background-color: black;
 }
 
@@ -13,12 +13,12 @@ h5 {
     color: white;
 }
 
-select {
-    font-size: 12px;
-    min-width: 100px;
-    max-width: 200px;
-    min-height: 30px;
-}
+/*select {*/
+/*    font-size: 12px;*/
+/*    min-width: 100px;*/
+/*    max-width: 200px;*/
+/*    min-height: 30px;*/
+/*}*/
 canvas {
     border: 1px dotted cyan;
     -ms-interpolation-mode: nearest-neighbor;
@@ -34,13 +34,13 @@ canvas {
     height: 480px;
 }
 
-.btn {
-    font-size: 8px;
-}
+/*.btn {*/
+/*    font-size: 8px;*/
+/*}*/
 
-.navbar a {
-    font-size: 8px;
-}
+/*.navbar a {*/
+/*    font-size: 8px;*/
+/*}*/
 
 .text-center {
     text-align: center;
