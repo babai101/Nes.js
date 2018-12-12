@@ -579,7 +579,7 @@ export default function ppu(nes) {
     var checkSprite0Hit = false;
 
     this.clock = function() {
-        if (!skipFrame) {
+        // if (!skipFrame) {
             if (vIncremented)
                 vIncremented = false;
             //visible scanline
@@ -816,10 +816,10 @@ export default function ppu(nes) {
                 return true;
             }
             return false;
-        }
-        else {
-            this.fakeClock();
-        }
+        // }
+        // else {
+        //     this.fakeClock();
+        // }
     };
 
     this.fakeClock = function() {

@@ -10,6 +10,7 @@ export default function pulse() {
     this.lenCounterDisable = false; //envelope loop / length counter halt
     this.dutyCycle = 0; //Duty cycle of the wave
     this.period = 0; //11 bit Period 
+    this.timerPeriod = 0; //timer for counting down period
     this.envPeriod = 0x0F; //Envelop decay counter
     this.periodLowBits = 0; //lower 8 bit period
     this.periodHighBits = 0; //High 3 bit period
@@ -35,6 +36,7 @@ export default function pulse() {
         [0, 1, 1, 1, 1, 0, 0, 0],
         [1, 0, 0, 1, 1, 1, 1, 1]
     ];
+    var sweepChangeAmt = 0;
 
     //calculate the current sequence value
     this.calcSequence = function(duty, sequence) {
@@ -63,28 +65,38 @@ export default function pulse() {
         }
     };
 
+    this.updateTargetPeriod = function() {
+        sweepChangeAmt = this.period >> this.sweepShiftCount;
+        if (this.sweepNegate == 0) { //Add sweep
+            sweepTargetPeriod = this.period + sweepChangeAmt;
+        }
+        else if (this.sweepNegate == 1) { //Negate sweep
+            if (this.channel == 1) {
+                sweepTargetPeriod = this.period - sweepChangeAmt - 1;
+            }
+            else if (this.channel == 2) {
+                sweepTargetPeriod = this.period - sweepChangeAmt;
+            }
+        }
+    };
+
     this.updateEnvelope = function() {
         if (!this.envStartFlag) {
             //Now clock divider
             if (this.dividerPeriod == 0) { //Reload divider period
-                this.dividerPeriod = this.volume + 1;
+                this.dividerPeriod = this.volume; // + 1;
                 //Now clock Decay level counter
                 this.clockDecayLevelCounter();
             }
             else {
                 this.dividerPeriod--;
-                //Now clock Decay level counter
-                this.clockDecayLevelCounter();
             }
         }
         else {
             this.envStartFlag = false; //Clear Start flag
             this.decayLvlCount = 15; //Reload Decay level counter
-            this.dividerPeriod = this.volume + 1; //Reload divider period
+            this.dividerPeriod = this.volume; // + 1; //Reload divider period
         }
-        // if (this.dividerOriginalPeriod > 0)
-        //     this.setVol(this.dividerOriginalPeriod - 1);
-        // else this.setVol(0);
     };
 
     this.updSweepAndLengthCounter = function() {
@@ -96,56 +108,51 @@ export default function pulse() {
             this.lenCounter--;
         }
         //Update Sweep
-        sweepTargetPeriod = 0;
         //Divider has reached 0 do sweep now
         if (this.sweepCount == 0) {
             this.sweepCount = this.sweepDividerPeriod; //Relaod sweep divider count
             this.sweepReloadFlag = false; //clear reload flag
-            var sweepChangeAmt = this.period >> this.sweepShiftCount;
-            if (this.sweepNegate == 0) { //Add sweep
-                sweepTargetPeriod = this.period + sweepChangeAmt;
-            }
-            else if (this.sweepNegate == 1) { //Negate sweep
-                if (this.channel == 1) {
-                    sweepTargetPeriod = this.period + (~sweepChangeAmt); //1's complement for pulse1 channel
+            if (this.sweepEnabled) {
+                if (sweepTargetPeriod <= 0x7FF) { //Adjust the sweep
+                    this.period = sweepTargetPeriod;
+                    this.updateTargetPeriod();
                 }
-                else if (this.channel == 2) {
-                    sweepTargetPeriod = this.period - sweepChangeAmt; //2's complement for pulse2 channel
-                }
-            }
-            if (this.sweepEnabled) { //Adjust the sweep
-                this.period = sweepTargetPeriod;
             }
         }
         else if (!this.sweepReloadFlag) {
             this.sweepCount--;
         }
         if (this.sweepReloadFlag) {
-            this.sweepCount = this.sweepDividerPeriod; //Relaod sweep divider count
+            this.sweepCount = this.sweepDividerPeriod + 1; //Relaod sweep divider count
             this.sweepReloadFlag = false; //clear reload flag
         }
     };
 
     //Clock the sequencer after timer has counted down
     this.clock = function() {
-        if (this.period <= 0) {
+        if (this.timerPeriod <= 0) {
             this.clockSequencer();
-            this.period = this.periodLowBits | (this.periodHighBits << 8) + 1;
+            this.timerPeriod = this.period;//this.periodLowBits | (this.periodHighBits << 8) + 1;
         }
         else {
-            this.period--;
+            this.timerPeriod--;
         }
     };
 
     this.output = function() {
-        if ((outputValue) && (sweepTargetPeriod <= 0x7FF) && (this.period >= 0x08)) {
+        if (outputValue) {
             if (!this.lenCounterDisable && this.lenCounter <= 0)
                 return 0;
-            if (!this.sawEnvDisable) {
-                return this.decayLvlCount;
+            if ((sweepTargetPeriod <= 0x7FF) && (this.period >= 0x08)) {
+                if (!this.sawEnvDisable) {
+                    return this.decayLvlCount;
+                }
+                else {
+                    return this.volume;
+                }
             }
             else {
-                return this.volume;
+                return 0;
             }
         }
         else return 0;

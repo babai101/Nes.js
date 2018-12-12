@@ -14,13 +14,16 @@ export default function triangle() {
     this.currentSequence = 0;
     this.lenCounter = 0; //Len counter value
     this.linearCounter = 0;
-    this.sequenceTable = [15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
-    0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15];
+    this.outputValue = 0;
+    this.sequenceTable = [15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+    ];
 
     //Clocks the sequencer
     this.clockSequencer = function() {
-        if (!this.controlFlag && (this.lenCounter > 0) && (this.linearCounter > 0)) {
-            this.outputValue  = this.sequenceTable[this.currentSequence];
+        // if (!this.controlFlag && (this.lenCounter > 0) && (this.linearCounter > 0)) {
+        if ((this.lenCounter > 0) && (this.linearCounter > 0)) {
+            this.outputValue = this.sequenceTable[this.currentSequence];
             this.currentSequence++;
             if (this.currentSequence == 32)
                 this.currentSequence = 0;
@@ -50,10 +53,7 @@ export default function triangle() {
     };
 
     this.updateLenCounter = function() {
-        if (!this.enabled) {
-            this.lenCounter = 0;
-        }
-        else if (!this.controlFlag && this.lenCounter > 0) {
+        if (!this.controlFlag && this.lenCounter > 0) {
             this.lenCounter--;
         }
     };

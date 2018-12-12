@@ -13,7 +13,7 @@ export default function apu(nes) {
     this.triangleEnabled = false;
     this.noiseEnabled = false;
     this.dmcEnabled = false;
-    this.inhibitInterrupt = true;
+    this.inhibitInterrupt = false;
     this.seqMode = 0;
     this.step = 0;
     this.doIrq = false;
@@ -23,7 +23,7 @@ export default function apu(nes) {
     var pulse2Buffer = [];
     this.triangleBuffer = [];
     this.noiseBuffer = [];
-    this.bufferLength = 4096;
+    this.bufferLength = 1024;
     this.outputBuffer = new RingBuffer(this.bufferLength * 10);
     this.pulse1 = new pulse();
     this.pulse2 = new pulse();
@@ -31,9 +31,7 @@ export default function apu(nes) {
     this.noise1 = new noise();
     this.pulse1.channel = 1;
     this.pulse2.channel = 2;
-    // var sampleCount = 0;
-    // var t1 = 0;
-    // var t3 = 0;
+
     var pulseOverSamplingCycles = 0;
     var triangleOverSamplingCycles = 0;
     var overSamplingCycleRate = 20;
@@ -62,18 +60,18 @@ export default function apu(nes) {
     this.init = function() {
         var AudioContext = window.AudioContext || window.webkitAudioContext;
         this.audioCtx = new AudioContext();
-        // if (!window.AudioContext) {
-        //     if (!window.WebkitAudioContext) {
-        //         console.log("Could not initialize audio!");
-        //         return;
-        //     }
-        //     else {
-        //         this.audioCtx = new window.WebkitAudioContext();
-        //     }
-        // }
-        // else {
-        //     this.audioCtx = new window.AudioContext();
-        // }
+        if (!window.AudioContext) {
+            if (!window.WebkitAudioContext) {
+                console.log("Could not initialize audio!");
+                return;
+            }
+            else {
+                this.audioCtx = new window.WebkitAudioContext();
+            }
+        }
+        else {
+            this.audioCtx = new window.AudioContext();
+        }
         this.scriptNode = this.audioCtx.createScriptProcessor(this.bufferLength, 0, 1);
         this.scriptNode.onaudioprocess = this.onaudioprocess;
         this.scriptNode.connect(this.audioCtx.destination);
@@ -87,24 +85,28 @@ export default function apu(nes) {
         }
         else {
             this.pulse1.enabled = false;
+            this.pulse1.lenCounter = 0;
         }
         if (value & 0x02 == 0x02) {
             this.pulse2.enabled = true;
         }
         else {
             this.pulse2.enabled = false;
+            this.pulse2.lenCounter = 0;
         }
         if (value & 0x04 == 0x04) {
             this.triangle1.enabled = true;
         }
         else {
             this.triangle1.enabled = false;
+            this.triangle1.lenCounter = 0;
         }
         if (value & 0x08 == 0x08) {
             this.noise1.enabled = true;
         }
         else {
             this.noise1.enabled = false;
+            this.noise1.lenCounter = 0;
         }
         if (value & 0x10 == 0x10) {
             this.dmcEnabled = true;
@@ -117,8 +119,6 @@ export default function apu(nes) {
     //Square channel 1 methods
     //0x4000
     this.setSQ1_ENV = function(value) {
-        // pulse1.dividerPeriod = (value & 0x0F) + 1; //Env period
-        // pulse1.dividerOriginalPeriod = pulse1.dividerPeriod;
         if ((value & 0x10) == 0x10) {
             this.pulse1.sawEnvDisable = true; //use Volume for volume
         }
@@ -141,6 +141,8 @@ export default function apu(nes) {
         this.pulse1.periodLowBits = value;
         this.pulse1.period = this.pulse1.period & 0x700;
         this.pulse1.period = this.pulse1.period | this.pulse1.periodLowBits;
+        this.pulse1.timerPeriod = this.pulse1.period;
+        this.pulse1.updateTargetPeriod();
     };
 
     //Set the high 3 bits of the period if lengh counter is enabled, get the
@@ -150,15 +152,15 @@ export default function apu(nes) {
     this.setSQ1_HI = function(value) {
         this.pulse1.periodHighBits = value & 0x07;
         this.pulse1.period = this.pulse1.period & 0xFF;
-        this.pulse1.period = this.pulse1.period | (this.pulse1.periodHighBits << 8);
+        this.pulse1.period = this.pulse1.period | (this.pulse1.periodHighBits << 8) + 1;
+        this.pulse1.timerPeriod = this.pulse1.period;
         if (this.pulse1.enabled) {
             this.pulse1.lenCounter = this.lengthCounterTbl[value >> 3];
         }
-        this.pulse1.dividerPeriod = this.pulse1.volume + 1; //Restart envelop
-        this.pulse1.decayLvlCount = 15;
-        // this.pulse1.setVol(this.pulse1.dividerOriginalPeriod - 1);
+        this.pulse1.dividerPeriod = this.pulse1.volume + 1;
         this.pulse1.currentSequence = 0; //restart Phase
         this.pulse1.envStartFlag = true;
+        this.pulse1.updateTargetPeriod();
     };
 
     //0x4001
@@ -170,7 +172,6 @@ export default function apu(nes) {
             this.pulse1.sweepEnabled = false;
         }
         this.pulse1.sweepDividerPeriod = ((value & 0x70) >> 4) + 1;
-        this.pulse1.sweepCount = this.pulse1.sweepDividerPeriod;
         this.pulse1.sweepNegate = (value & 0x08) >> 3;
         this.pulse1.sweepShiftCount = value & 0x07;
         this.pulse1.sweepReloadFlag = true;
@@ -178,8 +179,6 @@ export default function apu(nes) {
 
     //Square Channel 2 methods
     this.setSQ2_ENV = function(value) {
-        // pulse2.dividerPeriod = (value & 0x0F) + 1; //Env period
-        // pulse2.dividerOriginalPeriod = pulse2.dividerPeriod;
         this.pulse2.volume = value & 0x0F; //Set volume 
         if ((value & 0x10) == 0x10) {
             this.pulse2.sawEnvDisable = true; //use Volume for volume
@@ -200,19 +199,22 @@ export default function apu(nes) {
         this.pulse2.periodLowBits = value;
         this.pulse2.period = this.pulse2.period & 0x700;
         this.pulse2.period = this.pulse2.period | this.pulse2.periodLowBits;
+        this.pulse2.timerPeriod = this.pulse2.period;
+        this.pulse2.updateTargetPeriod();
     };
 
     this.setSQ2_HI = function(value) {
         this.pulse2.periodHighBits = value & 0x07;
         this.pulse2.period = this.pulse2.period & 0xFF;
         this.pulse2.period = this.pulse2.period | (this.pulse2.periodHighBits << 8);
+        this.pulse2.timerPeriod = this.pulse2.period;
         if (this.pulse2.enabled) {
             this.pulse2.lenCounter = this.lengthCounterTbl[value >> 3];
         }
         this.pulse2.dividerPeriod = this.pulse2.volume + 1; //Restart envelop
-        this.pulse2.decayLvlCount = 15;
         this.pulse1.currentSequence = 0;
         this.pulse2.envStartFlag = true;
+        this.pulse2.updateTargetPeriod();
     };
 
     this.setSQ2_SWEEP = function(value) {
@@ -223,7 +225,7 @@ export default function apu(nes) {
             this.pulse2.sweepEnabled = false;
         }
         this.pulse2.sweepDividerPeriod = ((value & 0x70) >> 4) + 1;
-        this.pulse2.sweepCount = this.pulse2.sweepDividerPeriod;
+        // this.pulse2.sweepCount = this.pulse2.sweepDividerPeriod;
         this.pulse2.sweepNegate = (value & 0x08) >> 3;
         this.pulse2.sweepShiftCount = value & 0x07;
         this.pulse2.sweepReloadFlag = true;
@@ -248,9 +250,9 @@ export default function apu(nes) {
     this.setTRI_HI = function(value) {
         this.triangle1.periodHighBits = value & 0x07;
         this.triangle1.period = this.triangle1.period & 0xFF;
-        this.triangle1.period = this.triangle1.period | (this.triangle1.periodHighBits << 8);
-        if (this.triangle1.enabled)
-            this.triangle1.lenCounter = this.lengthCounterTbl[value >> 3];
+        this.triangle1.period = this.triangle1.period | (this.triangle1.periodHighBits << 8) + 1;
+        // if (this.triangle1.enabled)
+        this.triangle1.lenCounter = this.lengthCounterTbl[value >> 3];
         this.triangle1.linearCounterReloadFlag = true;
     };
 
@@ -293,74 +295,92 @@ export default function apu(nes) {
 
     this.setFrameCounter = function(value) {
         this.seqMode = value >> 7; //Sequencer mode
+        this.step = 0;
+        frameCycles = 0;
         if ((value & 0x40) == 0x40) {
             this.inhibitInterrupt = true;
+            this.frameIRQ = false;
         }
         else {
             this.inhibitInterrupt = false;
+        }
+        if ((value & 0x80) == 0x80) {
+            this.updateEnvelopes();
+            this.updateLenCounters();
+            this.step = 0;
+        }
+        else {
+            this.step = 0;
         }
     };
 
     this.onaudioprocess = (e) => {
         // //Thansk Ben Firshman!!!
-        // var channelData = e.outputBuffer.getChannelData(0);
-        // var size = channelData.length;
-        // if (this.outputBuffer.size() < size) {
-        //     this.nes.CPU.frame();
-        //     if (this.outputBuffer.size() < size) {
-        //         this.nes.CPU.frame();
-        //     }
-        // }
-        // try {
-        //     var samples = this.outputBuffer.deqN(size);
-        // }
-        // catch (e) {
-        //     // onBufferUnderrun failed to fill the buffer, so handle a real buffer
-        //     // underrun
-        //     // ignore empty buffers... assume audio has just stopped
-        //     var bufferSize = this.outputBuffer.size();
-        //     // if (bufferSize > 0) {
-        //     //     // console.log(`Buffer underrun (needed ${size}, got ${bufferSize})`);
-        //     // }
-        //     for (var j = 0; j < bufferSize; j++) {
-        //         channelData[j] = 0;
-        //     }
-        //     return;
-        // }
-        // for (var i = 0; i < size; i++) {
-        //     channelData[i] = samples[i];
-        // }
+        var channelData = e.outputBuffer.getChannelData(0);
+        var size = channelData.length;
+        if (this.outputBuffer.size() < size) {
+            this.nes.CPU.frame();
+            if (this.outputBuffer.size() < size) {
+                this.nes.CPU.frame();
+            }
+        }
+        try {
+            var samples = this.outputBuffer.deqN(size);
+        }
+        catch (e) {
+            // onBufferUnderrun failed to fill the buffer, so handle a real buffer
+            // underrun
+            // ignore empty buffers... assume audio has just stopped
+            var bufferSize = this.outputBuffer.size();
+            // if (bufferSize > 0) {
+            //     // console.log(`Buffer underrun (needed ${size}, got ${bufferSize})`);
+            // }
+            for (var j = 0; j < bufferSize; j++) {
+                channelData[j] = 0;
+            }
+            return;
+        }
+        for (var i = 0; i < size; i++) {
+            channelData[i] = samples[i];
+        }
     };
 
     this.sample = function() {
-        var pulse1Output = Math.floor(pulse1Buffer.reduce((a, b) => a + b, 0));
+        var pulse1Output = (pulse1Buffer.reduce((a, b) => a + b, 0));
         if (pulse1Output != 0)
-            pulse1Output = pulse1Output / pulse1Buffer.length;
-        var pulse2Output = Math.floor(pulse2Buffer.reduce((a, b) => a + b, 0));
+            pulse1Output = Math.floor(pulse1Output / pulse1Buffer.length);
+        // if (pulse1Output < 0) pulse1Output = 0;
+        var pulse2Output = (pulse2Buffer.reduce((a, b) => a + b, 0));
         if (pulse2Output != 0)
-            pulse2Output = pulse2Output / pulse2Buffer.length;
-        var triangleOutput = Math.floor(this.triangleBuffer.reduce((a, b) => a + b, 0));
+            pulse2Output = Math.floor(pulse2Output / pulse2Buffer.length);
+        // if (pulse2Output < 0) pulse2Output = 0;
+        var triangleOutput = 0;
+        triangleOutput = (this.triangleBuffer.reduce((a, b) => a + b, 0));
         if (triangleOutput != 0)
-            triangleOutput = triangleOutput / this.triangleBuffer.length;
-        var noiseOutput = Math.floor(this.noiseBuffer.reduce((a, b) => a + b, 0));
+            triangleOutput = Math.floor(triangleOutput / this.triangleBuffer.length);
+        // if (triangleOutput < 0) triangleOutput = 0;
+        var noiseOutput = (this.noiseBuffer.reduce((a, b) => a + b, 0));
         if (noiseOutput != 0)
-            noiseOutput = noiseOutput / this.noiseBuffer.length;
+            noiseOutput = Math.floor(noiseOutput / this.noiseBuffer.length);
+        // if (noiseOutput < 0) noiseOutput = 0;
         pulse1Buffer = [];
         pulse2Buffer = [];
         this.triangleBuffer = [];
         this.noiseBuffer = [];
         var pulseOutput = 0;
         if (triangleOutput != 0 || noiseOutput != 0) {
-            // triangleOutput = 159.79 / (1 / ((triangleOutput / 8227) + (noiseOutput / 12241)) + 100);
+            triangleOutput = 159.79 / (1 / ((triangleOutput / 8227) + (noiseOutput / 12241)) + 100);
             // triangleOutput = triangleTable[3 * triangleOutput + 2 * noiseOutput + 0];
-            triangleOutput = 0.00851 * triangleOutput + 0.00494 * noiseOutput;
+            // triangleOutput = 0.00851 * triangleOutput + 0.00494 * noiseOutput;
         }
         if (pulse1Output != 0 || pulse2Output != 0) {
             pulseOutput = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
             // pulseOutput = squareTable[pulse1Output + pulse2Output];
         }
         // output = this.squareTable[pulse1Output + pulse2Output];
-        this.pushToBuffer(pulseOutput + triangleOutput);
+        var output = pulseOutput + triangleOutput;
+        // if (output < 0) output = 0;
+        this.pushToBuffer(output);
     };
 
     this.pushToBuffer = function(data) {
@@ -398,59 +418,103 @@ export default function apu(nes) {
             else if (sampleCycleRate == 41)
                 sampleCycleRate = 40;
         }
-        frameCycles++;
-        if (frameCycles >= 7457) {
-            frameCycles -= 7457;
-            if (this.seqMode == 0) {
+
+        switch (frameCycles) {
+            case 7457:
+            case 14913:
+            case 22371:
+                this.doStep();
+                break;
+            case 29828:
+                if (this.seqMode == 0) {
+                    if (!this.inhibitInterrupt) {
+                        this.setFrameIRQ();
+                    }
+                }
+                break;
+            case 29829:
                 this.do4StepSeq();
-            }
-            else {
+                break;
+            case 29830:
+                if (this.seqMode == 0) {
+                    frameCycles = 0;
+                    if (!this.inhibitInterrupt) {
+                        this.setFrameIRQ();
+                    }
+                    return;
+                }
+                break;
+            case 37281:
                 this.do5StepSeq();
+                break;
+            case 37282:
+                if (this.seqMode == 1) {
+                    frameCycles = 0;
+                    return;
+                }
+                break;
+        }
+        frameCycles++;
+    };
+
+    this.doStep = function() {
+        if (this.seqMode == 0) {
+            this.do4StepSeq();
+        }
+        else {
+            this.do5StepSeq();
+        }
+    };
+
+    this.setFrameIRQ = function() {
+        this.frameIRQ = true;
+        if ((this.nes.CPU.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
+            if (!(this.nes.CPU.P & 0x04)) { //IRQ is enabled
+                this.nes.CPU.IRQToRun = 3;
             }
         }
     };
 
-    this.do4StepSeq = function() {
+    this.updateEnvelopes = function() {
         this.pulse1.updateEnvelope();
         this.pulse2.updateEnvelope();
         this.triangle1.updateLinearCounter();
         this.noise1.updateEnvelope();
-        if (this.step % 2 === 1) {
-            this.pulse1.updSweepAndLengthCounter();
-            this.pulse2.updSweepAndLengthCounter();
-            this.triangle1.updateLenCounter();
-            this.noise1.updateLenCounter();
-        }
-        this.step++;
-        if (this.step === 4) {
-            if (!this.inhibitInterrupt) {
-                this.frameIRQ = true;
-                if ((this.nes.CPU.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
-                    if (!(this.nes.CPU.P & 0x04)) { //IRQ is enabled
-                        this.nes.CPU.IRQToRun = 3;
-                    }
-                }
+    };
+
+    this.updateLenCounters = function() {
+        this.pulse1.updSweepAndLengthCounter();
+        this.pulse2.updSweepAndLengthCounter();
+        this.triangle1.updateLenCounter();
+        this.noise1.updateLenCounter();
+    };
+
+    this.do4StepSeq = function() {
+        if (this.seqMode == 0) {
+            this.updateEnvelopes();
+            if (this.step % 2 === 1) {
+                this.updateLenCounters();
             }
-            this.step = 0;
+            this.step++;
+            if (this.step === 4) {
+                if (!this.inhibitInterrupt) {
+                    this.setFrameIRQ();
+                }
+                this.step = 0;
+            }
         }
     };
 
     this.do5StepSeq = function() {
-        if (this.step % 2 === 0) {
-            this.pulse1.updSweepAndLengthCounter();
-            this.pulse2.updSweepAndLengthCounter();
-            this.triangle1.updateLenCounter();
-            this.noise1.updateLenCounter();
-        }
-        this.step++;
-        if (this.step === 5) {
-            this.step = 0;
-        }
-        else {
-            this.pulse1.updateEnvelope();
-            this.pulse2.updateEnvelope();
-            this.noise1.updateEnvelope();
-            this.triangle1.updateLinearCounter();
+        if (this.seqMode == 1) {
+            this.updateEnvelopes();
+            if (this.step % 2 === 0) {
+                this.updateLenCounters();
+            }
+            this.step++;
+            if (this.step === 4) {
+                this.step = 0;
+            }
         }
     };
 }

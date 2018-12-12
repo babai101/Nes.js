@@ -4320,7 +4320,7 @@ export default function cpu(nes) {
 	};
 
 	this.clockUnits = function() {
-		// this.clockAPU();
+		this.clockAPU();
 		for (var i = 0; i < 3; i++) {
 			this.clockPPU();
 		}
@@ -4410,6 +4410,6 @@ export default function cpu(nes) {
 			this.execCPU();
 		}
 		this.oddFrame = !this.oddFrame;
-		this.skipFrame = !this.skipFrame;
+		// this.skipFrame = !this.skipFrame;
 	};
 }
