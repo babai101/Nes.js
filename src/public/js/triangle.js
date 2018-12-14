@@ -8,6 +8,8 @@ export default function triangle() {
     //Triangle wave channel VARs
     this.controlFlag = false;
     this.counterReload = 0;
+    this.period = 0;
+    this.timerPeriod = 0;
     this.periodLowBits = 0;
     this.periodHighBits = 0;
     this.linearCounterReloadFlag = false;
@@ -31,12 +33,12 @@ export default function triangle() {
     };
 
     this.clock = function() {
-        if (this.period <= 0) {
+        if (this.timerPeriod <= 0) {
             this.clockSequencer();
-            this.period = this.periodLowBits | (this.periodHighBits << 8) + 1;
+            this.timerPeriod = this.period;
         }
         else {
-            this.period--;
+            this.timerPeriod--;
         }
     };
 

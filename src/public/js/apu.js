@@ -32,11 +32,13 @@ export default function apu(nes) {
     this.pulse1.channel = 1;
     this.pulse2.channel = 2;
 
-    var pulseOverSamplingCycles = 0;
-    var triangleOverSamplingCycles = 0;
+    var overSamplingCycles = 0;
+    // var triangleOverSamplingCycles = 0;
     var overSamplingCycleRate = 20;
     var sampleCycleRate = 41;
     var samplingCycles = 0;
+    this.prevSampleL = 0;
+    this.smpAccumL = 0;
     var clockCycles = 0;
     var frameCycles = 0;
     this.sampleCount = 0;
@@ -287,10 +289,10 @@ export default function apu(nes) {
 
     //0x400F
     this.setNoise_LenEnv = function(value) {
-        if (this.noise1.enabled)
-            this.noise1.lenCounter = this.lengthCounterTbl[value >> 3];
+        // if (this.noise1.enabled)
+        this.noise1.lenCounter = this.lengthCounterTbl[value >> 3];
         this.noise1.dividerPeriod = this.noise1.volume + 1; //Restart envelop
-        this.noise1.decayLvlCount = 15;
+        // this.noise1.decayLvlCount = 15;
     };
 
     this.setFrameCounter = function(value) {
@@ -316,14 +318,15 @@ export default function apu(nes) {
 
     this.onaudioprocess = (e) => {
         // //Thansk Ben Firshman!!!
+        //run once and check for underrrun
         var channelData = e.outputBuffer.getChannelData(0);
         var size = channelData.length;
         if (this.outputBuffer.size() < size) {
+            // this.nes.CPU.runPPU = false;
             this.nes.CPU.frame();
-            if (this.outputBuffer.size() < size) {
-                this.nes.CPU.frame();
-            }
+            // this.nes.CPU.runPPU = true;
         }
+        
         try {
             var samples = this.outputBuffer.deqN(size);
         }
@@ -349,20 +352,16 @@ export default function apu(nes) {
         var pulse1Output = (pulse1Buffer.reduce((a, b) => a + b, 0));
         if (pulse1Output != 0)
             pulse1Output = Math.floor(pulse1Output / pulse1Buffer.length);
-        // if (pulse1Output < 0) pulse1Output = 0;
         var pulse2Output = (pulse2Buffer.reduce((a, b) => a + b, 0));
         if (pulse2Output != 0)
             pulse2Output = Math.floor(pulse2Output / pulse2Buffer.length);
-        // if (pulse2Output < 0) pulse2Output = 0;
         var triangleOutput = 0;
         triangleOutput = (this.triangleBuffer.reduce((a, b) => a + b, 0));
         if (triangleOutput != 0)
             triangleOutput = Math.floor(triangleOutput / this.triangleBuffer.length);
-        // if (triangleOutput < 0) triangleOutput = 0;
         var noiseOutput = (this.noiseBuffer.reduce((a, b) => a + b, 0));
         if (noiseOutput != 0)
             noiseOutput = Math.floor(noiseOutput / this.noiseBuffer.length);
-        // if (noiseOutput < 0) noiseOutput = 0;
         pulse1Buffer = [];
         pulse2Buffer = [];
         this.triangleBuffer = [];
@@ -377,9 +376,12 @@ export default function apu(nes) {
             pulseOutput = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
             // pulseOutput = squareTable[pulse1Output + pulse2Output];
         }
-        // output = this.squareTable[pulse1Output + pulse2Output];
-        var output = pulseOutput + triangleOutput;
-        // if (output < 0) output = 0;
+        var output = pulseOutput + triangleOutput - 0.762664795;
+
+        var smpDiffL = output - this.prevSampleL;
+        this.prevSampleL += smpDiffL;
+        this.smpAccumL += smpDiffL - (this.smpAccumL >> 10);
+        output = this.smpAccumL;
         this.pushToBuffer(output);
     };
 
@@ -396,15 +398,11 @@ export default function apu(nes) {
         }
         this.triangle1.clock();
         this.noise1.clock();
-        pulseOverSamplingCycles++;
-        if (pulseOverSamplingCycles >= overSamplingCycleRate) {
-            pulseOverSamplingCycles -= overSamplingCycleRate;
+        overSamplingCycles++;
+        if (overSamplingCycles >= overSamplingCycleRate) {
+            overSamplingCycles -= overSamplingCycleRate;
             pulse1Buffer.push(this.pulse1.output());
             pulse2Buffer.push(this.pulse2.output());
-        }
-        triangleOverSamplingCycles++;
-        if (triangleOverSamplingCycles >= overSamplingCycleRate) {
-            triangleOverSamplingCycles -= overSamplingCycleRate;
             this.triangleBuffer.push(this.triangle1.output());
             this.noiseBuffer.push(this.noise1.output());
         }

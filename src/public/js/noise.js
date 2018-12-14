@@ -33,7 +33,7 @@ export default function noise() {
             else {
                 this.dividerPeriod--;
                 //Now clock Decay level counter
-                this.clockDecayLevelCounter();
+                // this.clockDecayLevelCounter();
             }
         }
         else {
@@ -54,10 +54,10 @@ export default function noise() {
     };
 
     this.updateLenCounter = function() {
-        if (!this.enabled) {
-            this.lenCounter = 0;
-        }
-        else if (!this.controlFlag && this.lenCounter > 0) {
+        // if (!this.enabled) {
+        //     this.lenCounter = 0;
+        // }
+        if (!this.controlFlag && this.lenCounter > 0) {
             this.lenCounter--;
         }
     };

@@ -48,29 +48,6 @@ export default function nes() {
 
     this.renderFrame = function() {
         this.CPU.frame();
-        // if (skipFrame)
-        // skipFrame = !skipFrame;
-        // frameCount++;
-        // frameCount2++;
-        // if (frameCount == 2) {
-        //     t2 = Date.now();
-        //     frameCount = 0;
-        //     if (t2 - t1 > (16.7 * 2)) {
-        //         skipFrame = true;
-        //         // skippedFrames++;
-        //         // console.log("skipped frmae");
-                
-        //     }
-        //     t1 = Date.now();
-        // }
-        // if (frameCount2 == 60) {
-        //     console.log("skippedFrames = " + skippedFrames);
-        //     skippedFrames = 0;
-        //     frameCount2 = 0;
-        // }
-        // this.mainDisplay.updateCanvas();
-        // this.renderScreen();
-        // requestAnimationFrame(this.renderFrame);
     };
 
     this.readOpcodeFile = function(e) {
