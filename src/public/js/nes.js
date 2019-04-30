@@ -61,11 +61,19 @@ export default function nes() {
     };
 
     this.reset = function() {
-        this.mainDisplay = null;
-        this.PPU = null;
-        this.MMU = null;
-        this.CPU = null;
-        this.APU = null;
+        // this.mainDisplay = null;
+        // this.PPU = null;
+        // this.MMU = null;
+        // this.CPU = null;
+        // this.APU = null;
+        this.isRunning = false;
+        this.mainDisplay = new display(document.getElementById('nesCanvas'), this);
+        this.ines = new iNES(this);
+        this.Mapper = new mapper(this);
+        this.PPU = new ppu(this);
+        this.MMU = new mmu(this);
+        this.CPU = new cpu(this);
+        this.APU = new apu(this);
     };
 }
 

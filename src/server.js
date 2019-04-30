@@ -36,7 +36,7 @@ app.route('/api/getPlayableRoms')
                     rom['file'] = file;
                     roms.push(rom);
                 });
-                res.json({roms: roms});
+                res.json({ roms: roms });
             }
         });
     });
@@ -49,7 +49,11 @@ app.route('/api/getRomByFileName/:romFileName')
 app.route('/')
     .get(function(req, res) {
         res.sendFile(process.cwd() + '/public/home.html');
-    })
+    });
+app.route('/test')
+    .get(function(req, res) {
+        res.sendFile(process.cwd() + '/public/opt_test/index.html');
+    });
 app.route('*')
     .get(function(req, res) {
         res.redirect('/');

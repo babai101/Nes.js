@@ -4,7 +4,6 @@
 <head>
     <title></title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
-    <!--<link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">-->
     <link rel="stylesheet" href="/public/css/style.css">
 </head>
 
@@ -29,16 +28,16 @@
                 </li>
             </ul>
             <div>
-                <select id="romSelect">
+                <select id="romSelect" class="form-control">
                     <option value="select" selected>Select a ROM</option> 
                 </select>
-                <button id="btnLoadROM" class="btn btn-primary">Load</button>
+                <!--<button id="btnLoadROM" class="btn btn-primary">Load</button>-->
             </div>
         </div>
     </nav>
     <div class="container">
         <div class="row heading">
-            <div class="col-sm-8 offset-sm-3">
+            <div class="col-sm-8 offset-sm-2 text-center">
                 <br>
                 <h4>NES Emulator Written in JavaScript</h4>
             </div>
@@ -52,7 +51,7 @@
         <div class="row">
             <div class="col-sm-10 offset-sm-1">
                 <div class="row">
-                    <div class="col-sm-4 offset-sm-5">
+                    <div class="col-sm-4 offset-sm-4 text-center">
                         <h4>Controls</h4>
                     </div>
                 </div>
@@ -74,6 +73,7 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4" crossorigin="anonymous"></script>
     <script type="text/javascript" src="/public/build/nes-emu.js"></script>
     <script>
+        /*global $*/
         $(document).ready(function() {
             var nes = new NES();
             var requestId = 0;
@@ -81,7 +81,7 @@
             function renderFrame() {
                 // requestId = nes.renderFrame();
                 nes.renderFrame();
-                requestAnimationFrame(renderFrame);
+                requestId = requestAnimationFrame(renderFrame);
             }
             //KeyPress events
             $(window).keydown(function(e) {
@@ -189,62 +189,61 @@
             $('#inpSearchRoms').popover('disable');
 
             //Click events
-            $('#test').click(function() {
-                requestAnimationFrame(nes.renderFrame);
-            });
             $('#pause').click(function() {
                 // isPaused = !isPaused;
             });
             $('#reset').click(function() {
                 nes.reset();
             });
-            $('#btnSearchRoms').click(function() {
-                var url = "/api/getRomListByName/" + $('#inpSearchRoms').val();
-                $('#inpSearchRoms').popover('enable');
-                $('#inpSearchRoms').popover('show');
-                $.ajax({
-                    type: 'GET',
-                    url: url,
-                    success: function(result) {
-                        $('.popover-body').append("<h5 id='loadedRomName'>" + result.rom + "</h5>" + "<button id='loadRom' type='button' class='btn btn-primary'>Load</button>");
-                    },
-                    error: function(e) {
-                        console.log(e);
-                    }
-                });
-            });
+            // $('#btnSearchRoms').click(function() {
+            //     var url = "/api/getRomListByName/" + $('#inpSearchRoms').val();
+            //     $('#inpSearchRoms').popover('enable');
+            //     $('#inpSearchRoms').popover('show');
+            //     $.ajax({
+            //         type: 'GET',
+            //         url: url,
+            //         success: function(result) {
+            //             $('.popover-body').append("<h5 id='loadedRomName'>" + result.rom + "</h5>" + "<button id='loadRom' type='button' class='btn btn-primary'>Load</button>");
+            //         },
+            //         error: function(e) {
+            //             console.log(e);
+            //         }
+            //     });
+            // });
 
-            $('body').on('click', '#loadRom', function() {
+            // $('body').on('click', '#loadRom', function() {
+            //     //Now load the selected rom into browser memory
+            //     var url = "/api/getRomByFileName/" + $('#loadedRomName').text();
+            //     $.ajax({
+            //         type: 'GET',
+            //         url: url,
+            //         success: function(result) {
+            //             $('#inpSearchRoms').popover('dispose');
+            //             nes.initGame(result.romData.data);
+            //             requestAnimationFrame(nes.renderFrame);
+            //         },
+            //         error: function(e) {
+            //             console.log(e);
+            //         }
+            //     });
+
+            // });
+
+            // $('body').on('click', '#btnLoadROM', function() {
+            $('body').on('change', '#romSelect', function() {
                 //Now load the selected rom into browser memory
-                var url = "/api/getRomByFileName/" + $('#loadedRomName').text();
+                var url = "/api/getRomByFileName/" + $(this).val();
                 $.ajax({
                     type: 'GET',
                     url: url,
                     success: function(result) {
                         $('#inpSearchRoms').popover('dispose');
-                        nes.initGame(result.romData.data);
-                        requestAnimationFrame(nes.renderFrame);
-                    },
-                    error: function(e) {
-                        console.log(e);
-                    }
-                });
-
-            });
-
-            $('body').on('click', '#btnLoadROM', function() {
-                //Now load the selected rom into browser memory
-                var url = "/api/getRomByFileName/" + $('#romSelect').val();
-                $.ajax({
-                    type: 'GET',
-                    url: url,
-                    success: function(result) {
-                        $('#inpSearchRoms').popover('dispose');
+                        cancelAnimationFrame(requestId);
                         if (nes.isRunning)
                             nes.reset();
-                        cancelAnimationFrame(requestId);
                         nes.initGame(result.romData.data);
-                        requestAnimationFrame(renderFrame);
+                        requestId = requestAnimationFrame(renderFrame);
+                        $('#romSelect').blur(); 
                     },
                     error: function(e) {
                         console.log(e);

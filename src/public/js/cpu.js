@@ -589,11 +589,13 @@ export default function cpu(nes) {
 		this.memoryRead(4, this.pc);
 	};
 	this.CLI = function() {
+		// this.setFlag(2);
 		this.unsetFlag(2);
 		this.memoryRead(4, this.pc);
 	};
 	this.SEI = function() {
 		this.setFlag(2);
+		// this.unsetFlag(2);
 		this.memoryRead(4, this.pc);
 	};
 	this.CLV = function() {
@@ -3514,6 +3516,28 @@ export default function cpu(nes) {
 		this.calcFlags(null, false, null);
 	};
 
+	this.AAC_I = function() {
+		var temp = this.accumulator & this.memoryRead(0, 0);
+		// this.accumulator = this.writeCarry(temp);
+		if (temp > 0xFF)
+			this.accumulator = temp & 0xFF;
+		else this.accumulator = temp;
+		if (this.accumulator == 0x00)
+			this.setFlag(1);
+		else
+			this.unsetFlag(1);
+		//check for negative flag	
+		if ((this.accumulator >> 7) == 1) {
+			this.setFlag(5);
+			this.setFlag(0);
+		}
+		else {
+			this.unsetFlag(5);
+			this.unsetFlag(0);
+		}
+		// this.clockUnits();
+	};
+
 
 	var log = [];
 
@@ -5176,6 +5200,12 @@ export default function cpu(nes) {
 				case 0x73:
 					this.RRA_I_Y();
 					break;
+				case 0x0B:
+				case 0x2B:
+					this.AAC_I();
+					break;
+				default:
+					console.log("unknown opcode: " + opCode);
 			}
 			if (this.IRQToRun) { // this.runIRQ();
 				switch (this.IRQToRun) {
@@ -5186,7 +5216,9 @@ export default function cpu(nes) {
 						this.IRQToRun--;
 						break;
 					case 3: //IRQ
-						this.IRQ();
+						if ((this.nes.CPU.P & 0x04) == 0) { //IRQ is enabled
+							this.IRQ();
+						}
 						break;
 				}
 			}

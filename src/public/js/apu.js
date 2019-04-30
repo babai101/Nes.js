@@ -318,7 +318,7 @@ export default function apu(nes) {
 
     this.onaudioprocess = (e) => {
         // //Thansk Ben Firshman!!!
-        //run once and check for underrrun
+        // run once and check for underrrun
         var channelData = e.outputBuffer.getChannelData(0);
         var size = channelData.length;
         if (this.outputBuffer.size() < size) {
