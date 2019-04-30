@@ -1,5 +1,5 @@
 # Nes.js
-An NES emulator in Javascript https://nes-emulator.herokuapp.com/
+An NES emulator in Javascript 
 
 ![Arkanoid](https://github.com/babai101/Nes.js/raw/master/screenshots/arkanoid.png)
 ![Contra](https://github.com/babai101/Nes.js/raw/master/screenshots/contra.png)
