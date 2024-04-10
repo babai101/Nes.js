@@ -1,5 +1,5 @@
 const path = require('path');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+// const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
 module.exports = {
   entry: './public/js/nes.js',
@@ -9,12 +9,12 @@ module.exports = {
   },
   optimization: {
     // compress: true,
-    minimize: true,
-    minimizer: [
-      new UglifyJsPlugin({
-        include: /\.js$/
-      })
-    ]
+    minimize: false,
+    // minimizer: [
+    //   new UglifyJsPlugin({
+    //     include: /\.js$/
+    //   })
+    // ]
   }
   // optimization: {
   //   minimize: true,
