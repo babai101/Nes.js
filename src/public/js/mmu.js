@@ -312,6 +312,23 @@ export default function mmu(nes) {
             this.ppuMem[location + 0x2800] = value;
             this.ppuMem[location + 0x2C00] = value;
         }
+
+        // //single screen mirroring
+        // if ((location > 0x2000) && this.nes.Mapper.currentMapperNum == 7) {
+        //     if (location < 0x2400)
+        //         location = location % 0x2000;
+        //     else if (location < 0x2800) 
+        //         location = location % 0x2400;
+        //     else if (location < 0x2C00)
+        //         location = location % 0x2800;
+        //     else if (location < 0x3000)
+        //         location = location % 0x2C00;
+        //     this.ppuMem[location + 0x2000] = value;
+        //     this.ppuMem[location + 0x2400] = value;
+        //     this.ppuMem[location + 0x2800] = value;
+        //     this.ppuMem[location + 0x2C00] = value;
+        // }
+        
         if (location >= 0x3000 && location <= 0x3EFF) {
             location = location - 0x1000;
         }

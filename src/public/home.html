@@ -3,16 +3,18 @@
 
 <head>
     <title></title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css"
+        integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
     <link rel="stylesheet" href="/public/css/style.css">
 </head>
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #e3f2fd;">
         <a class="navbar-brand" href="#">Nes.Js</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
-          </button>
+        </button>
 
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mr-auto">
@@ -29,7 +31,7 @@
             </ul>
             <div>
                 <select id="romSelect" class="form-control">
-                    <option value="select" selected>Select a ROM</option> 
+                    <option value="select" selected>Select a ROM</option>
                 </select>
                 <!--<button id="btnLoadROM" class="btn btn-primary">Load</button>-->
             </div>
@@ -68,23 +70,41 @@
             </div>
         </div>
     </div>
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"
+        integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js"
+        integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4"
+        crossorigin="anonymous"></script>
     <script type="text/javascript" src="/public/build/nes-emu.js"></script>
     <script>
         /*global $*/
-        $(document).ready(function() {
+        $(document).ready(function () {
             var nes = new NES();
             var requestId = 0;
-
+            var fps = 60, fpsInterval, startTime, now, then, elapsed;
+            
             function renderFrame() {
                 // requestId = nes.renderFrame();
-                nes.renderFrame();
+                
                 requestId = requestAnimationFrame(renderFrame);
+                // if enough time has elapsed, draw the next frame
+                now = Date.now();
+                elapsed = now - then;
+                if (elapsed > fpsInterval) {
+
+                    // Get ready for next frame by setting then=now, but also adjust for your
+                    // specified fpsInterval not being a multiple of RAF's interval (16.7ms)
+                    then = now - (elapsed % fpsInterval);
+
+                    // Put your drawing code here
+                    nes.renderFrame();
+                }
             }
             //KeyPress events
-            $(window).keydown(function(e) {
+            $(window).keydown(function (e) {
                 var key = e.which;
                 //do stuff with "key" here...
                 switch (key) {
@@ -92,35 +112,38 @@
                     case 17:
                         nes.MMU.startBtnState = 1;
                         break;
-                        //A
+                    //A
                     case 90:
                         nes.MMU.aBtnState = 1;
                         break;
-                        //B
+                    //B
                     case 88:
                         nes.MMU.bBtnState = 1;
                         break;
-                        //Up
+                    //Up
                     case 38:
                         nes.MMU.upBtnState = 1;
                         break;
-                        //Down
+                    //Down
                     case 40:
                         nes.MMU.downBtnState = 1;
                         break;
-                        //Left
+                    //Left
                     case 37:
                         nes.MMU.leftBtnState = 1;
                         break;
-                        //Right
+                    //Right
                     case 39:
                         nes.MMU.rightBtnState = 1;
+                        break;
+                    case 32:
+                        nes.MMU.selectBtnState = 1;
                         break;
                 }
             });
 
 
-            $(window).keyup(function(e) {
+            $(window).keyup(function (e) {
                 var key = e.which;
                 //do stuff with "key" here...
                 switch (key) {
@@ -128,35 +151,38 @@
                     case 17:
                         nes.MMU.startBtnState = 0;
                         break;
-                        //A
+                    //A
                     case 90:
                         nes.MMU.aBtnState = 0;
                         break;
-                        //B
+                    //B
                     case 88:
                         nes.MMU.bBtnState = 0;
                         break;
-                        //Up
+                    //Up
                     case 38:
                         nes.MMU.upBtnState = 0;
                         break;
-                        //Down
+                    //Down
                     case 40:
                         nes.MMU.downBtnState = 0;
                         break;
-                        //Left
+                    //Left
                     case 37:
                         nes.MMU.leftBtnState = 0;
                         break;
-                        //Right
+                    //Right
                     case 39:
                         nes.MMU.rightBtnState = 0;
+                        break;
+                    case 32:
+                        nes.MMU.selectBtnState = 0;
                         break;
                 }
             });
 
             //Bootstrap events
-            $('#inpSearchRoms').on('hidden.bs.popover', function() {
+            $('#inpSearchRoms').on('hidden.bs.popover', function () {
                 // do something…
                 $('#inpSearchRoms').popover('disable');
             });
@@ -167,19 +193,19 @@
                 $.ajax({
                     type: 'GET',
                     url: url,
-                    success: function(result) {
+                    success: function (result) {
                         var $dropdown = $("#romSelect");
-                        $.each(result.roms, function() {
+                        $.each(result.roms, function () {
                             $dropdown.append($("<option />").val(this.file).text(this.name));
                         });
                     },
-                    error: function(e) {
+                    error: function (e) {
                         console.log(e);
                     }
                 });
             }
             //Enable Bootstrap popovers 
-            $(function() {
+            $(function () {
                 $('#inpSearchRoms').popover({
                     html: true,
                     template: '<div class="popover" role="tooltip"><div class="arrow"></div><div class="popover-body"></div></div>'
@@ -189,10 +215,10 @@
             $('#inpSearchRoms').popover('disable');
 
             //Click events
-            $('#pause').click(function() {
+            $('#pause').click(function () {
                 // isPaused = !isPaused;
             });
-            $('#reset').click(function() {
+            $('#reset').click(function () {
                 nes.reset();
             });
             // $('#btnSearchRoms').click(function() {
@@ -230,22 +256,25 @@
             // });
 
             // $('body').on('click', '#btnLoadROM', function() {
-            $('body').on('change', '#romSelect', function() {
+            $('body').on('change', '#romSelect', function () {
                 //Now load the selected rom into browser memory
                 var url = "/api/getRomByFileName/" + $(this).val();
                 $.ajax({
                     type: 'GET',
                     url: url,
-                    success: function(result) {
+                    success: function (result) {
                         $('#inpSearchRoms').popover('dispose');
                         cancelAnimationFrame(requestId);
                         if (nes.isRunning)
                             nes.reset();
                         nes.initGame(result.romData.data);
+                        fpsInterval = 1000 / fps;
+                        then = Date.now();
+                        startTime = then
                         requestId = requestAnimationFrame(renderFrame);
-                        $('#romSelect').blur(); 
+                        $('#romSelect').blur();
                     },
-                    error: function(e) {
+                    error: function (e) {
                         console.log(e);
                     }
                 });
