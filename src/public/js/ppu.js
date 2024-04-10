@@ -82,93 +82,93 @@ export default function ppu(nes) {
     //     0x000000
     // ];
     this.paletteColors = [
-        [0x7C, 0x7C, 0x7C],
-        [0x00, 0x00, 0xFC],
-        [0x00, 0x00, 0xBC],
-        [0x44, 0x28, 0xBC],
-        [0x94, 0x00, 0x84],
-        [0xA8, 0x00, 0x20],
-        [0xA8, 0x10, 0x00],
-        [0x88, 0x14, 0x00],
-        [0x50, 0x30, 0x00],
-        [0x00, 0x78, 0x00],
-        [0x00, 0x68, 0x00],
-        [0x00, 0x58, 0x00],
-        [0x00, 0x40, 0x58],
-        [0x00, 0x00, 0x00],
-        [0x00, 0x00, 0x00],
-        [0x00, 0x00, 0x00],
-        [0xBC, 0xBC, 0xBC],
-        [0x00, 0x78, 0xF8],
-        [0x00, 0x58, 0xF8],
-        [0x68, 0x44, 0xFC],
-        [0xD8, 0x00, 0xCC],
-        [0xE4, 0x00, 0x58],
-        [0xF8, 0x38, 0x00],
-        [0xE4, 0x5C, 0x10],
-        [0xAC, 0x7C, 0x00],
-        [0x00, 0xB8, 0x00],
-        [0x00, 0xA8, 0x00],
-        [0x00, 0xA8, 0x44],
-        [0x00, 0x88, 0x88],
-        [0x00, 0x00, 0x00],
-        [0x00, 0x00, 0x00],
-        [0x00, 0x00, 0x00],
-        [0xF8, 0xF8, 0xF8],
-        [0x3C, 0xBC, 0xFC],
-        [0x68, 0x88, 0xFC],
-        [0x98, 0x78, 0xF8],
-        [0xF8, 0x78, 0xF8],
-        [0xF8, 0x58, 0x98],
-        [0xF8, 0x78, 0x58],
-        [0xFC, 0xA0, 0x44],
-        [0xF8, 0xB8, 0x00],
-        [0xB8, 0xF8, 0x18],
-        [0x58, 0xD8, 0x54],
-        [0x58, 0xF8, 0x98],
-        [0x00, 0xE8, 0xD8],
-        [0x78, 0x78, 0x78],
-        [0x00, 0x00, 0x00],
-        [0x00, 0x00, 0x00],
-        [0xFC, 0xFC, 0xFC],
-        [0xA4, 0xE4, 0xFC],
-        [0xB8, 0xB8, 0xF8],
-        [0xD8, 0xB8, 0xF8],
-        [0xF8, 0xB8, 0xF8],
-        [0xF8, 0xA4, 0xC0],
-        [0xF0, 0xD0, 0xB0],
-        [0xFC, 0xE0, 0xA8],
-        [0xF8, 0xD8, 0x78],
-        [0xD8, 0xF8, 0x78],
-        [0xB8, 0xF8, 0xB8],
-        [0xB8, 0xF8, 0xD8],
-        [0x00, 0xFC, 0xFC],
-        [0xF8, 0xD8, 0xF8],
-        [0x00, 0x00, 0x00],
-        [0x00, 0x00, 0x00]
+    [0x7C, 0x7C, 0x7C],
+    [0x00, 0x00, 0xFC],
+    [0x00, 0x00, 0xBC],
+    [0x44, 0x28, 0xBC],
+    [0x94, 0x00, 0x84],
+    [0xA8, 0x00, 0x20],
+    [0xA8, 0x10, 0x00],
+    [0x88, 0x14, 0x00],
+    [0x50, 0x30, 0x00],
+    [0x00, 0x78, 0x00],
+    [0x00, 0x68, 0x00],
+    [0x00, 0x58, 0x00],
+    [0x00, 0x40, 0x58],
+    [0x00, 0x00, 0x00],
+    [0x00, 0x00, 0x00],
+    [0x00, 0x00, 0x00],
+    [0xBC, 0xBC, 0xBC],
+    [0x00, 0x78, 0xF8],
+    [0x00, 0x58, 0xF8],
+    [0x68, 0x44, 0xFC],
+    [0xD8, 0x00, 0xCC],
+    [0xE4, 0x00, 0x58],
+    [0xF8, 0x38, 0x00],
+    [0xE4, 0x5C, 0x10],
+    [0xAC, 0x7C, 0x00],
+    [0x00, 0xB8, 0x00],
+    [0x00, 0xA8, 0x00],
+    [0x00, 0xA8, 0x44],
+    [0x00, 0x88, 0x88],
+    [0x00, 0x00, 0x00],
+    [0x00, 0x00, 0x00],
+    [0x00, 0x00, 0x00],
+    [0xF8, 0xF8, 0xF8],
+    [0x3C, 0xBC, 0xFC],
+    [0x68, 0x88, 0xFC],
+    [0x98, 0x78, 0xF8],
+    [0xF8, 0x78, 0xF8],
+    [0xF8, 0x58, 0x98],
+    [0xF8, 0x78, 0x58],
+    [0xFC, 0xA0, 0x44],
+    [0xF8, 0xB8, 0x00],
+    [0xB8, 0xF8, 0x18],
+    [0x58, 0xD8, 0x54],
+    [0x58, 0xF8, 0x98],
+    [0x00, 0xE8, 0xD8],
+    [0x78, 0x78, 0x78],
+    [0x00, 0x00, 0x00],
+    [0x00, 0x00, 0x00],
+    [0xFC, 0xFC, 0xFC],
+    [0xA4, 0xE4, 0xFC],
+    [0xB8, 0xB8, 0xF8],
+    [0xD8, 0xB8, 0xF8],
+    [0xF8, 0xB8, 0xF8],
+    [0xF8, 0xA4, 0xC0],
+    [0xF0, 0xD0, 0xB0],
+    [0xFC, 0xE0, 0xA8],
+    [0xF8, 0xD8, 0x78],
+    [0xD8, 0xF8, 0x78],
+    [0xB8, 0xF8, 0xB8],
+    [0xB8, 0xF8, 0xD8],
+    [0x00, 0xFC, 0xFC],
+    [0xF8, 0xD8, 0xF8],
+    [0x00, 0x00, 0x00],
+    [0x00, 0x00, 0x00]
     ];
-
+    
     var bitReversalLookUp = [
-        0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0, 0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0,
-        0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68, 0xE8, 0x18, 0x98, 0x58, 0xD8, 0x38, 0xB8, 0x78, 0xF8,
-        0x04, 0x84, 0x44, 0xC4, 0x24, 0xA4, 0x64, 0xE4, 0x14, 0x94, 0x54, 0xD4, 0x34, 0xB4, 0x74, 0xF4,
-        0x0C, 0x8C, 0x4C, 0xCC, 0x2C, 0xAC, 0x6C, 0xEC, 0x1C, 0x9C, 0x5C, 0xDC, 0x3C, 0xBC, 0x7C, 0xFC,
-        0x02, 0x82, 0x42, 0xC2, 0x22, 0xA2, 0x62, 0xE2, 0x12, 0x92, 0x52, 0xD2, 0x32, 0xB2, 0x72, 0xF2,
-        0x0A, 0x8A, 0x4A, 0xCA, 0x2A, 0xAA, 0x6A, 0xEA, 0x1A, 0x9A, 0x5A, 0xDA, 0x3A, 0xBA, 0x7A, 0xFA,
-        0x06, 0x86, 0x46, 0xC6, 0x26, 0xA6, 0x66, 0xE6, 0x16, 0x96, 0x56, 0xD6, 0x36, 0xB6, 0x76, 0xF6,
-        0x0E, 0x8E, 0x4E, 0xCE, 0x2E, 0xAE, 0x6E, 0xEE, 0x1E, 0x9E, 0x5E, 0xDE, 0x3E, 0xBE, 0x7E, 0xFE,
-        0x01, 0x81, 0x41, 0xC1, 0x21, 0xA1, 0x61, 0xE1, 0x11, 0x91, 0x51, 0xD1, 0x31, 0xB1, 0x71, 0xF1,
-        0x09, 0x89, 0x49, 0xC9, 0x29, 0xA9, 0x69, 0xE9, 0x19, 0x99, 0x59, 0xD9, 0x39, 0xB9, 0x79, 0xF9,
-        0x05, 0x85, 0x45, 0xC5, 0x25, 0xA5, 0x65, 0xE5, 0x15, 0x95, 0x55, 0xD5, 0x35, 0xB5, 0x75, 0xF5,
-        0x0D, 0x8D, 0x4D, 0xCD, 0x2D, 0xAD, 0x6D, 0xED, 0x1D, 0x9D, 0x5D, 0xDD, 0x3D, 0xBD, 0x7D, 0xFD,
-        0x03, 0x83, 0x43, 0xC3, 0x23, 0xA3, 0x63, 0xE3, 0x13, 0x93, 0x53, 0xD3, 0x33, 0xB3, 0x73, 0xF3,
-        0x0B, 0x8B, 0x4B, 0xCB, 0x2B, 0xAB, 0x6B, 0xEB, 0x1B, 0x9B, 0x5B, 0xDB, 0x3B, 0xBB, 0x7B, 0xFB,
-        0x07, 0x87, 0x47, 0xC7, 0x27, 0xA7, 0x67, 0xE7, 0x17, 0x97, 0x57, 0xD7, 0x37, 0xB7, 0x77, 0xF7,
-        0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF
+    0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0, 0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0,
+    0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68, 0xE8, 0x18, 0x98, 0x58, 0xD8, 0x38, 0xB8, 0x78, 0xF8,
+    0x04, 0x84, 0x44, 0xC4, 0x24, 0xA4, 0x64, 0xE4, 0x14, 0x94, 0x54, 0xD4, 0x34, 0xB4, 0x74, 0xF4,
+    0x0C, 0x8C, 0x4C, 0xCC, 0x2C, 0xAC, 0x6C, 0xEC, 0x1C, 0x9C, 0x5C, 0xDC, 0x3C, 0xBC, 0x7C, 0xFC,
+    0x02, 0x82, 0x42, 0xC2, 0x22, 0xA2, 0x62, 0xE2, 0x12, 0x92, 0x52, 0xD2, 0x32, 0xB2, 0x72, 0xF2,
+    0x0A, 0x8A, 0x4A, 0xCA, 0x2A, 0xAA, 0x6A, 0xEA, 0x1A, 0x9A, 0x5A, 0xDA, 0x3A, 0xBA, 0x7A, 0xFA,
+    0x06, 0x86, 0x46, 0xC6, 0x26, 0xA6, 0x66, 0xE6, 0x16, 0x96, 0x56, 0xD6, 0x36, 0xB6, 0x76, 0xF6,
+    0x0E, 0x8E, 0x4E, 0xCE, 0x2E, 0xAE, 0x6E, 0xEE, 0x1E, 0x9E, 0x5E, 0xDE, 0x3E, 0xBE, 0x7E, 0xFE,
+    0x01, 0x81, 0x41, 0xC1, 0x21, 0xA1, 0x61, 0xE1, 0x11, 0x91, 0x51, 0xD1, 0x31, 0xB1, 0x71, 0xF1,
+    0x09, 0x89, 0x49, 0xC9, 0x29, 0xA9, 0x69, 0xE9, 0x19, 0x99, 0x59, 0xD9, 0x39, 0xB9, 0x79, 0xF9,
+    0x05, 0x85, 0x45, 0xC5, 0x25, 0xA5, 0x65, 0xE5, 0x15, 0x95, 0x55, 0xD5, 0x35, 0xB5, 0x75, 0xF5,
+    0x0D, 0x8D, 0x4D, 0xCD, 0x2D, 0xAD, 0x6D, 0xED, 0x1D, 0x9D, 0x5D, 0xDD, 0x3D, 0xBD, 0x7D, 0xFD,
+    0x03, 0x83, 0x43, 0xC3, 0x23, 0xA3, 0x63, 0xE3, 0x13, 0x93, 0x53, 0xD3, 0x33, 0xB3, 0x73, 0xF3,
+    0x0B, 0x8B, 0x4B, 0xCB, 0x2B, 0xAB, 0x6B, 0xEB, 0x1B, 0x9B, 0x5B, 0xDB, 0x3B, 0xBB, 0x7B, 0xFB,
+    0x07, 0x87, 0x47, 0xC7, 0x27, 0xA7, 0x67, 0xE7, 0x17, 0x97, 0x57, 0xD7, 0x37, 0xB7, 0x77, 0xF7,
+    0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF
     ];
-
+    
     var bgUpdated = false;
-
+    
     //PPUCTRL vars
     this.baseNameTblAddr = 0x2000;
     this.vRamAddrInc = 1;
@@ -178,7 +178,7 @@ export default function ppu(nes) {
     this.ppuMasterSlave = 'readBackdrop';
     this.nmi_output = false;
     var nmi_output_prev = false;
-
+    
     //PPUMASK vars
     this.renderGreyscale = false;
     var renderBGLeftMost = false;
@@ -188,14 +188,14 @@ export default function ppu(nes) {
     this.renderEmphRed = false;
     this.renderEmphGreen = false;
     this.renderEmphBlue = false;
-
+    
     //PPUSTATUS vars
     this.ppuStatusBits = 0b00000000;
     this.spriteOverflow = false;
     //this.spriteHit = false;
     this.vBlankStarted = false;
     this.sprite0Hit = false;
-
+    
     //PPUSCROLL vars
     this.xScroll = 0;
     this.yScroll = 0;
@@ -204,20 +204,20 @@ export default function ppu(nes) {
     this.fineXScroll = 0;
     this.fineYScroll = 0;
     this.OAM = [];
-
+    
     //OAMADDR 
     this.OAMADDR = 0x00;
-
+    
     //OAMDATA
     this.OAMDATA = 0x00;
-
+    
     //OAMDMA
     this.OAMDMA = 0x00;
-
+    
     this.spriteGrid = [];
     this.backGroundGrid = [];
     var secOAM = [];
-
+    
     //Update PPUCTRL status
     this.setPPUCTRL = function(PPUCTRL) {
         var temp;
@@ -261,14 +261,14 @@ export default function ppu(nes) {
             }
             nmi_output_prev = true;
         }
-
-
+        
+        
         /*New cycle accurate logic*/
         //Nametable select
         this.t &= ~(0x0C00);
         this.t |= (PPUCTRL & 0x03) << 10;
     };
-
+    
     //Update PPUMASK status
     this.setPPUMASK = function(PPUMASK) {
         //DEbug 
@@ -324,18 +324,18 @@ export default function ppu(nes) {
         else
             this.renderEmphBlue = true;
     };
-
-
+    
+    
     //Update OAMADDR
     this.setOAMADDR = function(OAMADDR) {
         this.OAMADDR = OAMADDR;
     };
-
+    
     //Update PPUADDR
     // this.setPPUADDR = function(PPUADDR) {
     //     this.PPUADDR = PPUADDR;
     // };
-
+    
     //Load PPU Palette values
     this.setPalette = function(index, value) {
         if (index == 0x10) {
@@ -348,11 +348,11 @@ export default function ppu(nes) {
         }
         palette[index] = value;
     };
-
+    
     this.getPalette = function(index) {
         return palette[index];
     };
-
+    
     this.initPalette = function() {
         paletteColorsRendered = new Uint32Array(this.paletteColors.length);
         for (var i = 0; i < paletteColorsRendered.length; i++) {
@@ -362,11 +362,11 @@ export default function ppu(nes) {
             paletteColorsRendered[i] = 0xFF000000 | this.paletteColors[i][2] << 16 | this.paletteColors[i][1] << 8 | this.paletteColors[i][0];
         }
     };
-
+    
     this.getOffScreenBuffer = function() {
         return offScreenBuffer;
     };
-
+    
     this.initScreenBuffer = function() {
         // this.render = this.renderPixelFast;
         this.render = this.renderPixel;
@@ -374,7 +374,7 @@ export default function ppu(nes) {
         for (var i = 0; i < 64; i++) {
             palette[i] = 0;
         }
-
+        
         this.nes.mainDisplay.initScreenBuffer();
         for (var i = 0; i < 256; i++) {
             sprLkpTbl[i] = 0;
@@ -384,20 +384,20 @@ export default function ppu(nes) {
         }
     };
     var sprLkpTbl = new Uint8Array(256);
-
+    
     this.secOAMInit = function() {
         (secOAM = []).length = 32;
         secOAM.fill(0x100);
     };
-
+    
     /*
-    t & v 
-    yyy NN YYYYY XXXXX
-    ||| || ||||| +++++-- coarse X scroll
-    ||| || +++++-------- coarse Y scroll
-    ||| ++-------------- nametable select
-    +++----------------- fine Y scroll
-    */
+     *    t & v 
+     *    yyy NN YYYYY XXXXX
+     *    ||| || ||||| +++++-- coarse X scroll
+     *    ||| || +++++-------- coarse Y scroll
+     *    ||| ++-------------- nametable select
+     *    +++----------------- fine Y scroll
+     */
     //OAM registers
     var n = 0;
     var m = 0;
@@ -428,17 +428,17 @@ export default function ppu(nes) {
     this.PPUDATAReadBuffer = 0;
     var bgPixel = 0;
     var tempBgHBit = 0,
-        tempBgLBit = 0,
-        tempAtHBit = 0,
-        tempAtLBit = 0,
-        shiftAmt = 0,
-        bgHShiftAmt = 0,
-        bgLShiftAmt = 0;
+    tempBgLBit = 0,
+    tempAtHBit = 0,
+    tempAtLBit = 0,
+    shiftAmt = 0,
+    bgHShiftAmt = 0,
+    bgLShiftAmt = 0;
     var spritePixel = 0,
-        spritePixelColor = 0,
-        tempSpriteH = 0,
-        tempSpriteL = 0,
-        tempSpritePriority = 0;
+    spritePixelColor = 0,
+    tempSpriteH = 0,
+    tempSpriteL = 0,
+    tempSpritePriority = 0;
     var outputPixel = 0;
     var spriteOpUnits = []; //Sprite output unit combined of two 8-bit shift registers
     //One attribute latch and 1 X-position counter
@@ -448,13 +448,13 @@ export default function ppu(nes) {
             // this.spriteOpUnits.push({ bitmapLow: 0, bitmapHigh: 0, attr: 0, X: 0xFF, isActive: false, shiftCount: 0 });
         }
     };
-
+    
     var currentSpriteOpUnit = 0;
-
+    
     this.getCurrentScanline = function() {
         return currentScanline;
     };
-
+    
     this.getCurrentCycle = function() {
         return currentCycle;
     };
@@ -495,7 +495,7 @@ export default function ppu(nes) {
         this.w = 0;
         return prevStatus;
     };
-
+    
     this.getPPUDATA = function(location) {
         var returnValue = 0;
         if (currentScanline >= 240 && currentScanline <= 260) {
@@ -516,7 +516,7 @@ export default function ppu(nes) {
         }
         return returnValue;
     };
-
+    
     this.setPPUDATA = function(value) {
         if (currentScanline >= 240 && currentScanline <= 260) {
             this.nes.MMU.setPpuMemVal(v, value);
@@ -524,7 +524,7 @@ export default function ppu(nes) {
                 v += this.vRamAddrInc;
         }
         else if (currentScanline == 261 || (currentScanline >= 0 && currentScanline < 240)) {
-        this.nes.MMU.setPpuMemVal(v, value);
+            this.nes.MMU.setPpuMemVal(v, value);
             if (renderBackground || renderSprite) {
                 this.updateXScroll();
                 this.updateYScroll();
@@ -535,7 +535,7 @@ export default function ppu(nes) {
             }
         }
     };
-
+    
     this.getReadBuffer = function(location) {
         var returnValue = this.PPUDATAReadBuffer;
         if (location >= 0x0000 && location <= 0x3EFF) {
@@ -546,7 +546,7 @@ export default function ppu(nes) {
         }
         return returnValue;
     };
-
+    
     this.setPPUSCROLL = function(PPUSCROLL) {
         if (this.w == 0) {
             this.t &= ~(0x1F);
@@ -587,11 +587,11 @@ export default function ppu(nes) {
             lastPPUAddr = lastPPUAddrTemp | PPUADDR;
         }
     };
-
+    
     var oddFrameCycleSkipped = 0;
     var sprite0Evaluated = false;
     var checkSprite0Hit = false;
-
+    
     this.clock = function() {
         if (vIncremented)
             vIncremented = false;
@@ -622,7 +622,7 @@ export default function ppu(nes) {
                     }
                     this.memoryFetch();
                     this.updateYScroll(); //FIXME
-
+                    
                     if (renderBackground || renderSprite) {
                         this.evalSprites();
                     }
@@ -762,9 +762,9 @@ export default function ppu(nes) {
                         //MMC3 IRQ 
                         if (this.nes.Mapper.currentMapperNum == 4) {
                             if (currentCycle == 260) {
-                                // if (renderBackground || renderSprite) {
-                                this.clockMMC3IRQ();
-                                // }
+                                if (renderBackground || renderSprite) {
+                                    this.clockMMC3IRQ();
+                                }
                             }
                         }
                         this.fetchSprites();
@@ -827,15 +827,15 @@ export default function ppu(nes) {
                 //MMC3 IRQ 
                 if (this.nes.Mapper.currentMapperNum == 4) {
                     if (currentCycle == 260) {
-                        // if (renderBackground || renderSprite) {
-                        this.clockMMC3IRQ();
-                        // }
+                        if (renderBackground || renderSprite) {
+                            this.clockMMC3IRQ();
+                        }
                     }
                 }
                 this.fetchSprites();
                 if (renderBackground || renderSprite)
                     this.OAMADDR = 0;
-
+                
                 if (currentCycle >= 280 && currentCycle <= 304) {
                     this.copyVScroll();
                 }
@@ -855,7 +855,7 @@ export default function ppu(nes) {
             else if (currentCycle == 338 || currentCycle == 340)
                 nt_byte = this.nes.MMU.ppuMem[0x2000 | (v & 0x0FFF)]; //this.getNameTableByte(); // this.processPrerenderScanlines();
         }
-
+        
         currentCycle++;
         if (currentCycle == 341) {
             currentCycle = 0;
@@ -872,7 +872,7 @@ export default function ppu(nes) {
         }
         return false;
     };
-
+    
     // this.processVisibleScanlines = function() {
     //     switch (currentCycle) {
     //         case 0:
@@ -900,7 +900,7 @@ export default function ppu(nes) {
     //             }
     //             this.memoryFetch();
     //             this.updateYScroll(); //FIXME
-
+    
     //             if (renderBackground || renderSprite) {
     //                 this.evalSprites();
     //             }
@@ -926,7 +926,7 @@ export default function ppu(nes) {
     //             oamReadBuffer = secOAM[0];
     //             return;
     //     }
-
+    
     //     if (currentCycle < 256) {
     //         this.memoryFetch();
     //         this.render();
@@ -946,7 +946,7 @@ export default function ppu(nes) {
     //         oamReadBuffer = secOAM[0];
     //     }
     // };
-
+    
     // this.processVBlankScanlines = function() {
     //     if (currentCycle == 1) {
     //         //Set V-Blank
@@ -965,7 +965,7 @@ export default function ppu(nes) {
     //         suppressNMI = false;
     //     }
     // };
-
+    
     // this.processPrerenderScanlines = function() {
     //     if (currentCycle >= 1 && currentCycle <= 256) {
     //         if (currentCycle == 1) {
@@ -990,7 +990,7 @@ export default function ppu(nes) {
     //         this.fetchSprites();
     //         if (renderBackground || renderSprite)
     //             this.OAMADDR = 0;
-
+    
     //         if (currentCycle >= 280 && currentCycle <= 304) {
     //             this.copyVScroll();
     //         }
@@ -1010,7 +1010,7 @@ export default function ppu(nes) {
     //     else if (currentCycle == 338 || currentCycle == 340)
     //         nt_byte = this.nes.MMU.ppuMem[0x2000 | (v & 0x0FFF)]; //this.getNameTableByte();
     // };
-
+    
     this.evalSprites = function() {
         //Even cycles
         if ((currentCycle & 1) == 0) {
@@ -1063,14 +1063,14 @@ export default function ppu(nes) {
             }
         }
     };
-
+    
     this.clearSecondaryOAM = function() {
         if (currentCycle == 1) {
             this.nes.MMU.secOAMInit();
         }
         secOAMIndex = 0;
     };
-
+    
     this.fetchSprites = function() {
         switch (currentCycle % 8) {
             //Two garbage NameTable bytes
@@ -1116,7 +1116,7 @@ export default function ppu(nes) {
                 break;
         }
     };
-
+    
     var spriteTileNum = 0;
     var spriteEffectiveY = 0;
     var spriteTileAddr = 0;
@@ -1126,12 +1126,12 @@ export default function ppu(nes) {
     var horizontalFlipping = false;
     this.getSpriteTileBitmapLow = function() {
         tempSpriteOpUnitIndex = currentSpriteOpUnit * 4;
-
+        
         verticalFlipping = (spriteOpUnits[currentSpriteOpUnit][4] & 0x80) == 0x80;
         horizontalFlipping = (spriteOpUnits[currentSpriteOpUnit][4] & 0x40) == 0x40;
-
+        
         spriteEffectiveY = currentScanline - secOAM[tempSpriteOpUnitIndex];
-
+        
         spriteTileNum = secOAM[tempSpriteOpUnitIndex + 1];
         tempSpritePatTblAddr = this.spritePatTblAddr;
         if (spriteSize === 16) {
@@ -1152,12 +1152,12 @@ export default function ppu(nes) {
             }
             tempSpritePatTblAddr = secOAM[tempSpriteOpUnitIndex + 1] & 0x01;
         }
-
+        
         //vertical flipping
         if (verticalFlipping) {
             spriteEffectiveY = Math.abs(spriteEffectiveY - 7);
         }
-
+        
         spriteTileAddr = (spriteTileNum * 16) + spriteEffectiveY + 0x1000 * tempSpritePatTblAddr;
         spriteOpUnits[currentSpriteOpUnit][2] = this.nes.Mapper.getCHRRom(spriteTileAddr);
         //horizontal flipping
@@ -1168,8 +1168,8 @@ export default function ppu(nes) {
         secOAM[tempSpriteOpUnitIndex] = 0x100;
         secOAM[tempSpriteOpUnitIndex + 1] = 0x100;
     };
-
-
+    
+    
     this.getSpriteTileBitmapHigh = function() {
         spriteTileAddr += 8;
         spriteOpUnits[currentSpriteOpUnit][3] = this.nes.Mapper.getCHRRom(spriteTileAddr);
@@ -1177,7 +1177,7 @@ export default function ppu(nes) {
             spriteOpUnits[currentSpriteOpUnit][3] = bitReversalLookUp[spriteOpUnits[currentSpriteOpUnit][3]];
         }
     };
-
+    
     var tileAddr = 0;
     this.memoryFetch = function() {
         switch (currentCycle & 0x07) {
@@ -1222,11 +1222,11 @@ export default function ppu(nes) {
                 break;
         }
     };
-
+    
     // this.getNameTableByte = function() {
     //     nt_byte = this.nes.MMU.ppuMem[0x2000 | (v & 0x0FFF)];
     // };
-
+    
     // this.getAttrTableByte = function() {
     //     at_byte = this.nes.MMU.ppuMem[0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07)];
     //     this.at_bits = this.calcPaletteFromAttr(v & 0x1F, (v & 0x3E0) >> 5, at_byte);
@@ -1239,31 +1239,31 @@ export default function ppu(nes) {
     //         atL |= 0xFF;
     //     }
     // };
-
+    
     /* PPU addresses within Pattern tables
-    DCBA98 76543210
-    ---------------
-    0HRRRR CCCCPTTT
-    |||||| |||||+++- T: Fine Y offset, the row number within a tile
-    |||||| ||||+---- P: Bit plane (0: "lower"; 1: "upper")
-    |||||| ++++----- C: Tile column
-    ||++++---------- R: Tile row
-    |+-------------- H: Half of sprite table (0: "left"; 1: "right")
-    +--------------- 0: Pattern table is at $0000-$1FFF
-    */
-
+     *    DCBA98 76543210
+     *    ---------------
+     *    0HRRRR CCCCPTTT
+     *    |||||| |||||+++- T: Fine Y offset, the row number within a tile
+     *    |||||| ||||+---- P: Bit plane (0: "lower"; 1: "upper")
+     *    |||||| ++++----- C: Tile column
+     *    ||++++---------- R: Tile row
+     *    |+-------------- H: Half of sprite table (0: "left"; 1: "right")
+     *    +--------------- 0: Pattern table is at $0000-$1FFF
+     */
+    
     this.getTileBitmapLow = function() {
         var T = (v & 0x7000) >> 12;
         var addr = (nt_byte * 16) + 0x1000 * (this.backgroundPatTblAddr) + T;
         bgL = (bgL & 0xFF00) | (this.nes.Mapper.getCHRRom(addr));
     };
-
+    
     this.getTileBitmapHigh = function() {
         var T = (v & 0x7000) >> 12;
         var addr = (nt_byte * 16) + 8 + 0x1000 * (this.backgroundPatTblAddr) + T;
         bgH = (bgH & 0xFF00) | (this.nes.Mapper.getCHRRom(addr));
     };
-
+    
     //Update Coarse X bits. Ref NesDev Wiki
     this.updateXScroll = function() {
         if (renderBackground || renderSprite) {
@@ -1301,21 +1301,21 @@ export default function ppu(nes) {
             }
         }
     };
-
+    
     this.copyVScroll = function() {
         if (renderBackground || renderSprite) {
             v &= ~(0x7BE0);
             v |= this.t & 0x7BE0;
         }
     };
-
+    
     this.copyHScroll = function() {
         if (renderBackground || renderSprite) {
             v &= ~(0x041F);
             v |= this.t & 0x041F;
         }
     };
-
+    
     var tempSprAttr = 0;
     var tempSpritePixel = 0;
     var bgPixelColor = 0;
@@ -1333,12 +1333,12 @@ export default function ppu(nes) {
             else {
                 tempBgHBit = (bgShiftH & shiftAmt) >> bgHShiftAmt;
                 tempBgLBit = (bgShiftL & shiftAmt) >> bgLShiftAmt;
-
+                
                 bgPixel = tempBgHBit | tempBgLBit;
-
+                
                 tempAtHBit = (atShiftH & shiftAmt) >> bgHShiftAmt;
                 tempAtLBit = (atShiftL & shiftAmt) >> bgLShiftAmt;
-
+                
                 // bgPixelColor = palette[(tempAtHBit | tempAtLBit) * 4 + bgPixel];
             }
             bgShiftH <<= 1;
@@ -1346,10 +1346,10 @@ export default function ppu(nes) {
             atShiftH <<= 1;
             atShiftL <<= 1;
         }
-
+        
         spritePixel = 0;
         spritePixelColor = 0;
-
+        
         if (renderSprite) {
             if (!renderSpritesLeftMost && currentCycle < 8) {
                 spritePixel = 0;
@@ -1425,54 +1425,54 @@ export default function ppu(nes) {
         }
         currentScanlineBufferIndex++;
     };
-
+    
     this.getAtBit = function(byte, shiftBit) {
         byte <<= shiftBit;
         return (byte & 0x80) >> 7;
     };
-
+    
     this.reloadShiftRegisters = function() {
         bgShiftL = bgL;
         bgShiftH = bgH;
         atShiftH = atH;
         atShiftL = atL;
     };
-
+    
     this.calcPalette = function(x, y, at_byte) {
         var pal = at_byte >> ((x & 0x01) * 2);
         pal = pal >> ((y & 0x01) * 4);
         return pal & 0x03;
     };
-
+    
     this.rendering = function() {
         if ((renderBackground == 1) || (renderSprite == 1))
             return true;
         else return false;
     };
-
+    
     this.renderPixelFast = function() {
         bgPixel,
         bgPixelColor = 0;
         if (renderBackground) {
-
+            
             tempBgHBit = (bgShiftH & shiftAmt) >> bgHShiftAmt;
             tempBgLBit = (bgShiftL & shiftAmt) >> bgLShiftAmt;
-
+            
             bgPixel = tempBgHBit | tempBgLBit;
-
+            
             tempAtHBit = (atShiftH & shiftAmt) >> bgHShiftAmt;
             tempAtLBit = (atShiftL & shiftAmt) >> bgLShiftAmt;
-
+            
             // bgPixelColor = palette[(tempAtHBit | tempAtLBit) * 4 + bgPixel];
             bgShiftH <<= 1;
             bgShiftL <<= 1;
             atShiftH <<= 1;
             atShiftL <<= 1;
         }
-
+        
         spritePixel = 0;
         spritePixelColor = 0;
-
+        
         if (renderSprite) {
             if (sprLkpTbl[currentCycle]) {
                 //loop for all sprite pixels on current cycle output
@@ -1542,18 +1542,26 @@ export default function ppu(nes) {
         }
         currentScanlineBufferIndex++;
     };
-
+    
     this.clockMMC3IRQ = function() {
-        if (this.nes.Mapper.MMC3IRQReload) {
+        //         if (this.nes.Mapper.MMC3IRQReload) {
+        //             this.MMC3IRQCounter = this.nes.Mapper.MMC3IRQCntReloadVal;
+        //             this.nes.Mapper.MMC3IRQReload = false;
+        //         }
+        //         if (this.MMC3IRQCounter == 0) {
+        //             this.MMC3IRQCounter = this.nes.Mapper.MMC3IRQCntReloadVal;
+        //             if (this.nes.Mapper.MMC3IRQEnabled) { //generate irq
+        //                 this.nes.CPU.IRQToRun = 3;
+        //             }
+        //         }
+        //         else this.MMC3IRQCounter--;
+        if (this.nes.Mapper.MMC3IRQReload || this.MMC3IRQCounter == 0) {
             this.MMC3IRQCounter = this.nes.Mapper.MMC3IRQCntReloadVal;
-            this.nes.Mapper.MMC3IRQReload = false;
-        }
-        if (this.MMC3IRQCounter == 0) {
-            this.MMC3IRQCounter = this.nes.Mapper.MMC3IRQCntReloadVal;
-            if (this.nes.Mapper.MMC3IRQEnabled) { //generate irq
-                this.nes.CPU.IRQToRun = 3;
-            }
         }
         else this.MMC3IRQCounter--;
+        if (this.MMC3IRQCounter <= 0 && this.nes.Mapper.MMC3IRQEnabled) {
+            this.nes.CPU.IRQToRun = 3;
+        }
+        this.nes.Mapper.MMC3IRQReload = false;
     };
 }

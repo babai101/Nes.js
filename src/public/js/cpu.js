@@ -324,7 +324,7 @@ export default function cpu(nes) {
 	};
 
 	this.clockAPU = function() {
-		this.nes.APU.run();
+ 		this.nes.APU.run();
 	};
 
 	this.run = function() {
@@ -4345,7 +4345,7 @@ export default function cpu(nes) {
 	};
 
 	this.clockUnits = function() {
-		this.nes.APU.run();
+ 		this.nes.APU.run();
 		if (this.runPPU) {
 			for (var i = 0; i < 3; i++) {
 				this.clockPPU();
@@ -4403,19 +4403,19 @@ export default function cpu(nes) {
 		// this.clockUnits();
 	};
 	this.IRQToRun = 0;
-	this.runIRQ = function() {
-		switch (this.IRQToRun) {
-			case 1: //NMI
-				this.NMI();
-				break;
-			case 2: //Immediate NMI
-				this.IRQToRun--;
-				break;
-			case 3: //IRQ
-				this.IRQ();
-				break;
-		}
-	};
+	// this.runIRQ = function() {
+	// 	switch (this.IRQToRun) {
+	// 		case 1: //NMI
+	// 			this.NMI();
+	// 			break;
+	// 		case 2: //Immediate NMI
+	// 			this.IRQToRun--;
+	// 			break;
+	// 		case 3: //IRQ
+	// 			this.IRQ();
+	// 			break;
+	// 	}
+	// };
 
 	this.pushStatusToLog = function() {
 		log.push("A:" + ("00" + this.accumulator.toString(16).toUpperCase()).slice(-2));
@@ -4424,15 +4424,15 @@ export default function cpu(nes) {
 		log.push("P:" + ("00" + this.P.toString(16).toUpperCase()).slice(-2));
 		log.push("SP:" + ("00" + this.sp.toString(16).toUpperCase()).slice(-2));
 	};
-	this.execCPU = function() {
-		// log = [];
-		// log.push(("0000" + this.pc.toString(16).toUpperCase()).slice(-4));
-		var opCode = this.memoryRead(0, 0);
-		// this.pushStatusToLog();
-		this.executeInstruction(opCode);
-		// printLog();
-		if (this.IRQToRun) this.runIRQ();
-	};
+	// this.execCPU = function() {
+	// 	// log = [];
+	// 	// log.push(("0000" + this.pc.toString(16).toUpperCase()).slice(-4));
+	// 	var opCode = this.memoryRead(0, 0);
+	// 	// this.pushStatusToLog();
+	// 	this.executeInstruction(opCode);
+	// 	// printLog();
+	// 	if (this.IRQToRun) this.runIRQ();
+	// };
 
 	this.cyclesToHalt = 0;
 	this.frame = function() {

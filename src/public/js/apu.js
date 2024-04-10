@@ -60,23 +60,27 @@ export default function apu(nes) {
     };
 
     this.init = function() {
-        var AudioContext = window.AudioContext || window.webkitAudioContext;
-        this.audioCtx = new AudioContext();
-        if (!window.AudioContext) {
-            if (!window.WebkitAudioContext) {
-                console.log("Could not initialize audio!");
-                return;
-            }
-            else {
-                this.audioCtx = new window.WebkitAudioContext();
-            }
-        }
-        else {
-            this.audioCtx = new window.AudioContext();
-        }
-        this.scriptNode = this.audioCtx.createScriptProcessor(this.bufferLength, 0, 1);
-        this.scriptNode.onaudioprocess = this.onaudioprocess;
-        this.scriptNode.connect(this.audioCtx.destination);
+        // const AudioContext = window.AudioContext || window.webkitAudioContext;
+
+        // const audioContext = new AudioContext();
+
+        // var AudioContext = window.AudioContext || window.webkitAudioContext;
+        // this.audioCtx = new AudioContext();
+        // if (!window.AudioContext) {
+        //     if (!window.WebkitAudioContext) {
+        //         console.log("Could not initialize audio!");
+        //         return;
+        //     }
+        //     else {
+        //         this.audioCtx = new window.WebkitAudioContext();
+        //     }
+        // }
+        // else {
+        //     this.audioCtx = new window.AudioContext();
+        // }
+        // this.scriptNode = this.audioCtx.createScriptProcessor(this.bufferLength, 0, 1);
+        // this.scriptNode.onaudioprocess = this.onaudioprocess;
+        // this.scriptNode.connect(this.audioCtx.destination);
         initMixesLkpTables();
     };
 
@@ -322,6 +326,7 @@ export default function apu(nes) {
         var channelData = e.outputBuffer.getChannelData(0);
         var size = channelData.length;
         if (this.outputBuffer.size() < size) {
+            console.log("buffer underrun, running cpu to generate more samples.")
             // this.nes.CPU.runPPU = false;
             this.nes.CPU.frame();
             // this.nes.CPU.runPPU = true;
@@ -466,11 +471,11 @@ export default function apu(nes) {
 
     this.setFrameIRQ = function() {
         this.frameIRQ = true;
-        if ((this.nes.CPU.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
-            if (!(this.nes.CPU.P & 0x04)) { //IRQ is enabled
+        // if ((this.nes.CPU.P >> 2) & 0x01 == 0x01) { //IRQ is enabled
+        //     if (!(this.nes.CPU.P & 0x04)) { //IRQ is enabled
                 this.nes.CPU.IRQToRun = 3;
-            }
-        }
+            // }
+        // }
     };
 
     this.updateEnvelopes = function() {

@@ -56,6 +56,10 @@ export default function mapper(nes) {
                 //UNROM
             case 2:
                 break;
+            case 7: //AxROM
+                this.nes.MMU.nameTableMirroring = 2;
+                this.nes.ines.mirroring = 2;
+                break;
         }
     };
 
@@ -95,6 +99,15 @@ export default function mapper(nes) {
                     prgBank = new Uint8Array(8192);
                     for (var j = 0; j < 8192; j++) {
                         prgBank[j] = romBytes[i * 8192 + 16 + j];
+                    }
+                    prgRomBanks[i] = prgBank;
+                }
+                break;
+            case 7: //AxROM
+                for (var i = 0; i < this.nes.ines.prgRomUnits; i++) {
+                    prgBank = new Uint8Array(32768);
+                    for (var j = 0; j < 32768; j++) {
+                        prgBank[j] = romBytes[i * 32768 + 16 + j];
                     }
                     prgRomBanks[i] = prgBank;
                 }
@@ -201,6 +214,8 @@ export default function mapper(nes) {
                 }
             case 4: //MMC3
                 return getMMC3PrgRom(location);
+            case 7: //AxROM
+                return prgRomBanks[this.currentPRGBank][location - 0x8000];
         }
     };
 
@@ -236,6 +251,7 @@ export default function mapper(nes) {
             case 0: //NROM
             case 2: //UnROM
             case 3: //CNROM
+            case 7: //AxROM
                 return chrRomBanks[this.currentCHRBank][location];
             case 4: //MMC3
                 if (this.chrRam) {
@@ -265,6 +281,7 @@ export default function mapper(nes) {
             case 2: //UnROM
             case 3: //CNROM
             case 4: //MMC3
+            case 7: //AxROM
                 if (this.chrRam)
                     chrRomBanks[this.currentCHRBank][location] = value;
                 break;
@@ -372,6 +389,9 @@ export default function mapper(nes) {
                         this.MMC3IRQEnabled = true;
                     }
                 }
+                break;
+            case 7: //AxROM
+                this.setPRGBank(value & 0x07);
                 break;
         }
     };
