@@ -1,33 +1,137 @@
+/* Nes.js home page
+   Palette borrowed from the console itself: two greys, black glass, one red. */
+
+:root {
+    --shell: #cfcdc8;        /* light grey case: page background */
+    --shell-edge: #b4b1ab;   /* grooves and rules on the case */
+    --plastic: #3b3b3e;      /* dark grey: bezel and controller */
+    --plastic-edge: #2c2c2e;
+    --glass: #000;           /* the screen */
+    --red: #c4122f;          /* A/B buttons, power light, active state */
+    --ink: #2c2c2e;          /* text on the light case */
+    --ink-soft: #5d5b57;
+    --on-plastic: #e9e7e2;   /* text on dark plastic */
+    --on-plastic-soft: #a8a6a1;
+    --key: #f3f2ee;          /* keycaps */
+
+    --pad: 18px;             /* bezel padding */
+    color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --shell: #262628;
+        --shell-edge: #3a3a3d;
+        --plastic: #3b3b3e;
+        --plastic-edge: #4a4a4e;
+        --ink: #e9e7e2;
+        --ink-soft: #a8a6a1;
+        --key: #dedcd6;
+        color-scheme: dark;
+    }
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 body {
-    /*font-family: 'Press Start 2P', cursive;*/
-    /*font-size: 8px;*/
-    background-color: black;
+    margin: 0;
+    min-height: 100vh;
+    background: var(--shell);
+    color: var(--ink);
+    font-family: 'Archivo', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
 }
 
-h4 {
-    font-size: 16px;
-    color: white;
+/* ---------- Top bar ---------- */
+
+.topbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px 32px;
+    max-width: 1220px;
+    margin: 0 auto;
+    padding: 28px 24px 22px;
+    border-bottom: 2px solid var(--shell-edge);
 }
 
-h5 {
-    font-size: 12px;
-    color: white;
+.wordmark {
+    margin: 0;
+    font-size: 40px;
+    line-height: 1;
+    font-weight: 800;
+    font-stretch: 125%;
+    font-variation-settings: 'wdth' 125;
+    letter-spacing: -0.02em;
 }
 
-/*select {*/
+.tagline {
+    margin: 6px 0 0;
+    color: var(--ink-soft);
+    font-size: 14px;
+}
 
-/*    font-size: 12px;*/
+.game-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+}
 
-/*    min-width: 100px;*/
+.game-picker__label {
+    color: var(--ink-soft);
+    font-size: 14px;
+}
 
-/*    max-width: 200px;*/
+#romSelect {
+    min-width: 240px;
+    max-width: 70vw;
+    padding: 9px 36px 9px 12px;
+    font: inherit;
+    font-weight: 500;
+    color: var(--on-plastic);
+    background: var(--plastic)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23e9e7e2' stroke-width='2'/%3E%3C/svg%3E")
+        no-repeat right 12px center;
+    border: 0;
+    border-radius: 6px;
+    appearance: none;
+    cursor: pointer;
+}
 
-/*    min-height: 30px;*/
+/* ---------- Stage: screen + controls ---------- */
 
-/*}*/
+.stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    padding: 32px 16px 48px;
+}
+
+/* The bezel's width is the screen width plus padding.
+   Fit: up to 880px wide. 1x-4x: the toggle sets --screen-w on .stage. */
+.bezel {
+    width: min(100%, calc(var(--screen-w, 880px) + 2 * var(--pad)));
+    padding: var(--pad) var(--pad) 12px;
+    background: var(--plastic);
+    border-radius: 10px;
+    box-shadow: inset 0 -3px 0 var(--plastic-edge);
+}
+
+.screen {
+    position: relative;
+    line-height: 0;
+    background: var(--glass);
+}
 
 canvas {
-    outline: 1px dotted cyan; /* outline, not border, so it does not skew the aspect ratio */
     /* -ms-interpolation-mode: nearest-neighbor;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: -moz-crisp-edges;
@@ -37,72 +141,257 @@ canvas {
     image-rendering: auto;   /* smooth (bilinear) scaling */
 }
 
-.viewport {
-    display: flex;
-    justify-content: center;
-    padding: 0 16px;
-}
-
 .mainCanvas {
-    /* Width is set by the 1x/2x/3x/4x toggle (see home.html); "Fit" uses
-       the default below. Height always follows from the aspect ratio. */
-    width: min(100%, 880px);
-    max-width: 100%;   /* never overflow a narrow window */
+    display: block;
+    width: 100%;
     height: auto;
     /* NTSC pixel aspect ratio is 8:7, so 256x224 pixels display as
        (256 * 8/7) : 224 = 292.57 : 224 = 64 : 49 (about 1.306:1) */
     aspect-ratio: 64 / 49;
 }
 
-.scale-toggle {
-    display: flex;
-    justify-content: center;
-    gap: 4px;
-    margin-top: 12px;
-}
-
-.scale-toggle button {
-    background: transparent;
-    color: #9ad;
-    border: 1px solid #456;
-    border-radius: 4px;
-    padding: 2px 10px;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.scale-toggle button.active {
-    background: #e3f2fd;
-    color: #000;
-    border-color: #e3f2fd;
-}
-
-/*.btn {*/
-
-/*    font-size: 8px;*/
-
-/*}*/
-
-/*.navbar a {*/
-
-/*    font-size: 8px;*/
-
-/*}*/
-
-.text-center {
+.screen__empty {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    padding: 24px;
+    color: var(--on-plastic-soft);
+    font-size: clamp(14px, 2.2vw, 18px);
+    line-height: 1.4;
     text-align: center;
 }
 
-::-webkit-input-placeholder {
-    font-size: 8px;
+.screen__empty[hidden] {
+    display: none;
 }
 
-:-moz-placeholder {
-    /* Firefox 18- */
-    font-size: 8px;
+.bezel__strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    margin-top: 12px;
 }
 
-::-moz-placeholder {
-    /* Firefox 19+ */
-    font-size: 8px;
+.status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0;
+    min-width: 0;
+    color: var(--on-plastic-soft);
+    font-size: 13px;
+}
+
+#statusText {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.status__led {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #5a1a24;
+}
+
+.status.is-on {
+    color: var(--on-plastic);
+}
+
+.status.is-on .status__led {
+    background: var(--red);
+    box-shadow: 0 0 6px 1px rgba(196, 18, 47, 0.7);
+}
+
+.scale-toggle {
+    display: flex;
+    padding: 2px;
+    background: var(--plastic-edge);
+    border-radius: 6px;
+}
+
+.scale-toggle button {
+    min-width: 40px;
+    padding: 4px 10px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--on-plastic-soft);
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.scale-toggle button:hover {
+    color: var(--on-plastic);
+}
+
+.scale-toggle button.active {
+    color: #fff;
+    background: var(--red);
+}
+
+/* ---------- Key map ---------- */
+
+.keymap {
+    width: min(100%, 640px);
+}
+
+.keymap__title {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.pad {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 24px;
+    padding: 22px 28px;
+    background: var(--plastic);
+    border-radius: 14px;
+    box-shadow: inset 0 -3px 0 var(--plastic-edge);
+    color: var(--on-plastic);
+}
+
+.pad__group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.pad__caption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--on-plastic-soft);
+    text-align: center;
+}
+
+kbd {
+    display: inline-block;
+    min-width: 22px;
+    padding: 1px 6px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--plastic-edge);
+    background: var(--key);
+    border-radius: 4px;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+    text-align: center;
+}
+
+/* D-pad: two overlapping bars */
+.dpad {
+    position: relative;
+    width: 66px;
+    height: 66px;
+}
+
+.dpad span {
+    position: absolute;
+    background: #1e1e20;
+    border-radius: 3px;
+}
+
+.dpad span:first-child {
+    inset: 22px 0;
+}
+
+.dpad span:last-child {
+    inset: 0 22px;
+}
+
+.pill-pair,
+.face-pair {
+    display: flex;
+    gap: 18px;
+}
+
+.pill-pair > div,
+.face-pair > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.pill {
+    display: block;
+    width: 40px;
+    height: 12px;
+    margin: 27px 0;
+    background: #1e1e20;
+    border-radius: 6px;
+}
+
+.face {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin: 9px 0;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.3);
+    color: #fff;
+    font-weight: 800;
+    font-size: 15px;
+}
+
+/* ---------- Focus and small screens ---------- */
+
+:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+    :root {
+        --pad: 10px;
+    }
+
+    .topbar {
+        padding: 20px 16px 16px;
+    }
+
+    .wordmark {
+        font-size: 32px;
+    }
+
+    .game-picker,
+    #romSelect {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .stage {
+        padding-top: 20px;
+    }
+
+    .pad {
+        grid-template-columns: 1fr 1fr;
+        padding: 20px;
+    }
+
+    .pad__group--menu {
+        grid-column: 1 / -1;
+        order: 3;
+    }
 }

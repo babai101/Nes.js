@@ -1,105 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title></title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css"
-        integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nes.js</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
     <link rel="stylesheet" href="/public/css/style.css">
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #e3f2fd;">
-        <a class="navbar-brand" href="#">Nes.Js</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+    <header class="topbar">
+        <div class="brand">
+            <h1 class="wordmark">Nes.js</h1>
+            <p class="tagline">An NES emulator written in JavaScript</p>
+        </div>
+        <label class="game-picker">
+            <span class="game-picker__label">Game</span>
+            <select id="romSelect">
+                <option value="select" selected disabled>Choose a game</option>
+            </select>
+        </label>
+    </header>
 
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item active">
-                    <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-                </li>
-                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <a class="dropdown-item" href="#">Action</a>
-                    <a class="dropdown-item" href="#">Another action</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="#">Something else here</a>
-                </div>
-                </li>
-            </ul>
-            <div>
-                <select id="romSelect" class="form-control">
-                    <option value="select" selected>Select a ROM</option>
-                </select>
-                <!--<button id="btnLoadROM" class="btn btn-primary">Load</button>-->
+    <main class="stage" id="stage">
+        <div class="bezel">
+            <div class="screen">
+                <canvas id="nesCanvas" width="256" height="224" class="mainCanvas"></canvas>
+                <p class="screen__empty" id="emptyState">Choose a game from the list above to start playing.</p>
             </div>
-        </div>
-    </nav>
-    <div class="container">
-        <div class="row heading">
-            <div class="col-sm-8 offset-sm-2 text-center">
-                <br>
-                <h4>NES Emulator Written in JavaScript</h4>
-            </div>
-        </div>
-    </div>
-    <!-- Outside .container so 3x/4x aren't clipped by Bootstrap's max-width -->
-    <div class="viewport">
-        <canvas id="nesCanvas" width="256" height="224" class="mainCanvas"></canvas>
-    </div>
-    <div class="scale-toggle" role="group" aria-label="Screen size">
-        <button type="button" data-scale="fit">Fit</button>
-        <button type="button" data-scale="1">1x</button>
-        <button type="button" data-scale="2">2x</button>
-        <button type="button" data-scale="3">3x</button>
-        <button type="button" data-scale="4">4x</button>
-    </div>
-    <div class="container">
-        <br>
-        <div class="row">
-            <div class="col-sm-10 offset-sm-1">
-                <div class="row">
-                    <div class="col-sm-4 offset-sm-4 text-center">
-                        <h4>Controls</h4>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-4 offset-sm-4 text-center">
-                        <h5>Start == Ctrl Key</h5>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-10 offset-sm-1 text-center">
-                        <h5>A == Z key B == X key Up/Down/Left/Right == Arrow keys</h5>
-                    </div>
+            <div class="bezel__strip">
+                <p class="status" id="status"><span class="status__led" aria-hidden="true"></span><span id="statusText">No game loaded</span></p>
+                <div class="scale-toggle" role="group" aria-label="Screen size">
+                    <button type="button" data-scale="fit">Fit</button>
+                    <button type="button" data-scale="1">1x</button>
+                    <button type="button" data-scale="2">2x</button>
+                    <button type="button" data-scale="3">3x</button>
+                    <button type="button" data-scale="4">4x</button>
                 </div>
             </div>
         </div>
-    </div>
+
+        <section class="keymap" aria-labelledby="keymapTitle">
+            <h2 id="keymapTitle" class="keymap__title">Keyboard controls</h2>
+            <div class="pad">
+                <div class="pad__group">
+                    <div class="dpad" aria-hidden="true"><span></span><span></span></div>
+                    <p class="pad__caption">D-pad <kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd></p>
+                </div>
+                <div class="pad__group pad__group--menu">
+                    <div class="pill-pair">
+                        <div><span class="pill" aria-hidden="true"></span><p class="pad__caption">Select <kbd>Space</kbd></p></div>
+                        <div><span class="pill" aria-hidden="true"></span><p class="pad__caption">Start <kbd>Ctrl</kbd></p></div>
+                    </div>
+                </div>
+                <div class="pad__group">
+                    <div class="face-pair">
+                        <div><span class="face" aria-hidden="true">B</span><p class="pad__caption"><kbd>X</kbd></p></div>
+                        <div><span class="face" aria-hidden="true">A</span><p class="pad__caption"><kbd>Z</kbd></p></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"
         integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-        crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js"
-        integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4"
-        crossorigin="anonymous"></script>
     <script>
         // Screen size toggle: Fit / 1x / 2x / 3x / 4x.
         // Nx means 224*N CSS pixels tall; width follows the 8:7 NTSC pixel
         // aspect ratio (256 * 8/7 * N = 292.57 * N) via aspect-ratio in CSS.
         (function () {
-            var canvas = document.getElementById('nesCanvas');
+            var stage = document.getElementById('stage');
             var buttons = document.querySelectorAll('.scale-toggle button');
 
             function setScale(scale) {
                 if (scale === 'fit') {
-                    canvas.style.width = '';   // fall back to the stylesheet
+                    stage.style.removeProperty('--screen-w');   // fall back to the stylesheet
                 } else {
                     var n = Number(scale);
-                    canvas.style.width = (256 * 8 / 7 * n) + 'px';   // unrounded so height is exactly 224*n
+                    // unrounded so the height is exactly 224*n
+                    stage.style.setProperty('--screen-w', (256 * 8 / 7 * n) + 'px');
                 }
                 buttons.forEach(function (b) {
                     b.classList.toggle('active', b.dataset.scale === String(scale));
@@ -221,13 +204,6 @@
                         break;
                 }
             });
-
-            //Bootstrap events
-            $('#inpSearchRoms').on('hidden.bs.popover', function () {
-                // do something…
-                $('#inpSearchRoms').popover('disable');
-            });
-
             function loadRomsToDropdown() {
                 var url = '/api/getPlayableRoms';
                 var $dropdown = $('#romDropdown');
@@ -245,16 +221,6 @@
                     }
                 });
             }
-            //Enable Bootstrap popovers 
-            $(function () {
-                $('#inpSearchRoms').popover({
-                    html: true,
-                    template: '<div class="popover" role="tooltip"><div class="arrow"></div><div class="popover-body"></div></div>'
-                });
-            });
-            //disable search result popover by default
-            $('#inpSearchRoms').popover('disable');
-
             //Click events
             $('#pause').click(function () {
                 // isPaused = !isPaused;
@@ -304,7 +270,6 @@
                     type: 'GET',
                     url: url,
                     success: function (result) {
-                        $('#inpSearchRoms').popover('dispose');
                         cancelAnimationFrame(requestId);
                         if (nes.isRunning)
                             nes.reset();
@@ -314,6 +279,9 @@
                         startTime = then
                         requestId = requestAnimationFrame(renderFrame);
                         $('#romSelect').blur();
+                        $('#emptyState').prop('hidden', true);
+                        $('#status').addClass('is-on');
+                        $('#statusText').text($('#romSelect option:selected').text());
                     },
                     error: function (e) {
                         console.log(e);
