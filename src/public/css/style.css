@@ -27,20 +27,54 @@ h5 {
 /*}*/
 
 canvas {
-    border: 1px dotted cyan;
-    -ms-interpolation-mode: nearest-neighbor;
+    outline: 1px dotted cyan; /* outline, not border, so it does not skew the aspect ratio */
+    /* -ms-interpolation-mode: nearest-neighbor;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: -moz-crisp-edges;
     image-rendering: -o-pixelated;
     image-rendering: pixelated;
-    image-rendering: optimizespeed
+    image-rendering: optimizespeed */
+    image-rendering: auto;   /* smooth (bilinear) scaling */
+}
+
+.viewport {
+    display: flex;
+    justify-content: center;
+    padding: 0 16px;
 }
 
 .mainCanvas {
-    /*width: 512px;*/
-    /*height: 480px;*/
-    width: 100%;
-    height: 100%;
+    /* Width is set by the 1x/2x/3x/4x toggle (see home.html); "Fit" uses
+       the default below. Height always follows from the aspect ratio. */
+    width: min(100%, 880px);
+    max-width: 100%;   /* never overflow a narrow window */
+    height: auto;
+    /* NTSC pixel aspect ratio is 8:7, so 256x224 pixels display as
+       (256 * 8/7) : 224 = 292.57 : 224 = 64 : 49 (about 1.306:1) */
+    aspect-ratio: 64 / 49;
+}
+
+.scale-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 12px;
+}
+
+.scale-toggle button {
+    background: transparent;
+    color: #9ad;
+    border: 1px solid #456;
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.scale-toggle button.active {
+    background: #e3f2fd;
+    color: #000;
+    border-color: #e3f2fd;
 }
 
 /*.btn {*/

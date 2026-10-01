@@ -1,10 +1,16 @@
 'use strict';
+// NTSC TVs hid roughly 8 scanlines at the top and bottom of the NES picture
+// (overscan). We only draw scanlines 8-231, i.e. 224 visible lines.
+// The canvas in home.html must be 256 x VISIBLE_LINES.
+export var CROP_TOP = 8;
+export var VISIBLE_LINES = 224;
+
 export default function display(canvas, nes) {
     this.nes = nes;
     this.offscreenBuffer = [];
     var renderTarget = 0; //'1 for WebGL or 0 for Canvas'
     if (renderTarget == 0) {
-        this.ctx = canvas.getContext('2d');
+        this.ctx = canvas.getContext('2d', { desynchronized: true });
         this.canvasImageData = this.ctx.getImageData(0, 0, canvas.width, canvas.height);
         this.data = this.canvasImageData.data;
         this.buf = new ArrayBuffer(this.canvasImageData.data.length);
@@ -76,10 +82,10 @@ export default function display(canvas, nes) {
             //     this.bufData[i] = 0xFF000000 | (this.offscreenBuffer[i][2] << 16) | (this.offscreenBuffer[i][1] << 8) | this.offscreenBuffer[i][0];
             // }
             // var offScreenBuffer = this.nes.PPU.getOffScreenBuffer();
-            for (var i = 0; i < this.bufData.length; i++) {
-                // this.bufData[i] = this.offscreenBuffer[i];
-                this.bufData[i] = this.nes.PPU.getOffScreenBuffer()[i];
-            }
+            // The PPU always renders the full 256x240 frame; copy only
+            // scanlines CROP_TOP .. CROP_TOP + VISIBLE_LINES - 1 (8-231).
+            var src = this.nes.PPU.getOffScreenBuffer();
+            this.bufData.set(src.subarray(CROP_TOP * 256, (CROP_TOP + VISIBLE_LINES) * 256));
             this.canvasImageData.data.set(this.buf8);
             this.ctx.putImageData(this.canvasImageData, 0, 0);
         }

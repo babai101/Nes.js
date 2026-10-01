@@ -44,11 +44,19 @@
                 <h4>NES Emulator Written in JavaScript</h4>
             </div>
         </div>
-        <div class="row">
-            <div class="col-sm-6 offset-sm-3 viewport">
-                <canvas id="nesCanvas" width="256" height="240" class="mainCanvas"></canvas>
-            </div>
-        </div>
+    </div>
+    <!-- Outside .container so 3x/4x aren't clipped by Bootstrap's max-width -->
+    <div class="viewport">
+        <canvas id="nesCanvas" width="256" height="224" class="mainCanvas"></canvas>
+    </div>
+    <div class="scale-toggle" role="group" aria-label="Screen size">
+        <button type="button" data-scale="fit">Fit</button>
+        <button type="button" data-scale="1">1x</button>
+        <button type="button" data-scale="2">2x</button>
+        <button type="button" data-scale="3">3x</button>
+        <button type="button" data-scale="4">4x</button>
+    </div>
+    <div class="container">
         <br>
         <div class="row">
             <div class="col-sm-10 offset-sm-1">
@@ -78,6 +86,39 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js"
         integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4"
         crossorigin="anonymous"></script>
+    <script>
+        // Screen size toggle: Fit / 1x / 2x / 3x / 4x.
+        // Nx means 224*N CSS pixels tall; width follows the 8:7 NTSC pixel
+        // aspect ratio (256 * 8/7 * N = 292.57 * N) via aspect-ratio in CSS.
+        (function () {
+            var canvas = document.getElementById('nesCanvas');
+            var buttons = document.querySelectorAll('.scale-toggle button');
+
+            function setScale(scale) {
+                if (scale === 'fit') {
+                    canvas.style.width = '';   // fall back to the stylesheet
+                } else {
+                    var n = Number(scale);
+                    canvas.style.width = (256 * 8 / 7 * n) + 'px';   // unrounded so height is exactly 224*n
+                }
+                buttons.forEach(function (b) {
+                    b.classList.toggle('active', b.dataset.scale === String(scale));
+                });
+                try { localStorage.setItem('nesScale', scale); } catch (e) {}
+            }
+
+            buttons.forEach(function (b) {
+                b.addEventListener('click', function () {
+                    setScale(b.dataset.scale);
+                    b.blur();   // keep keyboard focus off the button so Z/X/Space reach the game
+                });
+            });
+
+            var saved = 'fit';
+            try { saved = localStorage.getItem('nesScale') || 'fit'; } catch (e) {}
+            setScale(saved);
+        })();
+    </script>
     <script type="text/javascript" src="/public/build/nes-emu.js"></script>
     <script>
         /*global $*/
