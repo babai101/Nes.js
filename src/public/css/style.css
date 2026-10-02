@@ -209,6 +209,39 @@ canvas {
     box-shadow: 0 0 6px 1px rgba(196, 18, 47, 0.7);
 }
 
+.transport {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;   /* sit next to the size toggle, right-aligned */
+}
+
+.transport button {
+    min-width: 64px;
+    padding: 4px 12px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--on-plastic);
+    background: var(--plastic-edge);
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.transport button:hover:not(:disabled) {
+    background: #4a4a4e;
+}
+
+.transport button:disabled {
+    color: var(--on-plastic-soft);
+    opacity: 0.5;
+    cursor: default;
+}
+
+.status.is-paused .status__led {
+    background: #8a3a46;   /* dimmed power light while paused */
+}
+
 .scale-toggle {
     display: flex;
     padding: 2px;

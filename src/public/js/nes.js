@@ -67,6 +67,7 @@ export default function nes() {
         // this.CPU = null;
         // this.APU = null;
         this.isRunning = false;
+        this.APU.stop();   // stop the old game's audio before replacing the APU
         this.mainDisplay = new display(document.getElementById('nesCanvas'), this);
         this.ines = new iNES(this);
         this.Mapper = new mapper(this);

@@ -33,6 +33,10 @@
             </div>
             <div class="bezel__strip">
                 <p class="status" id="status"><span class="status__led" aria-hidden="true"></span><span id="statusText">No game loaded</span></p>
+                <div class="transport" role="group" aria-label="Game controls">
+                    <button type="button" id="pause" disabled>Pause</button>
+                    <button type="button" id="reset" disabled>Reset</button>
+                </div>
                 <div class="scale-toggle" role="group" aria-label="Screen size">
                     <button type="button" data-scale="fit">Fit</button>
                     <button type="button" data-scale="1">1x</button>
@@ -222,11 +226,54 @@
                 });
             }
             //Click events
+            var isPaused = false;
+            var currentRom = null;      // the loaded game's ROM bytes, kept for Reset
+            var currentGameName = '';
+
+            function startLoop() {
+                cancelAnimationFrame(requestId);
+                fpsInterval = 1000 / fps;
+                then = Date.now();      // so the loop doesn't try to catch up on time spent paused
+                requestId = requestAnimationFrame(renderFrame);
+            }
+
+            function setPaused(paused) {
+                isPaused = paused;
+                if (paused)
+                    cancelAnimationFrame(requestId);
+                else
+                    startLoop();
+                // pause the sound with the game (the audio context is shared by all games)
+                var ctx = nes.APU && nes.APU.audioCtx;
+                if (ctx) {
+                    if (paused && ctx.state === 'running') ctx.suspend();
+                    if (!paused && ctx.state === 'suspended') ctx.resume();
+                }
+                $('#pause').text(paused ? 'Play' : 'Pause');
+                $('#status').toggleClass('is-on', !paused).toggleClass('is-paused', paused);
+                $('#statusText').text(paused ? currentGameName + ' (paused)' : currentGameName);
+            }
+
+            // Start (or restart) a game from its ROM bytes
+            function loadGame(romData) {
+                cancelAnimationFrame(requestId);
+                if (nes.isRunning)
+                    nes.reset();
+                nes.initGame(romData);
+                currentRom = romData;
+                $('#pause, #reset').prop('disabled', false);
+                setPaused(false);
+            }
+
             $('#pause').click(function () {
-                // isPaused = !isPaused;
+                setPaused(!isPaused);
+                this.blur();   // keep keyboard focus off the button so Space/Z/X reach the game
             });
             $('#reset').click(function () {
-                nes.reset();
+                // Like switching the console off and on: reload the game from the start.
+                if (currentRom)
+                    loadGame(currentRom);
+                this.blur();
             });
             // $('#btnSearchRoms').click(function() {
             //     var url = "/api/getRomListByName/" + $('#inpSearchRoms').val();
@@ -270,18 +317,10 @@
                     type: 'GET',
                     url: url,
                     success: function (result) {
-                        cancelAnimationFrame(requestId);
-                        if (nes.isRunning)
-                            nes.reset();
-                        nes.initGame(result.romData.data);
-                        fpsInterval = 1000 / fps;
-                        then = Date.now();
-                        startTime = then
-                        requestId = requestAnimationFrame(renderFrame);
+                        currentGameName = $('#romSelect option:selected').text();
+                        loadGame(result.romData.data);
                         $('#romSelect').blur();
                         $('#emptyState').prop('hidden', true);
-                        $('#status').addClass('is-on');
-                        $('#statusText').text($('#romSelect option:selected').text());
                     },
                     error: function (e) {
                         console.log(e);

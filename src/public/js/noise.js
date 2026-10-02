@@ -84,7 +84,7 @@ export default function noise() {
         }
         this.register = this.register >> 1;
         if (feedback == 1) {
-            this.register = this.register | 0x8000;
+            this.register = this.register | 0x4000;   // 15-bit shift register: feedback goes into bit 14
         }
     };
 

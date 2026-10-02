@@ -23,6 +23,11 @@ export default function triangle() {
 
     //Clocks the sequencer
     this.clockSequencer = function() {
+        // Games silence the triangle by setting a timer period of 0 or 1. On
+        // hardware that makes an inaudible ~28-56 kHz tone; emulated, it would
+        // alias into audible noise, so hold the current level instead.
+        if (this.period < 2)
+            return;
         // if (!this.controlFlag && (this.lenCounter > 0) && (this.linearCounter > 0)) {
         if ((this.lenCounter > 0) && (this.linearCounter > 0)) {
             this.outputValue = this.sequenceTable[this.currentSequence];

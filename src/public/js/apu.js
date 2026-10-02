@@ -6,6 +6,58 @@ import triangle from './triangle';
 import noise from './noise';
 import RingBuffer from 'ringbufferjs';
 
+// One AudioContext for the whole page, reused when a new game is loaded.
+// Browsers limit how many contexts a page may open, and a context that is
+// left running keeps calling its onaudioprocess handler.
+var sharedAudioCtx = null;
+var workletReady = null;   // Promise<boolean>: true once the worklet module has loaded
+var WORKLET_URL = '/public/js/nes-audio-worklet.js';
+var CHUNK_SIZE = 512;      // samples per message to the worklet (~12 ms)
+
+function getAudioContext() {
+    if (sharedAudioCtx)
+        return sharedAudioCtx;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) {
+        console.log("Could not initialize audio!");
+        return null;
+    }
+    // The APU produces about 44,100 samples per second (one every 40.5 CPU
+    // cycles), so ask for that rate. Otherwise a 48 kHz device drains the
+    // buffer faster than it is filled and the game speeds up to catch up.
+    try {
+        sharedAudioCtx = new AC({ sampleRate: 44100 });
+    }
+    catch (e) {
+        sharedAudioCtx = new AC();   // older browsers don't accept options
+    }
+    // Browsers start audio "suspended" until the user interacts with the page.
+    // Resume on the first key press or click.
+    var resume = function() {
+        if (sharedAudioCtx.state === 'suspended')
+            sharedAudioCtx.resume();
+    };
+    window.addEventListener('keydown', resume);
+    window.addEventListener('pointerdown', resume);
+    resume();
+
+    // AudioWorklet plays the sound on the browser's audio thread. It is only
+    // available on secure pages (https:// or http://localhost); elsewhere we
+    // fall back to the older ScriptProcessorNode.
+    if (sharedAudioCtx.audioWorklet) {
+        workletReady = sharedAudioCtx.audioWorklet.addModule(WORKLET_URL)
+            .then(function() { return true; })
+            .catch(function(e) {
+                console.log('Could not load the audio worklet, using ScriptProcessorNode instead.', e);
+                return false;
+            });
+    }
+    else {
+        workletReady = Promise.resolve(false);
+    }
+    return sharedAudioCtx;
+}
+
 export default function apu(nes) {
     this.nes = nes;
     this.sqe1Enabled = false;
@@ -19,10 +71,6 @@ export default function apu(nes) {
     this.doIrq = false;
     this.lengthCounterTbl = [10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14, 12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30];
     this.noisePeriodTbl = [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068];
-    var pulse1Buffer = [];
-    var pulse2Buffer = [];
-    this.triangleBuffer = [];
-    this.noiseBuffer = [];
     this.bufferLength = 1024;
     this.outputBuffer = new RingBuffer(this.bufferLength * 10);
     this.pulse1 = new pulse();
@@ -32,20 +80,73 @@ export default function apu(nes) {
     this.pulse1.channel = 1;
     this.pulse2.channel = 2;
 
-    var overSamplingCycles = 0;
-    // var triangleOverSamplingCycles = 0;
-    var overSamplingCycleRate = 20;
-    var sampleCycleRate = 41;
-    var samplingCycles = 0;
-    this.prevSampleL = 0;
-    this.smpAccumL = 0;
+    // --- Turning the 1.79 MHz mixer output into 44.2 kHz audio ---
+    // Square waves have overtones far above what 44 kHz audio can hold; if
+    // they are not removed before sampling, they fold back down as audible,
+    // out-of-tune tones (aliasing). Two stages remove them:
+    //  1. average the mixer output over every CPU cycle, in blocks of a
+    //     quarter of an output sample (10.125 cycles, i.e. 176.8 kHz);
+    //  2. low-pass those blocks with a 31-tap FIR filter (cutoff 19 kHz) and
+    //     keep every 4th result: one output sample per 40.5 CPU cycles.
+    var CYCLES_PER_SAMPLE = 40.5;
+    var OVERSAMPLE = 4;
+    var CYCLES_PER_BLOCK = CYCLES_PER_SAMPLE / OVERSAMPLE;
+    var mixSum = 0;
+    var mixCount = 0;
+    var currentMix = 0;
+    var blockPhase = 0;
+
+    var FIR_TAPS = 31;
+    var firCoefs = (function() {   // Blackman-windowed sinc, normalised to a gain of 1
+        var c = new Float64Array(FIR_TAPS), fc = 19000 / (1789773 / CYCLES_PER_BLOCK), sum = 0;
+        for (var i = 0; i < FIR_TAPS; i++) {
+            var n = i - (FIR_TAPS - 1) / 2;
+            var sinc = n === 0 ? 2 * fc : Math.sin(2 * Math.PI * fc * n) / (Math.PI * n);
+            var w = 0.42 - 0.5 * Math.cos(2 * Math.PI * i / (FIR_TAPS - 1)) + 0.08 * Math.cos(4 * Math.PI * i / (FIR_TAPS - 1));
+            c[i] = sinc * w;
+            sum += c[i];
+        }
+        for (var j = 0; j < FIR_TAPS; j++) c[j] /= sum;
+        return c;
+    })();
+    var firHistory = new Float64Array(FIR_TAPS * 2);   // doubled so the window is always contiguous
+    var firPos = 0;
+    var blocksUntilSample = OVERSAMPLE;
+
+    var pushBlock = function(value) {
+        firHistory[firPos] = value;
+        firHistory[firPos + FIR_TAPS] = value;
+        firPos = (firPos + 1) % FIR_TAPS;
+        if (--blocksUntilSample > 0)
+            return undefined;
+        blocksUntilSample = OVERSAMPLE;
+        var acc = 0;
+        for (var i = 0; i < FIR_TAPS; i++)
+            acc += firCoefs[i] * firHistory[firPos + i];
+        return acc;
+    };
+
+    // The NES (and the TV it was plugged into) filtered its sound with two
+    // high-pass filters (90 Hz, 440 Hz) and a low-pass filter (14 kHz).
+    // These are one-pole versions of them, run at the output sample rate.
+    var SAMPLE_RATE = 1789773 / CYCLES_PER_SAMPLE;
+    var highPassCoef = function(cutoff) {
+        var rc = 1 / (2 * Math.PI * cutoff), dt = 1 / SAMPLE_RATE;
+        return rc / (rc + dt);
+    };
+    var lowPassCoef = function(cutoff) {
+        var rc = 1 / (2 * Math.PI * cutoff), dt = 1 / SAMPLE_RATE;
+        return dt / (rc + dt);
+    };
+    var hp90 = highPassCoef(90), hp440 = highPassCoef(440), lp14k = lowPassCoef(14000);
+    var hp90In = 0, hp90Out = 0, hp440In = 0, hp440Out = 0, lp14kOut = 0;
     var clockCycles = 0;
     var frameCycles = 0;
     this.sampleCount = 0;
     this.sampleTimerMax = 1000.0 / 44100.0;
     this.cyclesPerFrame = 1786830;
-    var squareTable = new Array(31);
-    var triangleTable = new Array(203);
+    var squareTable = new Float64Array(31);     // pulse 1 + pulse 2 mix, from nesdev
+    var triangleTable = new Float64Array(203);  // triangle + noise (+ DMC) mix, from nesdev
     this.frameIRQ = false;
 
     var initMixesLkpTables = function() {
@@ -64,57 +165,78 @@ export default function apu(nes) {
 
         // const audioContext = new AudioContext();
 
-        // var AudioContext = window.AudioContext || window.webkitAudioContext;
-        // this.audioCtx = new AudioContext();
-        // if (!window.AudioContext) {
-        //     if (!window.WebkitAudioContext) {
-        //         console.log("Could not initialize audio!");
-        //         return;
-        //     }
-        //     else {
-        //         this.audioCtx = new window.WebkitAudioContext();
-        //     }
-        // }
-        // else {
-        //     this.audioCtx = new window.AudioContext();
-        // }
-        // this.scriptNode = this.audioCtx.createScriptProcessor(this.bufferLength, 0, 1);
-        // this.scriptNode.onaudioprocess = this.onaudioprocess;
-        // this.scriptNode.connect(this.audioCtx.destination);
+        this.audioCtx = getAudioContext();
+        if (this.audioCtx) {
+            var self = this;
+            workletReady.then(function(ok) {
+                if (self.stopped)
+                    return;   // a new game was loaded before the worklet finished loading
+                if (ok) {
+                    self.workletNode = new AudioWorkletNode(self.audioCtx, 'nes-audio', {
+                        numberOfInputs: 0,
+                        numberOfOutputs: 1,
+                        outputChannelCount: [1]
+                    });
+                    self.workletNode.connect(self.audioCtx.destination);
+                }
+                else {
+                    self.scriptNode = self.audioCtx.createScriptProcessor(self.bufferLength, 0, 1);
+                    self.scriptNode.onaudioprocess = self.onaudioprocess;
+                    self.scriptNode.connect(self.audioCtx.destination);
+                }
+            });
+        }
         initMixesLkpTables();
+    };
+
+    // Disconnect this APU's audio output, e.g. before loading another game.
+    // Without this the old output keeps running, and on every buffer
+    // underrun it runs extra CPU frames, which makes the game speed up.
+    this.stop = function() {
+        this.stopped = true;
+        if (this.workletNode) {
+            this.workletNode.disconnect();
+            this.workletNode.port.close();
+            this.workletNode = null;
+        }
+        if (this.scriptNode) {
+            this.scriptNode.onaudioprocess = null;
+            this.scriptNode.disconnect();
+            this.scriptNode = null;
+        }
     };
 
     // 0x4015
     this.setAPUFlags = function(value) {
-        if (value & 0x01 == 1) {
+        if ((value & 0x01) != 0) {
             this.pulse1.enabled = true;
         }
         else {
             this.pulse1.enabled = false;
             this.pulse1.lenCounter = 0;
         }
-        if (value & 0x02 == 0x02) {
+        if ((value & 0x02) != 0) {
             this.pulse2.enabled = true;
         }
         else {
             this.pulse2.enabled = false;
             this.pulse2.lenCounter = 0;
         }
-        if (value & 0x04 == 0x04) {
+        if ((value & 0x04) != 0) {
             this.triangle1.enabled = true;
         }
         else {
             this.triangle1.enabled = false;
             this.triangle1.lenCounter = 0;
         }
-        if (value & 0x08 == 0x08) {
+        if ((value & 0x08) != 0) {
             this.noise1.enabled = true;
         }
         else {
             this.noise1.enabled = false;
             this.noise1.lenCounter = 0;
         }
-        if (value & 0x10 == 0x10) {
+        if ((value & 0x10) != 0) {
             this.dmcEnabled = true;
         }
         else {
@@ -158,7 +280,7 @@ export default function apu(nes) {
     this.setSQ1_HI = function(value) {
         this.pulse1.periodHighBits = value & 0x07;
         this.pulse1.period = this.pulse1.period & 0xFF;
-        this.pulse1.period = this.pulse1.period | (this.pulse1.periodHighBits << 8) + 1;
+        this.pulse1.period = this.pulse1.period | (this.pulse1.periodHighBits << 8);   // timer period = 11-bit value; the +1 is already in the countdown
         this.pulse1.timerPeriod = this.pulse1.period;
         if (this.pulse1.enabled) {
             this.pulse1.lenCounter = this.lengthCounterTbl[value >> 3];
@@ -218,7 +340,7 @@ export default function apu(nes) {
             this.pulse2.lenCounter = this.lengthCounterTbl[value >> 3];
         }
         this.pulse2.dividerPeriod = this.pulse2.volume + 1; //Restart envelop
-        this.pulse1.currentSequence = 0;
+        this.pulse2.currentSequence = 0; //restart Phase (was resetting pulse 1 by mistake)
         this.pulse2.envStartFlag = true;
         this.pulse2.updateTargetPeriod();
     };
@@ -256,7 +378,7 @@ export default function apu(nes) {
     this.setTRI_HI = function(value) {
         this.triangle1.periodHighBits = value & 0x07;
         this.triangle1.period = this.triangle1.period & 0xFF;
-        this.triangle1.period = this.triangle1.period | (this.triangle1.periodHighBits << 8) + 1;
+        this.triangle1.period = this.triangle1.period | (this.triangle1.periodHighBits << 8);   // timer period = 11-bit value; the +1 is already in the countdown
         // if (this.triangle1.enabled)
         this.triangle1.lenCounter = this.lengthCounterTbl[value >> 3];
         this.triangle1.linearCounterReloadFlag = true;
@@ -281,7 +403,7 @@ export default function apu(nes) {
 
     //0x400E 
     this.setNoise_Period = function(value) {
-        if (value & 0x80 == 0x80) {
+        if ((value & 0x80) != 0) {
             this.noise1.modeFlag = true;
         }
         else {
@@ -353,73 +475,65 @@ export default function apu(nes) {
         }
     };
 
-    this.sample = function() {
-        var pulse1Output = (pulse1Buffer.reduce((a, b) => a + b, 0));
-        if (pulse1Output != 0)
-            pulse1Output = Math.floor(pulse1Output / pulse1Buffer.length);
-        var pulse2Output = (pulse2Buffer.reduce((a, b) => a + b, 0));
-        if (pulse2Output != 0)
-            pulse2Output = Math.floor(pulse2Output / pulse2Buffer.length);
-        var triangleOutput = 0;
-        triangleOutput = (this.triangleBuffer.reduce((a, b) => a + b, 0));
-        if (triangleOutput != 0)
-            triangleOutput = Math.floor(triangleOutput / this.triangleBuffer.length);
-        var noiseOutput = (this.noiseBuffer.reduce((a, b) => a + b, 0));
-        if (noiseOutput != 0)
-            noiseOutput = Math.floor(noiseOutput / this.noiseBuffer.length);
-        pulse1Buffer = [];
-        pulse2Buffer = [];
-        this.triangleBuffer = [];
-        this.noiseBuffer = [];
-        var pulseOutput = 0;
-        if (triangleOutput != 0 || noiseOutput != 0) {
-            triangleOutput = 159.79 / (1 / ((triangleOutput / 8227) + (noiseOutput / 12241)) + 100);
-            // triangleOutput = triangleTable[3 * triangleOutput + 2 * noiseOutput + 0];
-            // triangleOutput = 0.00851 * triangleOutput + 0.00494 * noiseOutput;
-        }
-        if (pulse1Output != 0 || pulse2Output != 0) {
-            pulseOutput = 95.88 / ((8128 / (pulse1Output + pulse2Output)) + 100);
-            // pulseOutput = squareTable[pulse1Output + pulse2Output];
-        }
-        var output = pulseOutput + triangleOutput - 0.762664795;
-
-        var smpDiffL = output - this.prevSampleL;
-        this.prevSampleL += smpDiffL;
-        this.smpAccumL += smpDiffL - (this.smpAccumL >> 10);
-        output = this.smpAccumL;
-        this.pushToBuffer(output);
+    // x: one band-limited sample from the FIR stage
+    this.sample = function(x) {
+        // NES output filters. The high-pass filters also remove the constant
+        // offset of the mixer output, so silence is 0.
+        hp90Out = hp90 * (hp90Out + x - hp90In);
+        hp90In = x;
+        hp440Out = hp440 * (hp440Out + hp90Out - hp440In);
+        hp440In = hp90Out;
+        lp14kOut += lp14k * (hp440Out - lp14kOut);
+        this.pushToBuffer(lp14kOut);
     };
 
+    // Samples for the worklet are collected into chunks and posted together.
+    var chunk = new Float32Array(CHUNK_SIZE);
+    var chunkLength = 0;
+
     this.pushToBuffer = function(data) {
+        if (this.workletNode) {
+            chunk[chunkLength++] = data;
+            if (chunkLength === CHUNK_SIZE) {
+                // transfer the buffer instead of copying it, then start a new one
+                this.workletNode.port.postMessage(chunk, [chunk.buffer]);
+                chunk = new Float32Array(CHUNK_SIZE);
+                chunkLength = 0;
+            }
+            return;
+        }
+        if (!this.scriptNode)
+            return;   // audio not ready (or not available): drop the sample
         this.outputBuffer.enq(data);
     };
 
     this.run = function() {
         clockCycles++;
+        this.triangle1.clock();
+        this.noise1.clock();
         if ((clockCycles & 1) == 0) {
             this.pulse1.clock();
             this.pulse2.clock();
             clockCycles = 0;
+            // Mix the channels as the NES does (non-linear, via lookup tables).
+            // Done once per APU cycle (every 2 CPU cycles): the pulses only
+            // change then, and a triangle/noise change showing up one CPU
+            // cycle late makes no audible difference. Halves the mixing cost.
+            currentMix = squareTable[this.pulse1.output() + this.pulse2.output()] +
+                triangleTable[3 * this.triangle1.output() + 2 * this.noise1.output()];
         }
-        this.triangle1.clock();
-        this.noise1.clock();
-        overSamplingCycles++;
-        if (overSamplingCycles >= overSamplingCycleRate) {
-            overSamplingCycles -= overSamplingCycleRate;
-            pulse1Buffer.push(this.pulse1.output());
-            pulse2Buffer.push(this.pulse2.output());
-            this.triangleBuffer.push(this.triangle1.output());
-            this.noiseBuffer.push(this.noise1.output());
-        }
-        samplingCycles++;
-        if (samplingCycles >= sampleCycleRate) {
-            samplingCycles -= sampleCycleRate;
-            this.sample();
-            this.sampleCount++;
-            if (sampleCycleRate == 40)
-                sampleCycleRate = 41;
-            else if (sampleCycleRate == 41)
-                sampleCycleRate = 40;
+        mixSum += currentMix;
+        mixCount++;
+        blockPhase++;
+        if (blockPhase >= CYCLES_PER_BLOCK) {
+            blockPhase -= CYCLES_PER_BLOCK;
+            var filtered = pushBlock(mixSum / mixCount);
+            mixSum = 0;
+            mixCount = 0;
+            if (filtered !== undefined) {
+                this.sample(filtered);
+                this.sampleCount++;
+            }
         }
 
         switch (frameCycles) {
